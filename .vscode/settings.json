@@ -1,0 +1,7 @@
+{
+  "files.associations": {
+    "*.cuh": "cpp",
+    "*.gyp": "json",
+    "chevan_utils_min.h": "c"
+  }
+}
