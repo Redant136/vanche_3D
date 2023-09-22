@@ -14,10 +14,7 @@ if((${CMAKE_CXX_COMPILER_ID} STREQUAL GNU) OR (${CMAKE_CXX_COMPILER_ID} STREQUAL
   endif()
   set(CMAKE_CXX_FLAGS "-Wall -Wno-sign-compare -Wno-unused-function -Wno-missing-braces")
   set(CMAKE_CXX_FLAGS_DEBUG "-g")
-  set(CMAKE_CXX_FLAGS_RELEASE "-O3")
-  set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -Wall -Wno-sign-compare -Wno-unused-function -Wno-missing-braces")
-  set(CMAKE_C_FLAGS_DEBUG "-g")
-  set(CMAKE_C_FLAGS_RELEASE "-O3")
+  set(CMAKE_CXX_FLAGS_RELEASE "-g -O3")
 
   
 elseif(${CMAKE_CXX_COMPILER_ID} STREQUAL MSVC)

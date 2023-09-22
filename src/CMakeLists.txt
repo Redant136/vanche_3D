@@ -1,10 +1,16 @@
 include_directories(include/)
 
-file(COPY ../models DESTINATION ${CMAKE_BINARY_DIR})
-file(COPY shaders DESTINATION ${CMAKE_BINARY_DIR})
+# file(COPY ../models DESTINATION ${CMAKE_BINARY_DIR})
+# file(COPY shaders DESTINATION ${CMAKE_BINARY_DIR})
 
 
-add_executable(vanche main.c)
+SET(VANCHE_SOURCES
+ renderer/window.c
+ renderer/vmodelRenderer.cpp
+ loader/loader.cpp
+ loader/model.cpp)
+
+add_executable(vanche main.cpp ${VANCHE_SOURCES})
 
 target_link_libraries(vanche PRIVATE ${CMAKE_DL_LIBS})
 target_link_libraries(vanche PRIVATE glad)

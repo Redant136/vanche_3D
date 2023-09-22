@@ -7,8 +7,9 @@
 #include <stdlib.h>
 #include <stdint.h>
 #include <string.h>
+#include <assert.h>
 #define CHEVAN_UTILS_INLINE inline
-#define CHEVAN_VAL 0x86AC
+#define CHVAL 0x86AC
 #define membuild(type, name, data) \
   type name;                       \
   memcpy(&name, data, sizeof(name));
@@ -48,7 +49,6 @@ enum Cardinal8dir
   SOUTH_WEST
 };
 
-
 typedef struct color3_t
 {
   union
@@ -73,7 +73,7 @@ typedef struct color3_t
       uint8_t r, g, b;
     } rgb;
     struct
-    { 
+    {
       uint8_t y, cb, cr;
     } ycc;
   };
@@ -109,6 +109,35 @@ static color4_t initColor4(uint8_t x, uint8_t y, uint8_t z, uint8_t w)
   return c;
 }
 #define color4_t(x, y, z, w) initColor4(x, y, z, w)
+
+static void *ch_bufferFile(const char *file, void **targetBuffer, size_t *bufferLength)
+{
+  FILE *fp = fopen(file, "rb");
+  if (fp)
+  {
+    fseek(fp, 0, SEEK_END);
+    size_t _bufferLength = CHVAL;
+    if(!bufferLength)
+      bufferLength = &_bufferLength;
+    *bufferLength = ftell(fp);
+    
+    fseek(fp, 0, SEEK_SET);
+    *targetBuffer = malloc(*bufferLength);
+    fread(*targetBuffer, *bufferLength, 1, fp);
+    fclose(fp);
+    return *targetBuffer;
+  }
+  return NULL;
+}
+
+static void ch_printMem(uchar*mem,size_t length){
+  uchar p[4096];
+  memcpy(p,mem,length);
+  for(int i=0;i<length;i++){
+    printf("%02X ",p[i]);
+  }
+  printf("\n");
+}
 
 #ifdef CHEVAN_UTILS_BYTE_TYPEDEF
 typedef int8_t i8;
