@@ -4,7 +4,7 @@
 #include <fstream>
 #include <cstdint>
 #include <glm/glm.hpp>
-#include <GL/gl.h>
+#include <glad/glad.h>
 
 namespace gltf
 {

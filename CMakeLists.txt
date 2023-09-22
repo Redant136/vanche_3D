@@ -19,9 +19,9 @@ if((${CMAKE_CXX_COMPILER_ID} STREQUAL GNU) OR (${CMAKE_CXX_COMPILER_ID} STREQUAL
   
 elseif(${CMAKE_CXX_COMPILER_ID} STREQUAL MSVC)
   message(STATUS "MSVC detected, adding compile flags")
-  set(CMAKE_CXX_FLAGS "-Wall -Wno-sign-compare -Wno-unused-function")
-  # set(CMAKE_CXX_FLAGS_DEBUG "-DEBUG")
-  # set(CMAKE_CXX_FLAGS_RELEASE "-Ox")
+  # set(CMAKE_CXX_FLAGS "-Wall")
+  set(CMAKE_CXX_FLAGS_DEBUG "-DEBUG")
+  set(CMAKE_CXX_FLAGS_RELEASE "-Ox")
 
 endif()
 

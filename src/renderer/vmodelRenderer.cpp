@@ -9,14 +9,12 @@
 #include <stb_image.h>
 #define vec4ToQua(v) glm::qua<float>(v.x, v.y, v.z, v.w)
 
-#define defaultShader1 "../src/shader/default/shader.vert", "../src/shader/default/shader.geom", "../src/shader/default/shader.frag"
-#define defaultShader "/home/chevan/Projects/vanche_3D/src/shader/default/shader.vert", \
-                      "/home/chevan/Projects/vanche_3D/src/shader/default/shader.geom", \
-                      "/home/chevan/Projects/vanche_3D/src/shader/default/shader.frag"
+#define defaultShaderRelative "../src/shader/default/shader.vert", "../src/shader/default/shader.geom", "../src/shader/default/shader.frag"
+#define defaultShader defaultShaderRelative
 #define mtoonShader "../src/shader/MToon/MToon.vert", "../src/shader/MToon/MToon.geom", "../src/shader/MToon/MToon.frag"
-#define skeletonShaderSource "/home/chevan/Projects/vanche_3D/src/shader/skeletonRenderer/skeleton.vert", \
-                             "/home/chevan/Projects/vanche_3D/src/shader/skeletonRenderer/skeleton.geom", \
-                             "/home/chevan/Projects/vanche_3D/src/shader/skeletonRenderer/skeleton.frag"
+#define skeletonShaderSource "../src/shader/skeletonRenderer/skeleton.vert", \
+                             "../src/shader/skeletonRenderer/skeleton.geom", \
+                             "../src/shader/skeletonRenderer/skeleton.frag"
 
 WORLD_t WORLD;
 Shader_t skeletonShader;
@@ -187,7 +185,8 @@ static void updateVModelNodeTransform(VModel_t *vmodel, uint node, glm::mat4 par
     R = glm::mat4_cast(glm::quat(vmodel->model.nodes[node].rotation[3], vmodel->model.nodes[node].rotation[0], vmodel->model.nodes[node].rotation[1], vmodel->model.nodes[node].rotation[2]));
   if (vmodel->model.nodes[node].translation.size() != 0)
     T = glm::translate(glm::mat4(1.f), glm::vec3(vmodel->model.nodes[node].translation[0], vmodel->model.nodes[node].translation[1], vmodel->model.nodes[node].translation[2]));
-  if (vmodel->model.nodes[node].matrix.size() != 0){
+  if (vmodel->model.nodes[node].matrix.size() != 0)
+  {
     mat = glm::mat4(
         vmodel->model.nodes[node].matrix[0], vmodel->model.nodes[node].matrix[1], vmodel->model.nodes[node].matrix[2], vmodel->model.nodes[node].matrix[3],
         vmodel->model.nodes[node].matrix[4], vmodel->model.nodes[node].matrix[5], vmodel->model.nodes[node].matrix[6], vmodel->model.nodes[node].matrix[7],
