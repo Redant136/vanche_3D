@@ -39,20 +39,22 @@ uniform bool KHR_materials_unlit;
 
 // KHR_texture_transform
 uniform bool KHR_texture_transform;
-uniform vec2 u_offset, u_scale;
-uniform float u_rotation;
+uniform struct {
+  vec2 u_offset, u_scale;
+  float u_rotation;
+}KHR_texture_transform_data;
 
 void main()
 {
   vec2 UV=fs_in.TexCoords;
   if(KHR_texture_transform){
     UV = (
-      mat3(1,0,0, 0,1,0, u_offset.x, u_offset.y, 1)*
-      mat3( cos(u_rotation), sin(u_rotation), 0,
-            -sin(u_rotation), cos(u_rotation), 0,
+      mat3(1,0,0, 0,1,0, KHR_texture_transform_data.u_offset.x, KHR_texture_transform_data.u_offset.y, 1)*
+      mat3( cos(KHR_texture_transform_data.u_rotation), sin(KHR_texture_transform_data.u_rotation), 0,
+            -sin(KHR_texture_transform_data.u_rotation), cos(KHR_texture_transform_data.u_rotation), 0,
             0,             0, 1)*
-      mat3(u_scale.x,0,0, 0,u_scale.y,0, 0,0,1)*
-      vec3(fs_in.TexCoords,1.0)).xy;
+      mat3(KHR_texture_transform_data.u_scale.x,0,0, 0,KHR_texture_transform_data.u_scale.y,0, 0,0,1)*
+      vec3(fs_in.TexCoords,1)).xy;
   }
 
   vec4 color = texture(texture_base, UV);

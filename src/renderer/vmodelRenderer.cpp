@@ -19,87 +19,87 @@
 WORLD_t WORLD;
 Shader_t skeletonShader;
 
-void shaderSetBool(Shader_t &shader, const std::string &name, bool value)
+void shaderSetBool(const Shader_t &shader, const std::string &name, bool value)
 {
   glUniform1i(glGetUniformLocation(shader.ID, name.c_str()), (int)value);
 }
-void shaderSetInt(Shader_t &shader, const std::string &name, int value)
+void shaderSetInt(const Shader_t &shader, const std::string &name, int value)
 {
   glUniform1i(glGetUniformLocation(shader.ID, name.c_str()), value);
 }
-void shaderSetFloat(Shader_t &shader, const std::string &name, float value)
+void shaderSetFloat(const Shader_t &shader, const std::string &name, float value)
 {
   glUniform1f(glGetUniformLocation(shader.ID, name.c_str()), value);
 }
-void shaderSetVec2(Shader_t &shader, const std::string &name, const glm::vec2 &value)
+void shaderSetVec2(const Shader_t &shader, const std::string &name, const glm::vec2 &value)
 {
   glUniform2fv(glGetUniformLocation(shader.ID, name.c_str()), 1, &value[0]);
 }
-void shaderSetVec2(Shader_t &shader, const std::string &name, float x, float y)
+void shaderSetVec2(const Shader_t &shader, const std::string &name, float x, float y)
 {
   glUniform2f(glGetUniformLocation(shader.ID, name.c_str()), x, y);
 }
-void shaderSetVec3(Shader_t &shader, const std::string &name, const glm::vec3 &value)
+void shaderSetVec3(const Shader_t &shader, const std::string &name, const glm::vec3 &value)
 {
   glUniform3fv(glGetUniformLocation(shader.ID, name.c_str()), 1, &value[0]);
 }
-void shaderSetVec3(Shader_t &shader, const std::string &name, float x, float y, float z)
+void shaderSetVec3(const Shader_t &shader, const std::string &name, float x, float y, float z)
 {
   glUniform3f(glGetUniformLocation(shader.ID, name.c_str()), x, y, z);
 }
-void shaderSetVec4(Shader_t &shader, const std::string &name, const glm::vec4 &value)
+void shaderSetVec4(const Shader_t &shader, const std::string &name, const glm::vec4 &value)
 {
   glUniform4fv(glGetUniformLocation(shader.ID, name.c_str()), 1, &value[0]);
 }
-void shaderSetVec4(Shader_t &shader, const std::string &name, float x, float y, float z, float w)
+void shaderSetVec4(const Shader_t &shader, const std::string &name, float x, float y, float z, float w)
 {
   glUniform4f(glGetUniformLocation(shader.ID, name.c_str()), x, y, z, w);
 }
-void shaderSetMat2(Shader_t &shader, const std::string &name, const glm::mat2 &mat)
+void shaderSetMat2(const Shader_t &shader, const std::string &name, const glm::mat2 &mat)
 {
   glUniformMatrix2fv(glGetUniformLocation(shader.ID, name.c_str()), 1, GL_FALSE, &mat[0][0]);
 }
-void shaderSetMat3(Shader_t &shader, const std::string &name, const glm::mat3 &mat)
+void shaderSetMat3(const Shader_t &shader, const std::string &name, const glm::mat3 &mat)
 {
   glUniformMatrix3fv(glGetUniformLocation(shader.ID, name.c_str()), 1, GL_FALSE, &mat[0][0]);
 }
-void shaderSetMat4(Shader_t &shader, const std::string &name, const glm::mat4 &mat)
+void shaderSetMat4(const Shader_t &shader, const std::string &name, const glm::mat4 &mat)
 {
   glUniformMatrix4fv(glGetUniformLocation(shader.ID, name.c_str()), 1, GL_FALSE, &mat[0][0]);
 }
-void shaderSetBoolArr(Shader_t &shader, const std::string &name, uint size, bool *value)
+void shaderSetBoolArr(const Shader_t &shader, const std::string &name, uint size, bool *value)
 {
   glUniform1iv(glGetUniformLocation(shader.ID, name.c_str()), size, (int *)value);
 }
-void shaderSetIntArr(Shader_t &shader, const std::string &name, uint size, int *value)
+void shaderSetIntArr(const Shader_t &shader, const std::string &name, uint size, int *value)
 {
   glUniform1iv(glGetUniformLocation(shader.ID, name.c_str()), size, value);
 }
-void shaderSetFloatArr(Shader_t &shader, const std::string &name, uint size, float *value)
+void shaderSetFloatArr(const Shader_t &shader, const std::string &name, uint size, float *value)
 {
   glUniform1fv(glGetUniformLocation(shader.ID, name.c_str()), size, value);
 }
-void shaderSetVec2Arr(Shader_t &shader, const std::string &name, uint size, const float *value)
+void shaderSetVec2Arr(const Shader_t &shader, const std::string &name, uint size, const float *value)
 {
   glUniform2fv(glGetUniformLocation(shader.ID, name.c_str()), size, value);
 }
-void shaderSetVec3Arr(Shader_t &shader, const std::string &name, uint size, const float *value)
+void shaderSetVec3Arr(const Shader_t &shader, const std::string &name, uint size, const float *value)
 {
   glUniform3fv(glGetUniformLocation(shader.ID, name.c_str()), size, value);
 }
-void shaderSetVec4Arr(Shader_t &shader, const std::string &name, uint size, const float *value)
+void shaderSetVec4Arr(const Shader_t &shader, const std::string &name, uint size, const float *value)
 {
   glUniform4fv(glGetUniformLocation(shader.ID, name.c_str()), size, value);
 }
-void shaderSetMat2Arr(Shader_t &shader, const std::string &name, uint size, const float *mat)
+void shaderSetMat2Arr(const Shader_t &shader, const std::string &name, uint size, const float *mat)
 {
   glUniformMatrix2fv(glGetUniformLocation(shader.ID, name.c_str()), size, GL_FALSE, mat);
 }
-void shaderSetMat3Arr(Shader_t &shader, const std::string &name, uint size, const float *mat)
+void shaderSetMat3Arr(const Shader_t &shader, const std::string &name, uint size, const float *mat)
 {
   glUniformMatrix3fv(glGetUniformLocation(shader.ID, name.c_str()), size, GL_FALSE, mat);
 }
-void shaderSetMat4Arr(Shader_t &shader, const std::string &name, uint size, const float *mat)
+void shaderSetMat4Arr(const Shader_t &shader, const std::string &name, uint size, const float *mat)
 {
   glUniformMatrix4fv(glGetUniformLocation(shader.ID, name.c_str()), size, GL_FALSE, mat);
 }
@@ -179,20 +179,14 @@ Shader_t createShader(std::string vertexPath, std::string geometryPath, std::str
 static void updateVModelNodeTransform(VModel_t *vmodel, uint node, glm::mat4 parentTransform)
 {
   glm::mat4 mat, T, R, S;
-  if (vmodel->model.nodes[node].scale.size() != 0)
-    S = glm::scale(glm::mat4(1.f), glm::vec3(vmodel->model.nodes[node].scale[0], vmodel->model.nodes[node].scale[1], vmodel->model.nodes[node].scale[2]));
-  if (vmodel->model.nodes[node].rotation.size() != 0)
-    R = glm::mat4_cast(glm::quat(vmodel->model.nodes[node].rotation[3], vmodel->model.nodes[node].rotation[0], vmodel->model.nodes[node].rotation[1], vmodel->model.nodes[node].rotation[2]));
-  if (vmodel->model.nodes[node].translation.size() != 0)
-    T = glm::translate(glm::mat4(1.f), glm::vec3(vmodel->model.nodes[node].translation[0], vmodel->model.nodes[node].translation[1], vmodel->model.nodes[node].translation[2]));
-  if (vmodel->model.nodes[node].matrix.size() != 0)
-  {
-    mat = glm::mat4(
-        vmodel->model.nodes[node].matrix[0], vmodel->model.nodes[node].matrix[1], vmodel->model.nodes[node].matrix[2], vmodel->model.nodes[node].matrix[3],
-        vmodel->model.nodes[node].matrix[4], vmodel->model.nodes[node].matrix[5], vmodel->model.nodes[node].matrix[6], vmodel->model.nodes[node].matrix[7],
-        vmodel->model.nodes[node].matrix[8], vmodel->model.nodes[node].matrix[9], vmodel->model.nodes[node].matrix[10], vmodel->model.nodes[node].matrix[11],
-        vmodel->model.nodes[node].matrix[12], vmodel->model.nodes[node].matrix[13], vmodel->model.nodes[node].matrix[14], vmodel->model.nodes[node].matrix[15]);
-  }
+  S = glm::scale(glm::mat4(1.f), glm::vec3(vmodel->model.nodes[node].scale[0], vmodel->model.nodes[node].scale[1], vmodel->model.nodes[node].scale[2]));
+  R = glm::mat4_cast(glm::quat(vmodel->model.nodes[node].rotation[3], vmodel->model.nodes[node].rotation[0], vmodel->model.nodes[node].rotation[1], vmodel->model.nodes[node].rotation[2]));
+  T = glm::translate(glm::mat4(1.f), glm::vec3(vmodel->model.nodes[node].translation[0], vmodel->model.nodes[node].translation[1], vmodel->model.nodes[node].translation[2]));
+  mat = glm::mat4(
+      vmodel->model.nodes[node].matrix[0], vmodel->model.nodes[node].matrix[1], vmodel->model.nodes[node].matrix[2], vmodel->model.nodes[node].matrix[3],
+      vmodel->model.nodes[node].matrix[4], vmodel->model.nodes[node].matrix[5], vmodel->model.nodes[node].matrix[6], vmodel->model.nodes[node].matrix[7],
+      vmodel->model.nodes[node].matrix[8], vmodel->model.nodes[node].matrix[9], vmodel->model.nodes[node].matrix[10], vmodel->model.nodes[node].matrix[11],
+      vmodel->model.nodes[node].matrix[12], vmodel->model.nodes[node].matrix[13], vmodel->model.nodes[node].matrix[14], vmodel->model.nodes[node].matrix[15]);
 
   vmodel->nodeTransforms[node] = parentTransform * mat * T * R * S;
   for (uint i : vmodel->model.nodes[node].children)
@@ -211,7 +205,9 @@ void initVModel(VModel_t *vmodel)
   vmodel->VBO = (uint *)malloc(vmodel->model.bufferViews.size() * sizeof(uint));
   vmodel->nodeTransforms = (glm::mat4 *)malloc(vmodel->model.nodes.size() * sizeof(glm::mat4));
   vmodel->gltfImageTextureIndex = (uint *)malloc(vmodel->model.images.size() * sizeof(uint));
-  glUseProgram(WORLD.shader.ID);
+
+  vmodel->shader = createShader(defaultShader);
+  glUseProgram(vmodel->shader.ID);
   // setup morph weights and matrix and nodeMatrix
   for (uint i = 0; i < vmodel->model.nodes.size(); i++)
   {
@@ -465,9 +461,9 @@ void initVModel(VModel_t *vmodel)
 
     vmodel->gltfImageTextureIndex[i] = tex;
   }
-  shaderSetInt(WORLD.shader, "texture_base", texture_base_gl_index);
-  shaderSetInt(WORLD.shader, "texture_normal", texture_normal_gl_index);
-  shaderSetInt(WORLD.shader, "texture_emisive", texture_emisive_gl_index);
+  shaderSetInt(vmodel->shader, "texture_base", texture_base_gl_index);
+  shaderSetInt(vmodel->shader, "texture_normal", texture_normal_gl_index);
+  shaderSetInt(vmodel->shader, "texture_emisive", texture_emisive_gl_index);
 
   // TODO(ANT) other stuff here
 }
@@ -480,7 +476,6 @@ int WORLDExecute(const gltf::glTFModel model)
   WORLD.camera.rot = glm::vec4(1, 0, 0, 0);
   WORLD.camera.zoom = 45;
   WORLD.lights[0] = {glm::vec3(0, 5, -5), glm::vec3(1, 1, 1), 0.2};
-  WORLD.shader = createShader(defaultShader);
   skeletonShader = createShader(skeletonShaderSource);
   return 0;
 }
@@ -491,16 +486,16 @@ static void bindTexture(const VModel_t &vmodel, const gltf::Texture &texture, ui
   {
     gltf::Extensions::KHR_texture_transform *ext = (gltf::Extensions::KHR_texture_transform *)texture.extensions[gltf::findExtensionIndex("KHR_texture_transform", texture)].data;
     texCoord = ext->texCoord;
-    membuild(glm::vec2, offset, ext->offset.data());
-    membuild(glm::vec2, scale, ext->scale.data());
-    shaderSetBool(WORLD.shader, "KHR_texture_transform", true);
-    shaderSetVec2(WORLD.shader, "u_offset", offset);
-    shaderSetFloat(WORLD.shader, "u_rotation", ext->rotation);
-    shaderSetVec2(WORLD.shader, "u_scale", scale);
+    membuild(glm::vec2, offset, ext->offset);
+    membuild(glm::vec2, scale, ext->scale);
+    shaderSetBool(vmodel.shader, "KHR_texture_transform", true);
+    shaderSetVec2(vmodel.shader, "KHR_texture_transform_data.u_offset", offset);
+    shaderSetFloat(vmodel.shader, "KHR_texture_transform_data.u_rotation", ext->rotation);
+    shaderSetVec2(vmodel.shader, "u_scale", scale);
   }
   else
   {
-    shaderSetBool(WORLD.shader, "KHR_texture_transform", false);
+    shaderSetBool(vmodel.shader, "KHR_texture_transform", false);
   }
 
   if (texture.sampler != -1)
@@ -526,21 +521,21 @@ static int renderNode(const VModel_t &vmodel, const gltf::Node &node, glm::mat4 
       assert(node.skin < vmodel.model.skins.size());
       const gltf::Skin &skin = vmodel.model.skins[node.skin];
       glm::mat4 nodeInverse = glm::inverse(mat);
-      if (skin.skeleton > -1)
-      {
-        // nodeInverse = vmodel.nodeTransforms[skin.skeleton];
-      }
       std::vector<glm::mat4> jointMatrices = std::vector<glm::mat4>(skin.joints.size());
       for (uint i = 0; i < skin.joints.size(); i++)
       {
         glm::mat4 nodeTransform = vmodel.nodeTransforms[skin.joints[i]];
-        glm::mat4 inverseBindMatrix = glm::make_mat4(
-            (float *)gltf::getDataFromAccessor(vmodel.model, vmodel.model.accessors[skin.inverseBindMatrices], i));
+        float*invMatrixData=(float *)gltf::getDataFromAccessor(vmodel.model, vmodel.model.accessors[skin.inverseBindMatrices], i);
+        glm::mat4 inverseBindMatrix = glm::mat4(
+            invMatrixData[0], invMatrixData[1], invMatrixData[2], invMatrixData[3],
+            invMatrixData[4], invMatrixData[5], invMatrixData[6], invMatrixData[7],
+            invMatrixData[8], invMatrixData[9], invMatrixData[10], invMatrixData[11],
+            invMatrixData[12], invMatrixData[13], invMatrixData[14], invMatrixData[15]);
         jointMatrices[i] = nodeInverse * nodeTransform * inverseBindMatrix;
       }
-      shaderSetMat4Arr(WORLD.shader, "u_jointMatrix", jointMatrices.size(), (float *)jointMatrices.data());
+      shaderSetMat4Arr(vmodel.shader, "u_jointMatrix", jointMatrices.size(), (float *)jointMatrices.data());
     }
-    shaderSetMat4(WORLD.shader, "node", mat);
+    shaderSetMat4(vmodel.shader, "node", mat);
     assert(node.mesh < vmodel.model.meshes.size());
     const gltf::Mesh &mesh = vmodel.model.meshes[node.mesh];
     glBindVertexArray(vmodel.VAO[node.mesh]);
@@ -560,7 +555,7 @@ static int renderNode(const VModel_t &vmodel, const gltf::Node &node, glm::mat4 
         const gltf::Material &material = vmodel.model.materials[primitive.material];
         uint texCoord = 0;
 
-        bool KHR_materials_unlit = 1;
+        bool KHR_materials_unlit = vmodel.vrmData || gltf::findExtensionIndex("KHR_materials_unlit", material) != -1;
 
         if (material.pbrMetallicRoughness.baseColorTexture.index >= 0)
         {
@@ -573,7 +568,7 @@ static int renderNode(const VModel_t &vmodel, const gltf::Node &node, glm::mat4 
         {
           glm::vec4 baseColorFactor;
           memcpy(&baseColorFactor, material.pbrMetallicRoughness.baseColorFactor.data(), sizeof(float) * 4);
-          shaderSetVec4(WORLD.shader, "baseColorFactor", baseColorFactor);
+          shaderSetVec4(vmodel.shader, "baseColorFactor", baseColorFactor);
         }
         if (material.emissiveTexture.index >= 0 && KHR_materials_unlit)
         {
@@ -602,11 +597,11 @@ static int renderNode(const VModel_t &vmodel, const gltf::Node &node, glm::mat4 
           glEnable(GL_BLEND);
         }
         doubleSided = material.doubleSided;
-        shaderSetInt(WORLD.shader, "texCoordIndex", texCoord);
+        shaderSetInt(vmodel.shader, "texCoordIndex", texCoord);
         // TODO(ANT) VRM HERE
-        shaderSetFloat(WORLD.shader, "alphaCutoff", material.alphaCutoff);
+        shaderSetFloat(vmodel.shader, "alphaCutoff", material.alphaCutoff);
       }
-      shaderSetBool(WORLD.shader, "hasBaseColorTexture", hasBaseColorTexture);
+      shaderSetBool(vmodel.shader, "hasBaseColorTexture", hasBaseColorTexture);
       if (doubleSided)
         glDisable(GL_CULL_FACE);
       else
@@ -624,50 +619,6 @@ static int renderNode(const VModel_t &vmodel, const gltf::Node &node, glm::mat4 
       return r;
   }
   return 0;
-}
-
-static void testRender()
-{
-  float vertices[] = {
-      0.5f, 0.5f, 0.0f,   // top right
-      0.5f, -0.5f, 0.0f,  // bottom right
-      -0.5f, -0.5f, 0.0f, // bottom left
-      -0.5f, 0.5f, 0.0f   // top left
-  };
-  unsigned int indices[] = {
-      // note that we start from 0!
-      0, 1, 3, // first Triangle
-      1, 2, 3  // second Triangle
-  };
-  unsigned int VBO, VAO, EBO;
-  glGenVertexArrays(1, &VAO);
-  glGenBuffers(1, &VBO);
-  glGenBuffers(1, &EBO);
-  // bind the Vertex Array Object first, then bind and set vertex buffer(s), and then configure vertex attributes(s).
-  glBindVertexArray(VAO);
-
-  glBindBuffer(GL_ARRAY_BUFFER, VBO);
-  glBufferData(GL_ARRAY_BUFFER, sizeof(vertices), vertices, GL_STATIC_DRAW);
-
-  glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, EBO);
-  glBufferData(GL_ELEMENT_ARRAY_BUFFER, sizeof(indices), indices, GL_STATIC_DRAW);
-
-  glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 3 * sizeof(float), (void *)0);
-  glEnableVertexAttribArray(0);
-
-  // note that this is allowed, the call to glVertexAttribPointer registered VBO as the vertex attribute's bound vertex buffer object so afterwards we can safely unbind
-  glBindBuffer(GL_ARRAY_BUFFER, 0);
-
-  // remember: do NOT unbind the EBO while a VAO is active as the bound element buffer object IS stored in the VAO; keep the EBO bound.
-  // glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, 0);
-
-  // You can unbind the VAO afterwards so other VAO calls won't accidentally modify this VAO, but this rarely happens. Modifying other
-  // VAOs requires a call to glBindVertexArray anyways so we generally don't unbind VAOs (nor VBOs) when it's not directly necessary.
-  glBindVertexArray(0);
-  glUseProgram(WORLD.shader.ID);
-  glBindVertexArray(VAO); // seeing as we only have a single VAO there's no need to bind it every time, but we'll do so to keep things a bit more organized
-  // glDrawArrays(GL_TRIANGLES, 0, 6);
-  glDrawElements(GL_TRIANGLES, 6, GL_UNSIGNED_INT, 0);
 }
 
 void drawSkeleton(const VModel_t &vmodel, glm::mat4 modelTransform, glm::mat4 viewMatrix, glm::mat4 projectionMatrix)
@@ -697,15 +648,15 @@ void drawSkeleton(const VModel_t &vmodel, glm::mat4 modelTransform, glm::mat4 vi
 
 int renderVModel(const VModel_t &vmodel)
 {
-  glUseProgram(WORLD.shader.ID);
+  glUseProgram(vmodel.shader.ID);
   // TODO(ANT) see if necessary to pass light every frame, maybe only do it once
   for (int i = 0; i < MAX_LIGHT_SOURCES; i++)
   {
     char lightName[sizeof("lights[000]")] = {0};
     sprintf(lightName, "lights[%d]", i);
-    shaderSetVec3(WORLD.shader, std::string(lightName) + ".Position", WORLD.lights[i].pos);
-    shaderSetVec3(WORLD.shader, std::string(lightName) + ".Color", WORLD.lights[i].color);
-    shaderSetFloat(WORLD.shader, std::string(lightName) + ".Intensity", WORLD.lights[i].intensity);
+    shaderSetVec3(vmodel.shader, std::string(lightName) + ".Position", WORLD.lights[i].pos);
+    shaderSetVec3(vmodel.shader, std::string(lightName) + ".Color", WORLD.lights[i].color);
+    shaderSetFloat(vmodel.shader, std::string(lightName) + ".Intensity", WORLD.lights[i].intensity);
 
     // shaderSetFloatArr(WORLD.shader, std::string(lightName), 7, (float *)&WORLD.lights[i]);
   }
@@ -713,13 +664,13 @@ int renderVModel(const VModel_t &vmodel)
   // model space to world space
   glm::mat4 modelTransform = glm::mat4(1);
   modelTransform = glm::translate(modelTransform, vmodel.pos);
-  shaderSetMat4(WORLD.shader, "model", modelTransform);
+  shaderSetMat4(vmodel.shader, "model", modelTransform);
   // world space to camera space
   glm::mat4 viewMatrix = glm::lookAt(WORLD.camera.pos, WORLD.camera.pos + WORLD.FRONT, WORLD.UP);
-  shaderSetMat4(WORLD.shader, "view", viewMatrix);
+  shaderSetMat4(vmodel.shader, "view", viewMatrix);
   // camera space to display space
   glm::mat4 projectionMatrix = glm::mat4_cast(vec4ToQua(WORLD.camera.rot)) * glm::perspective(WORLD.camera.zoom, (float)windowData.realWindowWidth / windowData.realWindowHeight, 0.1f, 100.f);
-  shaderSetMat4(WORLD.shader, "projection", projectionMatrix);
+  shaderSetMat4(vmodel.shader, "projection", projectionMatrix);
 
   // modelDraw
   const gltf::Scene &scene = vmodel.model.scenes[vmodel.model.scene > -1 ? vmodel.model.scene : 0];

@@ -22,7 +22,12 @@ namespace gltf
   {
     const string KHR_materials_unlit = "KHR_materials_unlit";
     const string KHR_texture_transform = "KHR_texture_transform";
+    const string KHR_materials_emissive_strength = "KHR_materials_emissive_strength";
     const string VRM = "VRM";
+    const string VRMC_springBone = "VRMC_springBone";
+    const string VRMC_materials_mtoon = "VRMC_materials_mtoon";
+    const string VRMC_node_constraint = "VRMC_node_constraint";
+    const string VRMC_vrm = "VRMC_vrm";
   } SUPPORTED_EXTENSIONS;
 
   struct Extension
@@ -30,273 +35,6 @@ namespace gltf
     string name;
     void *data;
   };
-
-  namespace Extensions
-  {
-    struct KHR_materials_unlit
-    {
-      std::vector<Extension> extensions;
-      std::vector<Extension> extras;
-    };
-    struct KHR_texture_transform
-    {
-      std::vector<float> offset = {0.0, 0.0};
-      float rotation = 0.0;
-      std::vector<float> scale = {1.0, 1.0};
-      int texCoord = 0;
-      std::vector<Extension> extensions;
-      std::vector<Extension> extras;
-    };
-    struct VRM
-    {
-      union Vec3
-      {
-        glm::vec3 glm_vec;
-        struct
-        {
-          float x, y, z;
-        };
-      };
-      union Vec4
-      {
-        glm::vec4 glm_vec;
-        struct
-        {
-          float x, y, z, w;
-        };
-      };
-      VRM() = default;
-      string exporterVersion;
-      string specVersion;
-      struct Meta
-      {
-        string title;
-        string version;
-        string author;
-        string contactInformation;
-        string reference;
-        int texture;
-        enum
-        {
-          OnlyAuthor,
-          ExplicitlyLicensedPerson,
-          Everyone
-        } allowedUserName;
-        string violentUssageName;
-        string sexualUssageName;
-        string commercialUssageName;
-        string otherPermissionUrl;
-        enum
-        {
-          Redistribution_Prohibited,
-          CC0,
-          CC_BY,
-          CC_BY_NC,
-          CC_BY_SA,
-          CC_BY_NC_SA,
-          CC_BY_ND,
-          CC_BY_NC_ND,
-          Other
-        } licenseName;
-        string otherLicenseUrl;
-      } meta;
-      struct Humanoid
-      {
-        struct Bone
-        {
-          enum
-          {
-            hips,
-            leftUpperLeg,
-            rightUpperLeg,
-            leftLowerLeg,
-            rightLowerLeg,
-            leftFoot,
-            rightFoot,
-            spine,
-            chest,
-            neck,
-            head,
-            leftShoulder,
-            rightShoulder,
-            leftUpperArm,
-            rightUpperArm,
-            leftLowerArm,
-            rightLowerArm,
-            leftHand,
-            rightHand,
-            leftToes,
-            rightToes,
-            leftEye,
-            rightEye,
-            jaw,
-            leftThumbProximal,
-            leftThumbIntermediate,
-            leftThumbDistal,
-            leftIndexProximal,
-            leftIndexIntermediate,
-            leftIndexDistal,
-            leftMiddleProximal,
-            leftMiddleIntermediate,
-            leftMiddleDistal,
-            leftRingProximal,
-            leftRingIntermediate,
-            leftRingDistal,
-            leftLittleProximal,
-            leftLittleIntermediate,
-            leftLittleDistal,
-            rightThumbProximal,
-            rightThumbIntermediate,
-            rightThumbDistal,
-            rightIndexProximal,
-            rightIndexIntermediate,
-            rightIndexDistal,
-            rightMiddleProximal,
-            rightMiddleIntermediate,
-            rightMiddleDistal,
-            rightRingProximal,
-            rightRingIntermediate,
-            rightRingDistal,
-            rightLittleProximal,
-            rightLittleIntermediate,
-            rightLittleDistal,
-            upperChest
-          } bone;
-          int node;
-          bool useDefaultValues;
-          Vec3 min, max, center;
-          float axisLength; // figure out what this does
-        };
-        std::vector<Bone> humanBones;
-        float armStretch, legStretch, upperArmTwist, lowerArmTwist, upperLegTwist, lowerLegTwist, feetSpacing; // inverse kinematic bounds
-        bool hasTranslationDoF;
-      } humanoid;
-      struct FirstPerson
-      {
-        struct MeshAnnotations
-        {
-          int mesh = -1;
-          string type = "";
-        };
-        struct DegreeMap
-        {
-          std::vector<float> curve;
-          float xRange;
-          float yRange;
-        };
-        int firstPersonBone;
-        Vec3 firstPersonBoneOffset;
-        std::vector<MeshAnnotations> meshAnnotations;
-        enum
-        {
-          Bone,
-          BlendShape
-        } lookAtTypeName;
-        DegreeMap lookAtHorizontalInner;
-        DegreeMap lookAtHorizontalOuter;
-        DegreeMap lookAtVerticalDown;
-        DegreeMap lookAtVerticalUp;
-      } firstPerson;
-      struct BlendShapeMaster
-      {
-        struct BlendShapeGroup
-        {
-          struct Bind
-          {
-            uint mesh;
-            uint index;
-            float weight;
-          };
-          struct MaterialBind
-          {
-            string type;
-            string propertyName;
-            std::vector<float> targetValue;
-          };
-          string name = "";
-          enum PresetNames
-          {
-            unknown,
-            neutral,
-            a,
-            i,
-            u,
-            e,
-            o,
-            blink,
-            joy,
-            angry,
-            sorrow,
-            fun,
-            lookup,
-            lookdown,
-            lookleft,
-            lookright,
-            blink_l,
-            blink_r
-          } presetName;
-          std::vector<Bind> binds;
-          std::vector<MaterialBind> materialValues;
-          bool isBinary;
-        };
-        std::vector<BlendShapeGroup> blendShapeGroups;
-      } blendShapeMaster;
-      struct SecondaryAnimation
-      {
-        struct Spring
-        {
-          string comment;
-          float stiffiness;
-          float gravityPower;
-          Vec3 gravityDir;
-          float dragForce;
-          int center;
-          float hitRadius;
-          std::vector<uint> bones;
-          std::vector<int> colliderGroups;
-        };
-        struct ColliderGroup
-        {
-          struct Collider
-          {
-            Vec3 offset;
-            float radius;
-          };
-          int node;
-          std::vector<Collider> colliders;
-        };
-        std::vector<Spring> boneGroups;
-        std::vector<ColliderGroup> colliderGroups;
-      } secondaryAnimation;
-      struct MaterialProperties
-      {
-        string name;
-        string shader = "VRM/MToon";
-        int renderQueue;
-        struct FloatProperties
-        {
-          float _Cutoff, _BumpScale, _ReceiveShadowRate, _ShadingGradeRate, _ShadeShift, _ShadeToony, _LightColorAttenuation, _IndirectLightIntensity, _RimLightingMix, _RimFresnelPower, _RimLift, _OutlineWidth, _OutlineScaledMaxDistance, _OutlineLightingMix, _DebugMode, _BlendMode, _OutlineWidthMode, _OutlineColorMode, _CullMode, _OutlineCullMode, _SrcBlend, _DstBlend, _ZWrite;
-        } floatProperties;
-        struct VectorProperties
-        {
-          Vec4 _Color, _ShadeColor, _MainTex, _MainTex_ST, _ShadeTexture, _BumpMap, _ReceiveShadowTexture, _ShadingGradeTexture, _SphereAdd, _RimColor, _EmissionColor, _EmissionMap, _OutlineWidthTexture, _OutlineColor, _UvAnimMaskTexture;
-        } vectorProperties;
-        struct
-        {
-          int _MainTex, _ShadeTexture, _BumpMap, _ReceiveShadowTexture, _ShadingGradeTexture, _RimTexture, _SphereAdd, _EmissionMap, _OutlineWidthTexture, _UvAnimMaskTexture;
-        } textureProperties;
-        struct
-        {
-          bool MTOON_CLIP_IF_OUTLINE_IS_NONE, MTOON_OUTLINE_WIDTH_WORLD, MTOON_OUTLINE_WIDTH_SCREEN, _ALPHATEST_ON, _ALPHABLEND_ON, _NORMALMAP, MTOON_FORWARD_ADD, MTOON_OUTLINE_COLOR_FIXED, MTOON_OUTLINE_COLOR_MIXED, MTOON_DEBUG_NORMAL, MTOON_DEBUG_LITSHADERATE, MTOON_OUTLINE_COLORED;
-        } keywordMap;
-        struct
-        {
-          string RenderType;
-        } tagMap;
-      };
-      std::vector<MaterialProperties> materialProperties;
-    };
-  }
 
   struct Buffer
   {
@@ -595,13 +333,13 @@ namespace gltf
   {
     string name = "";
     std::vector<uint> children = std::vector<uint>();
-    std::vector<float> matrix = std::vector<float>({1, 0, 0, 0,
-                                                    0, 1, 0, 0,
-                                                    0, 0, 1, 0,
-                                                    0, 0, 0, 1});
-    std::vector<float> translation = std::vector<float>({0, 0, 0});
-    std::vector<float> rotation = std::vector<float>({0, 0, 0, 1});
-    std::vector<float> scale = std::vector<float>({1, 1, 1});
+    float matrix[16] = {1, 0, 0, 0,
+                        0, 1, 0, 0,
+                        0, 0, 1, 0,
+                        0, 0, 0, 1};
+    float translation[3] = {0, 0, 0};
+    float rotation[4] = {0, 0, 0, 1};
+    float scale[3] = {1, 1, 1};
     int mesh = -1;
     int skin = -1;
     std::vector<float> weights = std::vector<float>();
@@ -654,6 +392,605 @@ namespace gltf
     std::vector<Extension> extensions;
     std::vector<Extension> extras;
   };
+
+  namespace Extensions
+  {
+    struct KHR_materials_unlit
+    {
+      std::vector<Extension> extensions;
+      std::vector<Extension> extras;
+    };
+    struct KHR_texture_transform
+    {
+      float offset[2] = {0, 0};
+      float rotation = 0.0;
+      float scale[2] = {1, 1};
+      int texCoord = 0;
+      std::vector<Extension> extensions;
+      std::vector<Extension> extras;
+    };
+    struct KHR_materials_emissive_strength
+    {
+      float emissiveStrength = 1;
+    };
+    struct VRM
+    {
+      union Vec3
+      {
+        glm::vec3 glm_vec;
+        struct
+        {
+          float x, y, z;
+        };
+      };
+      union Vec4
+      {
+        glm::vec4 glm_vec;
+        struct
+        {
+          float x, y, z, w;
+        };
+      };
+      VRM() = default;
+      string exporterVersion;
+      string specVersion;
+      struct Meta
+      {
+        string title;
+        string version;
+        string author;
+        string contactInformation;
+        string reference;
+        int texture;
+        enum
+        {
+          OnlyAuthor,
+          ExplicitlyLicensedPerson,
+          Everyone
+        } allowedUserName;
+        string violentUssageName;
+        string sexualUssageName;
+        string commercialUssageName;
+        string otherPermissionUrl;
+        enum
+        {
+          Redistribution_Prohibited,
+          CC0,
+          CC_BY,
+          CC_BY_NC,
+          CC_BY_SA,
+          CC_BY_NC_SA,
+          CC_BY_ND,
+          CC_BY_NC_ND,
+          Other
+        } licenseName;
+        string otherLicenseUrl;
+      } meta;
+      struct Humanoid
+      {
+        struct Bone
+        {
+          enum
+          {
+            hips,
+            leftUpperLeg,
+            rightUpperLeg,
+            leftLowerLeg,
+            rightLowerLeg,
+            leftFoot,
+            rightFoot,
+            spine,
+            chest,
+            neck,
+            head,
+            leftShoulder,
+            rightShoulder,
+            leftUpperArm,
+            rightUpperArm,
+            leftLowerArm,
+            rightLowerArm,
+            leftHand,
+            rightHand,
+            leftToes,
+            rightToes,
+            leftEye,
+            rightEye,
+            jaw,
+            leftThumbProximal,
+            leftThumbIntermediate,
+            leftThumbDistal,
+            leftIndexProximal,
+            leftIndexIntermediate,
+            leftIndexDistal,
+            leftMiddleProximal,
+            leftMiddleIntermediate,
+            leftMiddleDistal,
+            leftRingProximal,
+            leftRingIntermediate,
+            leftRingDistal,
+            leftLittleProximal,
+            leftLittleIntermediate,
+            leftLittleDistal,
+            rightThumbProximal,
+            rightThumbIntermediate,
+            rightThumbDistal,
+            rightIndexProximal,
+            rightIndexIntermediate,
+            rightIndexDistal,
+            rightMiddleProximal,
+            rightMiddleIntermediate,
+            rightMiddleDistal,
+            rightRingProximal,
+            rightRingIntermediate,
+            rightRingDistal,
+            rightLittleProximal,
+            rightLittleIntermediate,
+            rightLittleDistal,
+            upperChest
+          } bone;
+          int node;
+          bool useDefaultValues;
+          Vec3 min, max, center;
+          float axisLength; // figure out what this does
+        };
+        std::vector<Bone> humanBones;
+        float armStretch, legStretch, upperArmTwist, lowerArmTwist, upperLegTwist, lowerLegTwist, feetSpacing; // inverse kinematic bounds
+        bool hasTranslationDoF;
+      } humanoid;
+      struct FirstPerson
+      {
+        struct MeshAnnotations
+        {
+          int mesh = -1;
+          string type = "";
+        };
+        struct DegreeMap
+        {
+          std::vector<float> curve;
+          float xRange;
+          float yRange;
+        };
+        int firstPersonBone;
+        Vec3 firstPersonBoneOffset;
+        std::vector<MeshAnnotations> meshAnnotations;
+        enum
+        {
+          Bone,
+          BlendShape
+        } lookAtTypeName;
+        DegreeMap lookAtHorizontalInner;
+        DegreeMap lookAtHorizontalOuter;
+        DegreeMap lookAtVerticalDown;
+        DegreeMap lookAtVerticalUp;
+      } firstPerson;
+      struct BlendShapeMaster
+      {
+        struct BlendShapeGroup
+        {
+          struct Bind
+          {
+            uint mesh;
+            uint index;
+            float weight;
+          };
+          struct MaterialBind
+          {
+            string type;
+            string propertyName;
+            std::vector<float> targetValue;
+          };
+          string name = "";
+          enum PresetNames
+          {
+            unknown,
+            neutral,
+            a,
+            i,
+            u,
+            e,
+            o,
+            blink,
+            joy,
+            angry,
+            sorrow,
+            fun,
+            lookup,
+            lookdown,
+            lookleft,
+            lookright,
+            blink_l,
+            blink_r
+          } presetName;
+          std::vector<Bind> binds;
+          std::vector<MaterialBind> materialValues;
+          bool isBinary;
+        };
+        std::vector<BlendShapeGroup> blendShapeGroups;
+      } blendShapeMaster;
+      struct SecondaryAnimation
+      {
+        struct Spring
+        {
+          string comment;
+          float stiffiness;
+          float gravityPower;
+          Vec3 gravityDir;
+          float dragForce;
+          int center;
+          float hitRadius;
+          std::vector<uint> bones;
+          std::vector<int> colliderGroups;
+        };
+        struct ColliderGroup
+        {
+          struct Collider
+          {
+            Vec3 offset;
+            float radius;
+          };
+          int node;
+          std::vector<Collider> colliders;
+        };
+        std::vector<Spring> boneGroups;
+        std::vector<ColliderGroup> colliderGroups;
+      } secondaryAnimation;
+      struct MaterialProperties
+      {
+        string name;
+        string shader = "VRM/MToon";
+        int renderQueue;
+        struct FloatProperties
+        {
+          float _Cutoff, _BumpScale, _ReceiveShadowRate, _ShadingGradeRate, _ShadeShift, _ShadeToony, _LightColorAttenuation, _IndirectLightIntensity, _RimLightingMix, _RimFresnelPower, _RimLift, _OutlineWidth, _OutlineScaledMaxDistance, _OutlineLightingMix, _DebugMode, _BlendMode, _OutlineWidthMode, _OutlineColorMode, _CullMode, _OutlineCullMode, _SrcBlend, _DstBlend, _ZWrite;
+        } floatProperties;
+        struct VectorProperties
+        {
+          Vec4 _Color, _ShadeColor, _MainTex, _MainTex_ST, _ShadeTexture, _BumpMap, _ReceiveShadowTexture, _ShadingGradeTexture, _SphereAdd, _RimColor, _EmissionColor, _EmissionMap, _OutlineWidthTexture, _OutlineColor, _UvAnimMaskTexture;
+        } vectorProperties;
+        struct
+        {
+          int _MainTex, _ShadeTexture, _BumpMap, _ReceiveShadowTexture, _ShadingGradeTexture, _RimTexture, _SphereAdd, _EmissionMap, _OutlineWidthTexture, _UvAnimMaskTexture;
+        } textureProperties;
+        struct
+        {
+          bool MTOON_CLIP_IF_OUTLINE_IS_NONE, MTOON_OUTLINE_WIDTH_WORLD, MTOON_OUTLINE_WIDTH_SCREEN, _ALPHATEST_ON, _ALPHABLEND_ON, _NORMALMAP, MTOON_FORWARD_ADD, MTOON_OUTLINE_COLOR_FIXED, MTOON_OUTLINE_COLOR_MIXED, MTOON_DEBUG_NORMAL, MTOON_DEBUG_LITSHADERATE, MTOON_OUTLINE_COLORED;
+        } keywordMap;
+        struct
+        {
+          string RenderType;
+        } tagMap;
+      };
+      std::vector<MaterialProperties> materialProperties;
+    };
+    struct VRMC_springBone
+    {
+      struct Collider
+      {
+        int node=-1;
+        struct
+        {
+          struct
+          {
+            float offset[3] = {0, 0, 0};
+            float radius = 0;
+          } sphere;
+          struct
+          {
+            float offset[3] = {0, 0, 0};
+            float radius = 0;
+            float tail[3] = {0, 0, 0};
+          } capsule;
+          bool isSphere;
+        } shape;
+      };
+      struct ColliderGroup
+      {
+        string name;
+        std::vector<int> colliders;
+      };
+      struct Spring
+      {
+        struct Joint
+        {
+          int node=-1;
+          float hitRadius;
+          float stiffness;
+          float gravityPower;
+          float gravityDir[3] = {0, -1, 0};
+          float dragForce = 0.5;
+        };
+        string name;
+        std::vector<Joint> joints;
+        std::vector<int> colliderGroups;
+        int center=-1;
+      };
+      string specVersion;
+      std::vector<Collider> colliders;
+      std::vector<ColliderGroup> colliderGroups;
+      std::vector<Spring> springs;
+    };
+    struct VRMC_materials_mtoon
+    {
+      string specVersion;
+      bool transparentWithZWrite = false;
+      int renderQueueOffsetNumber;
+      float shadeColorFactor[3] = {1, 1, 1};
+      Material::TextureInfo shadeMultiplyTexture;
+      float shadingShiftFactor;
+      struct ShadingShiftTexture : public Material::TextureInfo
+      {
+        float scale = 1;
+      } shadingShiftTexture;
+      float shadingToonyFactor = 0.9;
+      float giEqualizationFactor = 0.9;
+      float matcapFactor[3] = {0, 0, 0};
+      Material::TextureInfo matcapTexture;
+      float parametricRimColorFactor[3] = {0, 0, 0};
+      Material::TextureInfo rimMultiplyTexture;
+      float rimLightingMixFactor = 0;
+      float parametricRimFresnelPowerFactor = 1;
+      float parametricRimLiftFactor = 0;
+      enum OutlineWidthMode
+      {
+        none,
+        worldCoordinates,
+        screenCoordinates
+      } outlineWidthMode = none;
+      float outlineWidthFactor;
+      Material::TextureInfo outlineWidthMultiplyTexture;
+      float outlineColorFactor[3] = {0, 0, 0};
+      float outlineLightingMixFactor = 1;
+      Material::TextureInfo uvAnimationMaskTexture;
+      float uvAnimationScrollXSpeedFactor = 0;
+      float uvAnimationScrollYSpeedFactor = 0;
+      float uvAnimationRotationSpeedFactor = 0;
+    };
+    struct VRMC_node_constraint
+    {
+      string specVersion;
+      struct
+      {
+        struct
+        {
+          int source=-1;
+          enum
+          {
+            X,
+            Y,
+            Z
+          } rollAxis;
+          float weight = 1;
+        } roll;
+        struct
+        {
+          int source=-1;
+          enum
+          {
+            PositiveX,
+            NegativeX,
+            PositiveY,
+            NegativeY,
+            PositiveZ,
+            NegativeZ
+          } aimAxis;
+          float weight = 1;
+        } aim;
+        struct
+        {
+          int source=-1;
+          float weight = 1;
+        } rotation;
+      } constraint;
+    };
+    struct VRMC_vrm
+    {
+      string specVersion;
+      struct Meta
+      {
+        string name;
+        string version;
+        std::vector<string> authors;
+        string copyrightInformation;
+        string contactInformation;
+        std::vector<string> reference;
+        string thirdPartyLicenses;
+        int thumbnailImage=-1;
+        string licenseUrl;
+        enum
+        {
+          onlyAuthor,
+          onlySeparatelyLicensedPerson,
+          everyone
+        } avatarPermission = onlyAuthor;
+        bool allowExcessivelyViolentUsage = false;
+        bool allowExcessivelySexualUsage = false;
+        enum
+        {
+          personalNonProfit,
+          personalProfit,
+          corporation
+        } commercialUsage = personalNonProfit;
+        bool allowPoliticalOrReligiousUsage = false;
+        bool allowAntisocialOrHateUsage = false;
+        enum
+        {
+          required,
+          unnecessary
+        } creditNotation = required;
+        bool allowRedistribution = false;
+        enum
+        {
+          prohibited,
+          allowModification,
+          allowModificationRedistribution
+        } modification = prohibited;
+        string otherLicenseUrl;
+      } meta;
+      struct Humanoid
+      {
+        struct HumanBones
+        {
+          struct Bone
+          {
+            int node = -1;
+          } hips,
+              spine,
+              chest,
+              upperChest,
+              neck,
+              head,
+              leftEye,
+              rightEye,
+              jaw,
+              leftUpperLeg,
+              leftLowerLeg,
+              leftFoot,
+              leftToes,
+              rightUpperLeg,
+              rightLowerLeg,
+              rightFoot,
+              rightToes,
+              leftShoulder,
+              leftUpperArm,
+              leftLowerArm,
+              leftHand,
+              rightShoulder,
+              rightUpperArm,
+              rightLowerArm,
+              rightHand,
+              leftThumbMetacarpal,
+              leftThumbProximal,
+              leftThumbDistal,
+              leftIndexProximal,
+              leftIndexIntermediate,
+              leftIndexDistal,
+              leftMiddleProximal,
+              leftMiddleIntermediate,
+              leftMiddleDistal,
+              leftRingProximal,
+              leftRingIntermediate,
+              leftRingDistal,
+              leftLittleProximal,
+              leftLittleIntermediate,
+              leftLittleDistal,
+              rightThumbMetacarpal,
+              rightThumbProximal,
+              rightThumbDistal,
+              rightIndexProximal,
+              rightIndexIntermediate,
+              rightIndexDistal,
+              rightMiddleProximal,
+              rightMiddleIntermediate,
+              rightMiddleDistal,
+              rightRingProximal,
+              rightRingIntermediate,
+              rightRingDistal,
+              rightLittleProximal,
+              rightLittleIntermediate,
+              rightLittleDistal;
+        } humanBones;
+      } humanoid;
+      struct FirstPerson
+      {
+        struct MeshAnnotations
+        {
+          int node=-1;
+          enum
+          {
+            Auto,
+            both,
+            thirdPersonOnly,
+            firstPersonOnly
+          } type;
+        };
+        std::vector<MeshAnnotations> meshAnnotations;
+      } firstPerson;
+      struct LookAt
+      {
+        float offsetFromHeadBone[3] = {0, 0, 0};
+        enum
+        {
+          bone,
+          expression
+        } type;
+        struct RangeMap
+        {
+          float inputMaxValue, outputScale;
+        };
+        RangeMap rangeMapHorizontalInner;
+        RangeMap rangeMapHorizontalOuter;
+        RangeMap rangeMapVerticalDown;
+        RangeMap rangeMapVerticalUp;
+      } lookAt;
+      struct ExpressionPresets
+      {
+        struct Expression
+        {
+          struct MorphTargetBind
+          {
+            int node=-1;
+            int index=-1;
+            float weight;
+          };
+          struct MaterialColorBind
+          {
+            int material;
+            enum
+            {
+              color,
+              emissionColor,
+              shadeColor,
+              matcapColor,
+              rimColor,
+              outlineColor
+            } type;
+            float targetValue[4];
+          };
+          struct TextureTransformBind
+          {
+            int material=-1;
+            float scale[2] = {1, 1};
+            float offset[2] = {0, 0};
+          };
+          std::vector<MorphTargetBind> morphTargetBinds;
+          std::vector<MaterialColorBind> materialColorBinds;
+          std::vector<TextureTransformBind> textureTransformBinds;
+          bool isBinary = false;
+          enum BlockBlend
+          {
+            none,
+            block,
+            blend
+          };
+          BlockBlend overrideBlink = none;
+          BlockBlend overrideLookAt = none;
+          BlockBlend overrideMouth = none;
+        };
+        struct Preset
+        {
+          Expression happy,
+              angry,
+              sad,
+              relaxed,
+              surprised,
+              aa,
+              ih,
+              ou,
+              ee,
+              oh,
+              blink,
+              blinkLeft,
+              blinkRight,
+              lookUp,
+              lookDown,
+              lookLeft,
+              lookRight,
+              neutral;
+        } preset;
+        Expression custom;
+      } expressions;
+    };
+  }
 
   static int getMeshPrimitiveAttribVal(const Mesh::Primitive::Attributes &attribute, std::string name)
   {

@@ -14,8 +14,9 @@
 #define figure "/home/chevan/Projects/vanche_3D/models/RiggedFigure.gltf"
 #define skinTest "/home/chevan/Projects/vanche_3D/models/SimpleSkin.gltf"
 #define wave "/home/chevan/Projects/vanche_3D/models/wave/scene.gltf"
+#define seedsan "/home/chevan/Projects/vanche_3D/models/Seed-san.vrm"
 #define waveWindows "C:\\Users\\antoi\\Documents\\vanche_3D\\models\\wave\\scene.gltf"
-#define modelPath "../models/AliciaSolid_vrm-0.51.vrm"   
+#define modelPath seedsan
 
 VModel_t vmodel;
 void init()

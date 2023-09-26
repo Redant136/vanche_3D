@@ -22,6 +22,7 @@
 #ifndef M_PI
 #define M_PI 3.1415926535897932384626433832
 #endif
+#define ch_printErr(...) fprintf(stderr,__VA_ARGS__);exit(1);
 
 typedef unsigned char uchar;
 typedef unsigned short ushort;
