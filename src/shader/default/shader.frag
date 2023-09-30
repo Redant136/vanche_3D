@@ -73,11 +73,9 @@ void main()
       continue;
     }
     vec3 lightDirection=normalize(lights[i].Position-fs_in.Pos);
-    vec4 ambient=lights[i].Intensity*vec4(1,1,1,1);
     vec4 diffuse=max(dot(normalize(normal),lightDirection),0.f)*vec4(lights[i].Color,1);
-    color=(ambient+diffuse)*color;
+    color=(lights[i].Intensity*diffuse)*color;
   }
-  // color=vec4(1,0,0,1);
 
   if(color.w<alphaCutoff){
     discard;

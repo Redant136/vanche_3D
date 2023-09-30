@@ -1,7 +1,5 @@
 #version 330 core
 #define MAX_JOINT_MATRIX 128
-#define MAX_MORPH 16
-
 
 layout (location = 0) in vec3 a_pos;
 layout (location = 1) in vec3 a_normal;
@@ -12,7 +10,6 @@ layout (location = 5) in vec2 a_texCoords_2;
 layout (location = 6) in vec4 a_color_0;
 layout (location = 7) in vec4 a_joints;
 layout (location = 8) in vec4 a_weights;
-
 
 uniform int texCoordIndex;
 
@@ -27,7 +24,6 @@ out VS_OUT{
 
 uniform mat4 u_jointMatrix[MAX_JOINT_MATRIX];// joint matrices
 
-
 uniform mat4 node;// specific node transform
 uniform mat4 model;// global model transform
 uniform mat4 view;// camera
@@ -35,8 +31,6 @@ uniform mat4 projection;// camera
 
 void main()
 {
-
-
     if(texCoordIndex==0){
         vs_out.TexCoords=a_texCoords_0;
     }else if(texCoordIndex==1){

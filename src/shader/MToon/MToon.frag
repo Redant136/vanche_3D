@@ -3,13 +3,14 @@
 
 out vec4 FragColor;
 
-in GS_OUT{
+in VS_OUT{
   vec3 Pos;
   vec3 Normal;
   vec2 TexCoords;
   vec3 Tangent;
   vec4 Color;
   vec3 BitTangent;
+  flat int isOutline;
 } fs_in;
 
 
@@ -20,15 +21,6 @@ struct Light {
     float Intensity;
 };
 uniform Light lights[MAX_LIGHT_SOURCES];
-uniform float shadeToony;
-uniform float shadeShift;
-uniform vec4 materialColor;
-uniform vec4 shadeColor;
-
-// color
-uniform float outlineWidth;
-uniform vec4 outlineColor;
-uniform float outlineMix; 
 
 uniform vec4 baseColorFactor;
 uniform bool hasBaseColorTexture;
@@ -41,16 +33,38 @@ uniform sampler2D texture_occlusion;
 uniform sampler2D texture_metalic;
 uniform sampler2D texture_roughness;
 
-uniform vec3 viewPos;
-
 // extensions
 // KHR_materials_unlit
 uniform bool KHR_materials_unlit;
 
 // KHR_texture_transform
 uniform bool KHR_texture_transform;
-uniform vec2 u_offset, u_scale;
-uniform float u_rotation;
+uniform struct KHR_texture_transform_data_t{
+  vec2 u_offset, u_scale;
+  float u_rotation;
+}KHR_texture_transform_data;
+
+uniform struct VRMData_t{
+  vec3 shadeColor;
+  sampler2D shadeMultiplyTexture;
+  float shadingShiftFactor;
+  sampler2D shadingShiftTexture;
+  float shadingShiftTextureScale;
+  float shadingToonyFactor;
+  float outlineWidth;
+
+  float matcapFactor;
+  sampler2D matcapTexture;
+  vec3 parametricRimColorFactor;
+  float parametricRimFresnelPowerFactor;
+  float parametricRimLiftFactor;
+  sampler2D rimMultiplyTexture;
+  float rimLightingMixFactor;
+
+  vec3 outlineColorFactor;
+  float outlineLightingMixFactor;
+  
+} VRMData;
 
 
 float lerp(float a,float b,float w){
@@ -80,52 +94,65 @@ void main()
   vec2 UV=fs_in.TexCoords;
   if(KHR_texture_transform){
     UV = (
-      mat3(1,0,0, 0,1,0, u_offset.x, u_offset.y, 1)*
-      mat3( cos(u_rotation), sin(u_rotation), 0,
-            -sin(u_rotation), cos(u_rotation), 0,
+      mat3(1,0,0, 0,1,0, KHR_texture_transform_data.u_offset.x, KHR_texture_transform_data.u_offset.y, 1)*
+      mat3( cos(KHR_texture_transform_data.u_rotation), sin(KHR_texture_transform_data.u_rotation), 0,
+            -sin(KHR_texture_transform_data.u_rotation), cos(KHR_texture_transform_data.u_rotation), 0,
             0,             0, 1)*
-      mat3(u_scale.x,0,0, 0,u_scale.y,0, 0,0,1)*
-      vec3(fs_in.TexCoords,1.0)).xy;
+      mat3(KHR_texture_transform_data.u_scale.x,0,0, 0,KHR_texture_transform_data.u_scale.y,0, 0,0,1)*
+      vec3(fs_in.TexCoords,1)).xy;
   }
 
   vec4 color = texture(texture_base, UV);
-  if(!KHR_materials_unlit)
-    color += texture(texture_emisive,UV);
-  if(!hasBaseColorTexture){
-    color = baseColorFactor;
-  }else{
-    color *= baseColorFactor;
-  }
 
-  vec3 normal=fs_in.Normal+texture(texture_normal,UV).xyz;
-  
+  // if(!hasBaseColorTexture){
+  //   color = baseColorFactor;
+  // }else{
+  //   color *= baseColorFactor;
+  // }
+
   if(color.w<alphaCutoff){
     discard;
   }
   
-  if(outlineWidth>0.01){
-    //lerp(col, _OutlineColor * lerp(half3(1, 1, 1), col, _OutlineLightingMix), i.isOutline);
-    FragColor=vec4(outlineColor.xyz*lerp(vec3(1),color.xyz,outlineMix),color.w);
-    return;
-  }
+  
+
+  vec3 normal=fs_in.Normal+texture(texture_normal,UV).xyz;
+
+  vec3 worldViewX=normalize(vec3(fs_in.Pos.z,0,-fs_in.Pos.x));
+  vec3 worldViewY=cross(fs_in.Pos,worldViewX);
+  vec2 matcapUV=vec2(dot(worldViewX,normal),dot(worldViewY,normal))* 0.495 + 0.5;
+
+  vec3 rim=VRMData.matcapFactor*texture(VRMData.matcapTexture,matcapUV).xyz;
+  float parametricRim=clamp(1-dot(normalize(normal),normalize(fs_in.Pos))+VRMData.parametricRimLiftFactor,0,1);
+  parametricRim=pow(parametricRim,max(VRMData.parametricRimFresnelPowerFactor,0.00001));
+  rim+=parametricRim * VRMData.parametricRimColorFactor; 
+  rim*=texture(VRMData.rimMultiplyTexture,UV).xyz;
+  rim*=lerp(vec3(1,1,1),color.xyz,VRMData.rimLightingMixFactor);
+  color.xyz+=rim;
 
 
-  const float shadeRate=0.2;
-  vec3 lighting  = vec3(0,0,0);
   for(int i = 0; i < lights.length(); i++)
   {
     if(lights[i].Intensity<=0){
       continue;
     }
     vec3 lightDir = normalize(lights[i].Position - fs_in.Pos);
-    float lightIntensity = max(dot(fs_in.Normal, lightDir), 0.f) * lights[i].Intensity;
-    lightIntensity = clamp((lightIntensity - shadeShift) / max(0.000001, (lerp(1,shadeShift,shadeToony) - shadeShift)),0,1);
-    // use the clamp to only have a few colors
-    lightIntensity = (int(lightIntensity/shadeRate))*shadeRate;
+    float lightIntensity = dot(fs_in.Normal, lightDir)*lights[i].Intensity;
+
+    lightIntensity += VRMData.shadingShiftFactor;
+    lightIntensity += texture(VRMData.shadingShiftTexture, UV).x * VRMData.shadingShiftTextureScale;
+    lightIntensity = clamp((lightIntensity-(-1-VRMData.shadingToonyFactor))/((1-VRMData.shadingToonyFactor)-(-1-VRMData.shadingToonyFactor)),0,1);
     
-    lighting+=lerp(shadeColor,materialColor,lightIntensity).xyz;
-    color.xyz=lighting*color.xyz;
+    vec3 shadeColor = VRMData.shadeColor;
+    shadeColor *= texture(VRMData.shadeMultiplyTexture,UV).rgb;
+    color.xyz = lerp(color.xyz,shadeColor,1-lightIntensity) * lights[i].Color;
   }
+  if(fs_in.isOutline==1){
+    FragColor=vec4(lerp(VRMData.outlineColorFactor,color.xyz,VRMData.outlineLightingMixFactor),1);
+    return;
+  }
+
+
 
   FragColor=color;
 

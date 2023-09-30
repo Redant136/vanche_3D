@@ -79,12 +79,12 @@ static std::vector<gltf::Extension> deserialize_extensions(json extensions)
     }
     else if (ext.name == gltf::SUPPORTED_EXTENSIONS.VRM)
     {
-      fprintf(stderr, "vrm 0.0 not supported");
-      exit(1);
+      fprintf(stderr, "vrm 0.0 not supported\n");
+      // exit(1);
       // gltf::Extensions::VRM tmpExt = deserializeVRM(x.value());
-      // gltf::Extensions::VRM *vrm = new gltf::Extensions::VRM();
+      gltf::Extensions::VRM *vrm = new gltf::Extensions::VRM();
       // *vrm = tmpExt;
-      // ext.data = vrm;
+      ext.data = vrm;
     }
     else if (ext.name == gltf::SUPPORTED_EXTENSIONS.VRMC_springBone)
     {

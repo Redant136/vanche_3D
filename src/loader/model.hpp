@@ -201,7 +201,7 @@ namespace gltf
     std::vector<float> emissiveFactor;
     enum AlphaMode
     {
-      OPAQUE,
+      OPAQUE = 0,
       MASK,
       BLEND
     } alphaMode = OPAQUE;
@@ -716,7 +716,7 @@ namespace gltf
       int renderQueueOffsetNumber;
       float shadeColorFactor[3] = {1, 1, 1};
       Material::TextureInfo shadeMultiplyTexture;
-      float shadingShiftFactor;
+      float shadingShiftFactor=0;
       struct ShadingShiftTexture : public Material::TextureInfo
       {
         float scale = 1;
@@ -727,14 +727,14 @@ namespace gltf
       Material::TextureInfo matcapTexture;
       float parametricRimColorFactor[3] = {0, 0, 0};
       Material::TextureInfo rimMultiplyTexture;
-      float rimLightingMixFactor = 0;
-      float parametricRimFresnelPowerFactor = 1;
+      float rimLightingMixFactor = 1;
+      float parametricRimFresnelPowerFactor = 5;
       float parametricRimLiftFactor = 0;
       enum OutlineWidthMode
       {
-        none,
-        worldCoordinates,
-        screenCoordinates
+        none=0,
+        worldCoordinates=1,
+        screenCoordinates=2
       } outlineWidthMode = none;
       float outlineWidthFactor;
       Material::TextureInfo outlineWidthMultiplyTexture;
@@ -994,18 +994,18 @@ namespace gltf
 
   static int getMeshPrimitiveAttribVal(const Mesh::Primitive::Attributes &attribute, std::string name)
   {
-    int *attrib = (int *)&attribute;
-#define parseAttrib(att_name)              \
-  if (name == #att_name)                   \
-  {                                        \
-    attrib = (int *)(&attribute.att_name); \
+    int attrib = attribute.POSITION;
+#define parseAttrib(att_name)    \
+  if (name == #att_name)         \
+  {                              \
+    attrib = attribute.att_name; \
   }
     parseAttrib(POSITION) else parseAttrib(NORMAL) else parseAttrib(TANGENT) else parseAttrib(TEXCOORD_0) else parseAttrib(TEXCOORD_1) else parseAttrib(TEXCOORD_2) else parseAttrib(COLOR_0) else parseAttrib(JOINTS_0) else parseAttrib(WEIGHTS_0) else
     {
       assert(0);
     }
 #undef parseAttrib
-    return *attrib;
+    return attrib;
   }
 
   static uint gltf_sizeof(int type)
@@ -1132,7 +1132,6 @@ namespace gltf
   template <typename T>
   static int findExtensionIndex(string name, T obj)
   {
-
     for (int i = 0; i < obj.extensions.size(); i++)
     {
       if (obj.extensions[i].name == name)

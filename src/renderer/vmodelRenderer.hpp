@@ -29,16 +29,22 @@ extern struct WORLD_t
   glm::vec3 RIGHT;
   LightSource_t lights[MAX_LIGHT_SOURCES];
   Camera_t camera;
+  struct
+  {
+    Shader_t defaultShader;
+    Shader_t skeletonShader;
+    Shader_t mtoon;
+  } shaders;
 } WORLD;
 struct VModel_t
 {
   std::string path;
   gltf::glTFModel model;
-  void*vrmData;
-  Shader_t shader;
+  void *vrmData;
   glm::vec3 pos;
-  glm::mat4*nodeTransforms;
-  uint *VAO;
+  uint*renderQueue;
+  glm::mat4 *nodeTransforms;
+  uint **VAO;
   uint *VBO;
   uint *gltfImageTextureIndex;
 };
@@ -65,7 +71,7 @@ void shaderSetMat2Arr(const Shader_t &shader, const std::string &name, uint size
 void shaderSetMat3Arr(const Shader_t &shader, const std::string &name, uint size, const float *mat);
 void shaderSetMat4Arr(const Shader_t &shader, const std::string &name, uint size, const float *mat);
 
-void initVModel(VModel_t*model);
+void initVModel(VModel_t *model);
 int WORLDExecute(const gltf::glTFModel model);
 int renderVModel(const VModel_t &model);
 
