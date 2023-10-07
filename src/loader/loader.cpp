@@ -737,7 +737,21 @@ static std::vector<gltf::Extension> deserialize_extensions(json extensions)
 }
 static std::vector<gltf::Extension> deserialize_extras(json extras)
 {
-  return std::vector<gltf::Extension>();
+  std::vector<gltf::Extension> vec;
+  if (extras.contains("targetNames"))
+  {
+    gltf::Extension ext;
+    ext.name="targetNames";
+    gltf::Extras::TargetNames *targetNames = new gltf::Extras::TargetNames();
+    targetNames->targetNames = std::vector<std::string>();
+    for (int i = 0; i < extras["targetNames"].size(); i++)
+    {
+      targetNames->targetNames.push_back(extras["targetNames"][i].get<std::string>());
+    }
+    ext.data = (void *)targetNames;
+    vec.push_back(ext);
+  }
+  return vec;
 }
 
 static gltf::glTFModel parseGLTFJSON(json glTF_data)
@@ -1139,6 +1153,8 @@ static gltf::glTFModel parseGLTFJSON(json glTF_data)
                     }
                     primitive.targets.push_back(target);
                   }
+                  if (mesh.weights.size() != primitive.targets.size())
+                    mesh.weights = std::vector<float>(primitive.targets.size());
                   continue;
                 }
                 jsonExtensionMacro(y, primitive, extensions);
@@ -1625,7 +1641,7 @@ static gltf::glTFModel parseGLB(std::string path, BIN_t bin)
         uint32_t dataSize;
       },
       header, pop_buff(bin.data, 12));
-  printf("Loading model:%s\nglTF version %d size: %d, magic: %s\n", path.c_str(), header.version, header.dataSize, header.glTF);
+  printf("Loading model:%s\nglTF version %d size: %d, magic: %s\n", path.c_str(), header.version, header.dataSize, std::string(header.glTF,4).c_str());
   if (memcmp("glTF", header.glTF, 4))
   {
     fprintf(stderr, "Error loading file at " __FILE__ ":" toStr(__LINE__) ".\nUnexpected magic: %s. File might be corrupted\n", header.glTF);

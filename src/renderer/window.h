@@ -35,6 +35,7 @@ static int launch()
     glClearColor(0.3f, 0.3f, 0.3f, 1.f);
     glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
     update();
+    // glfwSwapInterval(0);
     glfwSwapInterval(1); // v-sync
     glfwSwapBuffers(window);
     glfwPollEvents();

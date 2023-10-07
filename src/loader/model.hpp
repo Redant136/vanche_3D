@@ -666,9 +666,10 @@ namespace gltf
     {
       struct Collider
       {
-        int node=-1;
+        int node = -1;
         struct
         {
+          bool isSphere = 1;
           struct
           {
             float offset[3] = {0, 0, 0};
@@ -680,7 +681,6 @@ namespace gltf
             float radius = 0;
             float tail[3] = {0, 0, 0};
           } capsule;
-          bool isSphere;
         } shape;
       };
       struct ColliderGroup
@@ -692,17 +692,17 @@ namespace gltf
       {
         struct Joint
         {
-          int node=-1;
-          float hitRadius;
-          float stiffness;
-          float gravityPower;
+          int node = -1;
+          float hitRadius = 0;
+          float stiffness = 1;
+          float gravityPower = 0;
           float gravityDir[3] = {0, -1, 0};
           float dragForce = 0.5;
         };
         string name;
         std::vector<Joint> joints;
         std::vector<int> colliderGroups;
-        int center=-1;
+        int center = -1;
       };
       string specVersion;
       std::vector<Collider> colliders;
@@ -716,7 +716,7 @@ namespace gltf
       int renderQueueOffsetNumber;
       float shadeColorFactor[3] = {1, 1, 1};
       Material::TextureInfo shadeMultiplyTexture;
-      float shadingShiftFactor=0;
+      float shadingShiftFactor = 0;
       struct ShadingShiftTexture : public Material::TextureInfo
       {
         float scale = 1;
@@ -732,9 +732,9 @@ namespace gltf
       float parametricRimLiftFactor = 0;
       enum OutlineWidthMode
       {
-        none=0,
-        worldCoordinates=1,
-        screenCoordinates=2
+        none = 0,
+        worldCoordinates = 1,
+        screenCoordinates = 2
       } outlineWidthMode = none;
       float outlineWidthFactor;
       Material::TextureInfo outlineWidthMultiplyTexture;
@@ -752,7 +752,7 @@ namespace gltf
       {
         struct
         {
-          int source=-1;
+          int source = -1;
           enum
           {
             X,
@@ -763,7 +763,7 @@ namespace gltf
         } roll;
         struct
         {
-          int source=-1;
+          int source = -1;
           enum
           {
             PositiveX,
@@ -777,7 +777,7 @@ namespace gltf
         } aim;
         struct
         {
-          int source=-1;
+          int source = -1;
           float weight = 1;
         } rotation;
       } constraint;
@@ -794,7 +794,7 @@ namespace gltf
         string contactInformation;
         std::vector<string> reference;
         string thirdPartyLicenses;
-        int thumbnailImage=-1;
+        int thumbnailImage = -1;
         string licenseUrl;
         enum
         {
@@ -894,7 +894,7 @@ namespace gltf
       {
         struct MeshAnnotations
         {
-          int node=-1;
+          int node = -1;
           enum
           {
             Auto,
@@ -928,8 +928,8 @@ namespace gltf
         {
           struct MorphTargetBind
           {
-            int node=-1;
-            int index=-1;
+            int node = -1;
+            int index = -1;
             float weight;
           };
           struct MaterialColorBind
@@ -948,7 +948,7 @@ namespace gltf
           };
           struct TextureTransformBind
           {
-            int material=-1;
+            int material = -1;
             float scale[2] = {1, 1};
             float offset[2] = {0, 0};
           };
@@ -992,7 +992,14 @@ namespace gltf
     };
   }
 
-  static int getMeshPrimitiveAttribVal(const Mesh::Primitive::Attributes &attribute, std::string name)
+  namespace Extras{
+    struct TargetNames{
+      std::vector<std::string> targetNames;
+    };
+  }
+
+  template<typename T>
+  static int getMeshPrimitiveAttribVal(const T &attribute, std::string name)
   {
     int attrib = attribute.POSITION;
 #define parseAttrib(att_name)    \
@@ -1142,19 +1149,42 @@ namespace gltf
     return -1;
   }
 
-  static void freeModel(glTFModel &model)
+  static void freeModel(glTFModel *model)
   {
-    for (uint i = 0; i < model.buffers.size(); i++)
+    for (uint i = 0; i < model->buffers.size(); i++)
     {
-      if (model.buffers[i].buffer)
+      if (model->buffers[i].buffer)
       {
-        delete[] model.buffers[i].buffer;
-        model.buffers[i].buffer = NULL;
+        delete[] model->buffers[i].buffer;
+        model->buffers[i].buffer = 0;
       }
     }
-    for (uint i = 0; i < model.extensions.size(); i++)
+    for (uint i = 0; i < model->extensions.size(); i++)
     {
-      free(model.extensions[i].data);
+      if(model->extensions[i].name=="KHR_materials_unlit"){
+        delete (Extensions::KHR_materials_unlit*)model->extensions[i].data;
+      }
+      else if(model->extensions[i].name=="KHR_texture_transform"){
+        delete (Extensions::KHR_texture_transform*)model->extensions[i].data;
+      }
+      else if(model->extensions[i].name=="KHR_materials_emissive_strength"){
+        delete (Extensions::KHR_materials_emissive_strength*)model->extensions[i].data;
+      }
+      else if(model->extensions[i].name=="VRM"){
+        delete (Extensions::VRM*)model->extensions[i].data;
+      }
+      else if(model->extensions[i].name=="VRMC_springBone"){
+        delete (Extensions::VRMC_springBone*)model->extensions[i].data;
+      }
+      else if(model->extensions[i].name=="VRMC_materials_mtoon"){
+        delete (Extensions::VRMC_materials_mtoon*)model->extensions[i].data;
+      }
+      else if(model->extensions[i].name=="VRMC_node_constraint"){
+        delete (Extensions::VRMC_node_constraint*)model->extensions[i].data;
+      }
+      else if(model->extensions[i].name=="VRMC_vrm"){
+        delete (Extensions::VRMC_vrm*)model->extensions[i].data;
+      }
     }
   }
 }

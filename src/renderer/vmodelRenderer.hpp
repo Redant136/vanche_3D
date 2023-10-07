@@ -17,6 +17,8 @@ struct Camera_t
   glm::vec3 pos;
   glm::vec4 rot;
   float zoom;
+  bool updated=true;
+  glm::mat4 viewMatrix, projectionMatrix;
 };
 struct Shader_t
 {
@@ -47,6 +49,9 @@ struct VModel_t
   uint **VAO;
   uint *VBO;
   uint *gltfImageTextureIndex;
+  uint sampler_obj;
+  bool **updatedMorphWeight;
+  glm::vec3 ***morphs;
 };
 
 void shaderSetBool(const Shader_t &shader, const std::string &name, bool value);
@@ -71,8 +76,9 @@ void shaderSetMat2Arr(const Shader_t &shader, const std::string &name, uint size
 void shaderSetMat3Arr(const Shader_t &shader, const std::string &name, uint size, const float *mat);
 void shaderSetMat4Arr(const Shader_t &shader, const std::string &name, uint size, const float *mat);
 
-void initVModel(VModel_t *model);
+void initVModel(VModel_t *vmodel);
 int WORLDExecute(const gltf::glTFModel model);
-int renderVModel(const VModel_t &model);
+int renderVModel(const VModel_t &vmodel);
+void freeVModel(VModel_t*vmodel);
 
 #endif

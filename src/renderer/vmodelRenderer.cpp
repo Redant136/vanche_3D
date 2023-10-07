@@ -9,9 +9,8 @@
 #include <stb_image.h>
 #define vec4ToQua(v) glm::qua<float>(v.x, v.y, v.z, v.w)
 
-#define defaultShaderRelative "../src/shader/default/shader.vert", "../src/shader/default/shader.geom", "../src/shader/default/shader.frag"
-#define defaultShaderSource defaultShaderRelative
-#define mtoonShaderSource "../src/shader/MToon/MToon.vert", "../src/shader/MToon/MToon.geom", "../src/shader/MToon/MToon.frag"
+#define defaultShaderSource "../src/shader/default/shader.vert", "../src/shader/default/shader.geom", "../src/shader/default/shader.frag"
+#define mtoonShaderSource "../src/shader/default/shader.vert", "../src/shader/MToon/MToon.geom", "../src/shader/MToon/MToon.frag"
 #define skeletonShaderSource "../src/shader/skeletonRenderer/skeleton.vert", \
                              "../src/shader/skeletonRenderer/skeleton.geom", \
                              "../src/shader/skeletonRenderer/skeleton.frag"
@@ -272,12 +271,11 @@ static void sortRenderQueue(VModel_t *vmodel)
 void initVModel(VModel_t *vmodel)
 {
   vmodel->pos = glm::vec3(0, 0, 0);
-  vmodel->VAO = (uint **)malloc(vmodel->model.meshes.size() * sizeof(uint *));
   vmodel->VBO = (uint *)malloc(vmodel->model.bufferViews.size() * sizeof(uint));
+  vmodel->VAO = (uint **)malloc(vmodel->model.meshes.size() * sizeof(uint *));
   vmodel->nodeTransforms = (glm::mat4 *)malloc(vmodel->model.nodes.size() * sizeof(glm::mat4));
   vmodel->gltfImageTextureIndex = (uint *)malloc(vmodel->model.images.size() * sizeof(uint));
 
-  glUseProgram(WORLD.shaders.defaultShader.ID);
   // setup morph weights and matrix and nodeMatrix
   for (uint i = 0; i < vmodel->model.nodes.size(); i++)
   {
@@ -417,6 +415,39 @@ void initVModel(VModel_t *vmodel)
   }
   sortRenderQueue(vmodel);
 
+  vmodel->updatedMorphWeight = (bool **)malloc(sizeof(bool *) * vmodel->model.meshes.size());
+  vmodel->morphs = (glm::vec3 ***)malloc(sizeof(glm::vec3 **) * vmodel->model.meshes.size());
+  for (uint i = 0; i < vmodel->model.meshes.size(); i++)
+  {
+    vmodel->updatedMorphWeight[i] = (bool *)calloc(vmodel->model.meshes[i].weights.size(), sizeof(bool));
+    // TODO(ANT) wrong, should be size of accessor data
+    vmodel->morphs[i] = (glm::vec3 **)malloc(sizeof(glm::vec3 *) * vmodel->model.meshes[i].primitives.size());
+    for (uint j = 0; j < vmodel->model.meshes[i].primitives.size(); j++)
+    {
+      const gltf::Accessor &accessor =
+          vmodel->model.accessors[vmodel->model.meshes[i].primitives[j].indices];
+      vmodel->morphs[i][j] = (glm::vec3 *)calloc(accessor.count * 3, sizeof(glm::vec3));
+      for (uint k = 0; k < vmodel->model.meshes[i].primitives[j].targets.size(); k++)
+      {
+        if (vmodel->model.meshes[i].primitives[j].targets[k].POSITION != -1)
+        {
+          membuild(glm::vec3, pos, gltf::getDataFromAccessor(vmodel->model, vmodel->model.accessors[vmodel->model.meshes[i].primitives[j].targets[k].POSITION]));
+          vmodel->morphs[i][j][k] += vmodel->model.meshes[i].weights[k] * pos;
+        }
+        if (vmodel->model.meshes[i].primitives[j].targets[k].NORMAL != -1)
+        {
+          membuild(glm::vec3, normal, gltf::getDataFromAccessor(vmodel->model, vmodel->model.accessors[vmodel->model.meshes[i].primitives[j].targets[k].NORMAL]));
+          vmodel->morphs[i][j][k + accessor.count] += vmodel->model.meshes[i].weights[k] * normal;
+        }
+        if (vmodel->model.meshes[i].primitives[j].targets[k].TANGENT != -1)
+        {
+          membuild(glm::vec3, tangent, gltf::getDataFromAccessor(vmodel->model, vmodel->model.accessors[vmodel->model.meshes[i].primitives[j].targets[k].TANGENT]));
+          vmodel->morphs[i][j][k + accessor.count * 2] += vmodel->model.meshes[i].weights[k] * tangent;
+        }
+      }
+    }
+  }
+
   // VAO
   const struct
   {
@@ -433,7 +464,6 @@ void initVModel(VModel_t *vmodel)
       glGenVertexArrays(1, &VAO);
       glBindVertexArray(VAO);
       const gltf::Mesh::Primitive &primitive = mesh.primitives[j];
-
       for (uint k = 0; k < sizeof(attribs) / sizeof(attribs[0]); k++)
       {
         if (gltf::getMeshPrimitiveAttribVal(primitive.attributes, attribs[k].accName) == -1)
@@ -473,7 +503,6 @@ void initVModel(VModel_t *vmodel)
                               byteStride, reinterpret_cast<void *>(accessor.byteOffset));
         glEnableVertexAttribArray(attribIndex);
       }
-
       primitivesVAO[j] = VAO;
     }
     vmodel->VAO[i] = primitivesVAO;
@@ -490,10 +519,10 @@ void initVModel(VModel_t *vmodel)
       const gltf::BufferView &bufferView = vmodel->model.bufferViews[image.bufferView];
       im = stbi_load_from_memory(vmodel->model.buffers[bufferView.buffer].buffer + bufferView.byteOffset,
                                  bufferView.byteLength, &width, &height, &channels, 0);
-      glDeleteBuffers(1, vmodel->VBO + image.bufferView);
-      vmodel->VBO[image.bufferView] = 0;
+      // glDeleteBuffers(1, vmodel->VBO + image.bufferView);
+      // vmodel->VBO[image.bufferView] = 0;
 
-      // NOTE(ANT) why doesnt this work??
+      // TODO(ANT) why doesnt this work??
       // glTexBuffer(GL_TEXTURE_2D, GL_RGB, gltfBufferViewVBO[image.bufferView]);
     }
     else if (image.uri.length() != 0)
@@ -540,6 +569,8 @@ void initVModel(VModel_t *vmodel)
 
     vmodel->gltfImageTextureIndex[i] = tex;
   }
+
+  glGenSamplers(1, &vmodel->sampler_obj);
 
   // TODO(ANT) other stuff here
 }
@@ -617,8 +648,6 @@ static int renderNode(const VModel_t &vmodel, const gltf::Node &node, glm::mat4 
     shaderSetMat4(currentShader, "node", mat);
     assert(node.mesh < vmodel.model.meshes.size());
     const gltf::Mesh &mesh = vmodel.model.meshes[node.mesh];
-    uint sampler_obj;
-    glGenSamplers(1, &sampler_obj);
     for (uint i = 0; i < mesh.primitives.size(); i++)
     {
       currentShader = WORLD.shaders.defaultShader;
@@ -654,7 +683,7 @@ static int renderNode(const VModel_t &vmodel, const gltf::Node &node, glm::mat4 
           hasBaseColorTexture = 1;
           const gltf::Texture &texture = vmodel.model.textures[material.pbrMetallicRoughness.baseColorTexture.index];
           shaderSetInt(currentShader, "texture_base", texture_base_gl_index);
-          bindTexture(vmodel, currentShader, texture, texCoord, sampler_obj, texture_base_gl_index);
+          bindTexture(vmodel, currentShader, texture, texCoord, vmodel.sampler_obj, texture_base_gl_index);
         }
         if (material.pbrMetallicRoughness.baseColorFactor.size() > 0)
         {
@@ -668,14 +697,14 @@ static int renderNode(const VModel_t &vmodel, const gltf::Node &node, glm::mat4 
           hasBaseColorTexture = 1;
           const gltf::Texture &texture = vmodel.model.textures[material.emissiveTexture.index];
           shaderSetInt(currentShader, "texture_emisive", texture_emisive_gl_index);
-          bindTexture(vmodel, currentShader, texture, texCoord, sampler_obj, texture_emisive_gl_index);
+          bindTexture(vmodel, currentShader, texture, texCoord, vmodel.sampler_obj, texture_emisive_gl_index);
         }
         if (material.normalTexture.index >= 0)
         {
           texCoord = material.normalTexture.texCoord;
           const gltf::Texture &texture = vmodel.model.textures[material.normalTexture.index];
           shaderSetInt(currentShader, "texture_normal", texture_emisive_gl_index);
-          bindTexture(vmodel, currentShader, texture, texCoord, sampler_obj, texture_normal_gl_index);
+          bindTexture(vmodel, currentShader, texture, texCoord, vmodel.sampler_obj, texture_normal_gl_index);
         }
 
         if (material.alphaMode == gltf::Material::OPAQUE)
@@ -707,7 +736,7 @@ static int renderNode(const VModel_t &vmodel, const gltf::Node &node, glm::mat4 
             assert(vrmMtoon->shadeMultiplyTexture.index < vmodel.model.textures.size());
             const gltf::Texture &texture = vmodel.model.textures[vrmMtoon->shadeMultiplyTexture.index];
             shaderSetInt(currentShader, "VRMData.shadeMultiplyTexture", mtoon_texture_shadeMultiply_gl_index);
-            bindTexture(vmodel, currentShader, texture, texCoord, sampler_obj, mtoon_texture_shadeMultiply_gl_index);
+            bindTexture(vmodel, currentShader, texture, texCoord, vmodel.sampler_obj, mtoon_texture_shadeMultiply_gl_index);
           }
           shaderSetFloat(currentShader, "VRMData.shadingShiftFactor", vrmMtoon->shadingShiftFactor);
           if (vrmMtoon->shadingShiftTexture.index != -1)
@@ -716,8 +745,10 @@ static int renderNode(const VModel_t &vmodel, const gltf::Node &node, glm::mat4 
             const gltf::Texture &texture = vmodel.model.textures[vrmMtoon->shadingShiftTexture.index];
             shaderSetInt(currentShader, "VRMData.shadingShiftTexture", mtoon_texture_shadingShiftTexture_gl_index);
             shaderSetFloat(currentShader, "VRMData.shadingShiftTextureScale", vrmMtoon->shadingShiftTexture.scale);
-            bindTexture(vmodel, currentShader, texture, texCoord, sampler_obj, mtoon_texture_shadingShiftTexture_gl_index);
-          }else {
+            bindTexture(vmodel, currentShader, texture, texCoord, vmodel.sampler_obj, mtoon_texture_shadingShiftTexture_gl_index);
+          }
+          else
+          {
             shaderSetFloat(currentShader, "VRMData.shadingShiftTextureScale", 0);
           }
           shaderSetFloat(currentShader, "VRMData.shadingToonyFactor", vrmMtoon->shadingToonyFactor);
@@ -728,7 +759,7 @@ static int renderNode(const VModel_t &vmodel, const gltf::Node &node, glm::mat4 
             assert(texCoord == vrmMtoon->matcapTexture.texCoord);
             const gltf::Texture &texture = vmodel.model.textures[vrmMtoon->matcapTexture.index];
             shaderSetInt(currentShader, "VRMData.matcapTexture", mtoon_texture_matcapTexture_gl_index);
-            bindTexture(vmodel, currentShader, texture, texCoord, sampler_obj, mtoon_texture_matcapTexture_gl_index);
+            bindTexture(vmodel, currentShader, texture, texCoord, vmodel.sampler_obj, mtoon_texture_matcapTexture_gl_index);
           }
           shaderSetVec3(currentShader, "VRMData.parametricRimColorFactor", glm::vec3(vrmMtoon->parametricRimColorFactor[0], vrmMtoon->parametricRimColorFactor[1], vrmMtoon->parametricRimColorFactor[2]));
           shaderSetFloat(currentShader, "VRMData.parametricRimFresnelPowerFactor", vrmMtoon->parametricRimFresnelPowerFactor);
@@ -738,11 +769,11 @@ static int renderNode(const VModel_t &vmodel, const gltf::Node &node, glm::mat4 
             assert(texCoord == vrmMtoon->rimMultiplyTexture.texCoord);
             const gltf::Texture &texture = vmodel.model.textures[vrmMtoon->rimMultiplyTexture.index];
             shaderSetInt(currentShader, "VRMData.rimMultiplyTexture", mtoon_texture_rimMultiplyTexture_gl_index);
-            bindTexture(vmodel, currentShader, texture, texCoord, sampler_obj, mtoon_texture_rimMultiplyTexture_gl_index);
+            bindTexture(vmodel, currentShader, texture, texCoord, vmodel.sampler_obj, mtoon_texture_rimMultiplyTexture_gl_index);
           }
           shaderSetFloat(currentShader, "VRMData.rimLightingMixFactor", vrmMtoon->rimLightingMixFactor);
-          shaderSetInt(currentShader, "VRM_outlineWidthMode",vrmMtoon->outlineWidthMode);
-          shaderSetFloat(currentShader, "VRM_outlineWidthFactor",vrmMtoon->outlineWidthFactor);
+          shaderSetInt(currentShader, "VRM_outlineWidthMode", vrmMtoon->outlineWidthMode);
+          shaderSetFloat(currentShader, "VRM_outlineWidthFactor", vrmMtoon->outlineWidthFactor);
         }
       }
       shaderSetBool(currentShader, "hasBaseColorTexture", hasBaseColorTexture);
@@ -754,7 +785,6 @@ static int renderNode(const VModel_t &vmodel, const gltf::Node &node, glm::mat4 
       glDrawElements(primitive.mode, indexAccessor.count, indexAccessor.componentType,
                      reinterpret_cast<void *>(indexAccessor.byteOffset));
     }
-    glDeleteSamplers(1, &sampler_obj);
   }
   return 0;
 }
@@ -788,34 +818,29 @@ int renderVModel(const VModel_t &vmodel)
 {
   glUseProgram(WORLD.shaders.defaultShader.ID);
 
-  // TODO(ANT) see if necessary to pass light every frame, maybe only do it once
-  for (int i = 0; i < MAX_LIGHT_SOURCES; i++)
-  {
-    char lightName[sizeof("lights[000]")] = {0};
-    sprintf(lightName, "lights[%d]", i);
-    shaderSetVec3(WORLD.shaders.defaultShader, std::string(lightName) + ".Position", WORLD.lights[i].pos);
-    shaderSetVec3(WORLD.shaders.defaultShader, std::string(lightName) + ".Color", WORLD.lights[i].color);
-    shaderSetFloat(WORLD.shaders.defaultShader, std::string(lightName) + ".Intensity", WORLD.lights[i].intensity);
-    shaderSetVec3(WORLD.shaders.mtoon, std::string(lightName) + ".Position", WORLD.lights[i].pos);
-    shaderSetVec3(WORLD.shaders.mtoon, std::string(lightName) + ".Color", WORLD.lights[i].color);
-    shaderSetFloat(WORLD.shaders.mtoon, std::string(lightName) + ".Intensity", WORLD.lights[i].intensity);
-
-    // shaderSetFloatArr(WORLD.shader, std::string(lightName), 7, (float *)&WORLD.lights[i]);
-  }
-
   // model space to world space
-  glm::mat4 modelTransform = glm::mat4(1);
-  modelTransform = glm::translate(modelTransform, vmodel.pos);
+  glm::mat4 modelTransform = glm::mat4(1, 0, 0, vmodel.pos.x,
+                                       0, 1, 0, vmodel.pos.y,
+                                       0, 0, 1, vmodel.pos.z,
+                                       0, 0, 0, 1);
   shaderSetMat4(WORLD.shaders.defaultShader, "model", modelTransform);
   shaderSetMat4(WORLD.shaders.mtoon, "model", modelTransform);
 
   // world space to camera space
-  glm::mat4 viewMatrix = glm::mat4_cast(vec4ToQua(WORLD.camera.rot)) * glm::lookAt(WORLD.camera.pos, WORLD.camera.pos + WORLD.FRONT, WORLD.UP);
+
+  if (WORLD.camera.updated)
+  {
+    WORLD.camera.viewMatrix = glm::mat4_cast(vec4ToQua(WORLD.camera.rot)) * glm::lookAt(WORLD.camera.pos, WORLD.camera.pos + WORLD.FRONT, WORLD.UP);
+    WORLD.camera.projectionMatrix = glm::perspective(WORLD.camera.zoom, (float)windowData.realWindowWidth / windowData.realWindowHeight, 0.1f, 100.f);
+    WORLD.camera.updated = false;
+  }
+
+  glm::mat4 viewMatrix = WORLD.camera.viewMatrix;
+  glm::mat4 projectionMatrix = WORLD.camera.projectionMatrix;
   shaderSetMat4(WORLD.shaders.defaultShader, "view", viewMatrix);
   shaderSetMat4(WORLD.shaders.mtoon, "view", viewMatrix);
 
   // camera space to display space
-  glm::mat4 projectionMatrix = glm::perspective(WORLD.camera.zoom, (float)windowData.realWindowWidth / windowData.realWindowHeight, 0.1f, 100.f);
   shaderSetMat4(WORLD.shaders.defaultShader, "projection", projectionMatrix);
   shaderSetMat4(WORLD.shaders.mtoon, "projection", projectionMatrix);
 
@@ -824,11 +849,28 @@ int renderVModel(const VModel_t &vmodel)
   {
     renderNode(vmodel, vmodel.model.nodes[vmodel.renderQueue[i]], vmodel.nodeTransforms[vmodel.renderQueue[i]]);
   }
-  // glClear(GL_DEPTH_BUFFER_BIT);
-  // glDisable(GL_DEPTH_TEST);
-  // glDepthFunc(GL_ALWAYS);
   // drawSkeleton(vmodel, modelTransform, viewMatrix, projectionMatrix);
 
   // update pos and shit
   return 0;
+}
+
+void freeVModel(VModel_t *vmodel)
+{
+  glDeleteBuffers(vmodel->model.bufferViews.size(), vmodel->VBO);
+  free(vmodel->VBO);
+  vmodel->VBO = 0;
+  for (uint i = 0; i < vmodel->model.meshes.size(); i++)
+  {
+    glDeleteVertexArrays(vmodel->model.meshes[i].primitives.size(), vmodel->VAO[i]);
+    free(vmodel->VAO[i]);
+    vmodel->VAO[i] = 0;
+  }
+  free(vmodel->VAO);
+  vmodel->VAO = 0;
+  glDeleteTextures(vmodel->model.images.size(), vmodel->gltfImageTextureIndex);
+  free(vmodel->gltfImageTextureIndex);
+  vmodel->gltfImageTextureIndex = 0;
+  glDeleteSamplers(1, &vmodel->sampler_obj);
+  gltf::freeModel(&vmodel->model);
 }
