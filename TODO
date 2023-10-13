@@ -1,13 +1,18 @@
-VRMC_springBone
+morph target (calc each frame)
+  done with precalc
+  implement it
+  test
 VRMC_node_constraint
+VRMC_springBone
 VRMC_vrm
 animation
 
 
 uv animation
 
-morph target/blendshape
 gltf camera
 GI shading
 finish screen size outline mode
 multiple texcoord
+min max accessor
+recheck sparse accessors

@@ -95,14 +95,9 @@ namespace gltf
         int byteOffset = 0;
         enum glComponentType
         {
-          BYTE = GLTF_COMPONENT_BYTE,
           UNSIGNED_BYTE = GLTF_COMPONENT_UBYTE,
-          SHORT = GLTF_COMPONENT_SHORT,
           UNSIGNED_SHORT = GLTF_COMPONENT_USHORT,
-          INT = GLTF_COMPONENT_INT,
-          UNSIGNED_INT = GLTF_COMPONENT_UINT,
-          FLOAT = GLTF_COMPONENT_FLOAT,
-          DOUBLE = GLTF_COMPONENT_DOUBLE
+          UNSIGNED_INT = GLTF_COMPONENT_UINT
         } componentType;
         std::vector<Extension> extensions;
         std::vector<Extension> extras;
@@ -1063,6 +1058,31 @@ namespace gltf
 
   static uchar *getDataFromAccessor(const glTFModel &model, const Accessor &accessor, uint index = 0)
   {
+    if(accessor.sparse.count>0){
+      uchar *bfIndiceData = model.buffers[model.bufferViews[accessor.sparse.indices.bufferView].buffer].buffer;
+      bfIndiceData += model.bufferViews[accessor.sparse.indices.bufferView].byteOffset;
+      bfIndiceData += accessor.sparse.indices.byteOffset;
+      for (uint l = 0; l < accessor.sparse.count; l++)
+      {
+        ulong sparseIndex=CHVAL;
+        if (accessor.sparse.indices.componentType == gltf::Accessor::Sparse::Indices::UNSIGNED_BYTE)
+          sparseIndex = *(((uint8_t *)bfIndiceData) + l);
+        else if (accessor.sparse.indices.componentType == gltf::Accessor::Sparse::Indices::UNSIGNED_SHORT)
+          sparseIndex = *(((uint16_t *)bfIndiceData) + l);
+        else
+          sparseIndex = *(((uint32_t *)bfIndiceData) + l);
+
+        if(sparseIndex!=index)
+          continue;
+        uchar *bfValData = model.buffers[model.bufferViews[accessor.sparse.values.bufferView].buffer].buffer;
+        bfValData += model.bufferViews[accessor.sparse.values.bufferView].byteOffset;
+        bfValData += accessor.sparse.values.byteOffset;
+        bfValData += gltf::gltf_num_components(accessor.type) * gltf::gltf_sizeof(accessor.componentType) * l;
+        return bfValData;
+      }
+    }
+    if (accessor.bufferView == -1)
+      return 0;
     const BufferView &bfView = model.bufferViews[accessor.bufferView];
     uint byteStride = bfView.byteStride;
     if (byteStride == 0)
@@ -1079,6 +1099,7 @@ namespace gltf
     assert(accessor.count > index);
 
     uchar *data = (model.buffers[bfView.buffer].buffer + bfView.byteOffset) + accessor.byteOffset + (byteStride)*index;
+    // MAX-MIN
     if (0)
     {
       for (int i = 0; i < accessor.max.size(); i++)

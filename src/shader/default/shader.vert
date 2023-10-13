@@ -11,7 +11,6 @@ layout (location = 6) in vec4 a_color_0;
 layout (location = 7) in vec4 a_joints;
 layout (location = 8) in vec4 a_weights;
 
-// layout (location = 12) in vec3 
 
 uniform int texCoordIndex;
 

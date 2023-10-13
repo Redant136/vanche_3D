@@ -266,15 +266,11 @@ static void sortRenderQueue(VModel_t *vmodel)
 #define mtoon_texture_shadeMultiply_gl_index 10
 #define mtoon_texture_shadingShiftTexture_gl_index 11
 #define mtoon_texture_matcapTexture_gl_index 12
-#define mtoon_texture_rimMultiplyTexture_gl_index 12
+#define mtoon_texture_rimMultiplyTexture_gl_index 13
 
 void initVModel(VModel_t *vmodel)
 {
   vmodel->pos = glm::vec3(0, 0, 0);
-  vmodel->VBO = (uint *)malloc(vmodel->model.bufferViews.size() * sizeof(uint));
-  vmodel->VAO = (uint **)malloc(vmodel->model.meshes.size() * sizeof(uint *));
-  vmodel->nodeTransforms = (glm::mat4 *)malloc(vmodel->model.nodes.size() * sizeof(glm::mat4));
-  vmodel->gltfImageTextureIndex = (uint *)malloc(vmodel->model.images.size() * sizeof(uint));
 
   // setup morph weights and matrix and nodeMatrix
   for (uint i = 0; i < vmodel->model.nodes.size(); i++)
@@ -302,102 +298,22 @@ void initVModel(VModel_t *vmodel)
     }
   }
   // VBOs
+  vmodel->VBO = (uint *)malloc(vmodel->model.bufferViews.size() * sizeof(uint));
   for (uint i = 0; i < vmodel->model.bufferViews.size(); i++)
   {
     const gltf::BufferView &bufferView = vmodel->model.bufferViews[i];
-
-    int sparse_accessor = -1;
-    for (uint a_i = 0; a_i < vmodel->model.accessors.size(); a_i++)
-    {
-      const auto &accessor = vmodel->model.accessors[a_i];
-      if (accessor.bufferView == i)
-      {
-        if (accessor.sparse.count > 0)
-        {
-          sparse_accessor = a_i;
-          break;
-        }
-      }
-    }
-
     uint VBO;
     glGenBuffers(1, &VBO);
     glBindBuffer(bufferView.target, VBO);
-    if (sparse_accessor < 0)
-      glBufferData(bufferView.target, bufferView.byteLength,
-                   vmodel->model.buffers[bufferView.buffer].buffer + bufferView.byteOffset,
-                   GL_STATIC_DRAW);
-    else
-    {
-      const auto &accessor = vmodel->model.accessors[sparse_accessor];
-      // copy the buffer to a temporary one for sparse patching
-      uchar *tmp_buffer = new uchar[bufferView.byteLength];
-      memcpy(tmp_buffer, vmodel->model.buffers[i].buffer + bufferView.byteOffset,
-             bufferView.byteLength);
-
-      const uint size_of_object_in_buffer =
-          gltf::gltf_sizeof(accessor.componentType);
-      const uint size_of_sparse_indices =
-          gltf::gltf_sizeof(accessor.sparse.indices.componentType);
-
-      const auto &indices_buffer_view =
-          vmodel->model.bufferViews[accessor.sparse.indices.bufferView];
-      const auto &indices_buffer = vmodel->model.buffers[indices_buffer_view.buffer];
-
-      const auto &values_buffer_view =
-          vmodel->model.bufferViews[accessor.sparse.values.bufferView];
-      const auto &values_buffer = vmodel->model.buffers[values_buffer_view.buffer];
-
-      for (uint sparse_index = 0; sparse_index < accessor.sparse.count;
-           sparse_index++)
-      {
-        int index = 0;
-        uchar *data = indices_buffer.buffer +
-                      indices_buffer_view.byteOffset +
-                      accessor.sparse.indices.byteOffset +
-                      (sparse_index * size_of_sparse_indices);
-        switch (accessor.sparse.indices.componentType)
-        {
-        case GLTF_COMPONENT_BYTE:
-        case GLTF_COMPONENT_UBYTE:
-          index = (int)*(uchar *)(data);
-          break;
-        case GLTF_COMPONENT_SHORT:
-        case GLTF_COMPONENT_USHORT:
-          index = (int)*(ushort *)(data);
-          break;
-        case GLTF_COMPONENT_INT:
-        case GLTF_COMPONENT_UINT:
-          index = (int)*(uint *)(data);
-          break;
-        case GLTF_COMPONENT_FLOAT:
-        case GLTF_COMPONENT_DOUBLE:
-        default:
-          assert(0);
-          break;
-        }
-        const uchar *read_from =
-            values_buffer.buffer +
-            (values_buffer_view.byteOffset +
-             accessor.sparse.values.byteOffset) +
-            (sparse_index * (size_of_object_in_buffer * gltf::gltf_num_components(accessor.type)));
-
-        uchar *write_to =
-            tmp_buffer + index * (size_of_object_in_buffer * gltf::gltf_num_components(accessor.type));
-
-        memcpy(write_to, read_from, size_of_object_in_buffer * gltf::gltf_num_components(accessor.type));
-      }
-
-      glBufferData(bufferView.target, bufferView.byteLength, tmp_buffer,
-                   GL_STATIC_DRAW);
-      delete[] tmp_buffer;
-    }
+    glBufferData(bufferView.target, bufferView.byteLength,
+                 vmodel->model.buffers[bufferView.buffer].buffer + bufferView.byteOffset,
+                 GL_STATIC_DRAW);
     glBindBuffer(bufferView.target, 0);
-
     vmodel->VBO[i] = VBO;
   }
 
   // node transform
+  vmodel->nodeTransforms = (glm::mat4 *)malloc(vmodel->model.nodes.size() * sizeof(glm::mat4));
   for (uint i = 0; i < vmodel->model.nodes.size(); i++)
   {
     vmodel->nodeTransforms[i] = glm::mat4(1.f);
@@ -420,7 +336,6 @@ void initVModel(VModel_t *vmodel)
   for (uint i = 0; i < vmodel->model.meshes.size(); i++)
   {
     vmodel->updatedMorphWeight[i] = (bool *)calloc(vmodel->model.meshes[i].weights.size(), sizeof(bool));
-    // TODO(ANT) wrong, should be size of accessor data
     vmodel->morphs[i] = (glm::vec3 **)malloc(sizeof(glm::vec3 *) * vmodel->model.meshes[i].primitives.size());
     for (uint j = 0; j < vmodel->model.meshes[i].primitives.size(); j++)
     {
@@ -431,17 +346,26 @@ void initVModel(VModel_t *vmodel)
       {
         if (vmodel->model.meshes[i].primitives[j].targets[k].POSITION != -1)
         {
-          membuild(glm::vec3, pos, gltf::getDataFromAccessor(vmodel->model, vmodel->model.accessors[vmodel->model.meshes[i].primitives[j].targets[k].POSITION]));
+          uchar *data = gltf::getDataFromAccessor(vmodel->model, vmodel->model.accessors[vmodel->model.meshes[i].primitives[j].targets[k].POSITION]);
+          glm::vec3 pos = glm::vec3(0, 0, 0);
+          if (data)
+            memcpy(&pos, data, sizeof(pos));
           vmodel->morphs[i][j][k] += vmodel->model.meshes[i].weights[k] * pos;
         }
         if (vmodel->model.meshes[i].primitives[j].targets[k].NORMAL != -1)
         {
-          membuild(glm::vec3, normal, gltf::getDataFromAccessor(vmodel->model, vmodel->model.accessors[vmodel->model.meshes[i].primitives[j].targets[k].NORMAL]));
+          uchar *data = gltf::getDataFromAccessor(vmodel->model, vmodel->model.accessors[vmodel->model.meshes[i].primitives[j].targets[k].NORMAL]);
+          glm::vec3 normal = glm::vec3(0, 0, 0);
+          if (data)
+            memcpy(&normal, data, sizeof(normal));
           vmodel->morphs[i][j][k + accessor.count] += vmodel->model.meshes[i].weights[k] * normal;
         }
         if (vmodel->model.meshes[i].primitives[j].targets[k].TANGENT != -1)
         {
-          membuild(glm::vec3, tangent, gltf::getDataFromAccessor(vmodel->model, vmodel->model.accessors[vmodel->model.meshes[i].primitives[j].targets[k].TANGENT]));
+          uchar *data = gltf::getDataFromAccessor(vmodel->model, vmodel->model.accessors[vmodel->model.meshes[i].primitives[j].targets[k].TANGENT]);
+          glm::vec3 tangent = glm::vec3(0, 0, 0);
+          if (data)
+            memcpy(&tangent, data, sizeof(tangent));
           vmodel->morphs[i][j][k + accessor.count * 2] += vmodel->model.meshes[i].weights[k] * tangent;
         }
       }
@@ -449,6 +373,7 @@ void initVModel(VModel_t *vmodel)
   }
 
   // VAO
+  vmodel->VAO = (uint **)malloc(vmodel->model.meshes.size() * sizeof(uint *));
   const struct
   {
     const std::string accName;
@@ -469,12 +394,24 @@ void initVModel(VModel_t *vmodel)
         if (gltf::getMeshPrimitiveAttribVal(primitive.attributes, attribs[k].accName) == -1)
           continue;
         const gltf::Accessor &accessor = vmodel->model.accessors[gltf::getMeshPrimitiveAttribVal(primitive.attributes, attribs[k].accName)];
-        glBindBuffer(GL_ARRAY_BUFFER, vmodel->VBO[accessor.bufferView]);
+        uint nullFilledVBO = 0;
+        if (accessor.bufferView > -1)
+          glBindBuffer(GL_ARRAY_BUFFER, vmodel->VBO[accessor.bufferView]);
+        else
+        {
+          void *tmpBuffer = calloc(accessor.count, gltf::gltf_sizeof(accessor.componentType) * gltf::gltf_num_components(accessor.type));
+          glGenBuffers(1, &nullFilledVBO);
+          glBindBuffer(GL_ARRAY_BUFFER, nullFilledVBO);
+          glBufferData(GL_ARRAY_BUFFER, accessor.count * gltf::gltf_sizeof(accessor.componentType) * gltf::gltf_num_components(accessor.type),
+                       tmpBuffer,
+                       GL_STATIC_DRAW);
+          free(tmpBuffer);
+        }
 
         uint attribIndex = attribs[k].attribIndex;
 
         uint byteStride = 0;
-        if (vmodel->model.bufferViews[accessor.bufferView].byteStride == 0)
+        if (accessor.bufferView == -1 || vmodel->model.bufferViews[accessor.bufferView].byteStride == 0)
         {
           int componentSizeInBytes = gltf::gltf_sizeof(accessor.componentType);
           int numComponents = gltf::gltf_num_components(accessor.type);
@@ -495,20 +432,56 @@ void initVModel(VModel_t *vmodel)
           else
             byteStride = vmodel->model.bufferViews[accessor.bufferView].byteStride;
         }
-        vmodel->model.bufferViews[accessor.bufferView].byteStride = byteStride;
+        if(accessor.bufferView!=-1)
+          vmodel->model.bufferViews[accessor.bufferView].byteStride = byteStride;
+
+        // sparse accessor
+        if (accessor.sparse.count > 0)
+        {
+          glBindBuffer(GL_ARRAY_BUFFER, vmodel->VBO[accessor.bufferView]);
+          uchar *bfIndiceData = vmodel->model.buffers[vmodel->model.bufferViews[accessor.sparse.indices.bufferView].buffer].buffer;
+          bfIndiceData += vmodel->model.bufferViews[accessor.sparse.indices.bufferView].byteOffset;
+          bfIndiceData += accessor.sparse.indices.byteOffset;
+          for (uint l = 0; l < accessor.sparse.count; l++)
+          {
+            ulong sparseIndex;
+            if (accessor.sparse.indices.componentType == gltf::Accessor::Sparse::Indices::UNSIGNED_BYTE)
+              sparseIndex = *(((uint8_t *)bfIndiceData) + l);
+            else if (accessor.sparse.indices.componentType == gltf::Accessor::Sparse::Indices::UNSIGNED_SHORT)
+              sparseIndex = *(((uint16_t *)bfIndiceData) + l);
+            else
+              sparseIndex = *(((uint32_t *)bfIndiceData) + l);
+
+            uchar *bfValData = vmodel->model.buffers[vmodel->model.bufferViews[accessor.sparse.values.bufferView].buffer].buffer;
+            bfValData += vmodel->model.bufferViews[accessor.sparse.values.bufferView].byteOffset;
+            bfValData += accessor.sparse.values.byteOffset;
+            bfValData += gltf::gltf_num_components(accessor.type) * gltf::gltf_sizeof(accessor.componentType) * l;
+            glBufferSubData(GL_ARRAY_BUFFER, accessor.byteOffset + sparseIndex * byteStride, gltf::gltf_sizeof(accessor.componentType) * gltf::gltf_num_components(accessor.type), bfValData);
+          }
+        }
 
         glVertexAttribPointer(attribIndex, gltf::gltf_num_components(accessor.type),
                               accessor.componentType,
                               accessor.normalized ? GL_TRUE : GL_FALSE,
                               byteStride, reinterpret_cast<void *>(accessor.byteOffset));
         glEnableVertexAttribArray(attribIndex);
+        if (accessor.sparse.count > 0 && accessor.bufferView != -1)
+        {
+          glBufferSubData(GL_ARRAY_BUFFER, 0, vmodel->model.bufferViews[accessor.bufferView].byteLength,
+                          vmodel->model.buffers[vmodel->model.bufferViews[accessor.bufferView].buffer].buffer + vmodel->model.bufferViews[accessor.bufferView].byteOffset);
+        }
+        glBindBuffer(GL_ARRAY_BUFFER, 0);
+        if (nullFilledVBO)
+          glDeleteBuffers(1, &nullFilledVBO);
       }
+      glBindVertexArray(0);
       primitivesVAO[j] = VAO;
     }
     vmodel->VAO[i] = primitivesVAO;
   }
 
   // textures
+  vmodel->gltfImageTextureIndex = (uint *)malloc(vmodel->model.images.size() * sizeof(uint));
   for (uint i = 0; i < vmodel->model.images.size(); i++)
   {
     const gltf::Image &image = vmodel->model.images[i];
@@ -519,11 +492,6 @@ void initVModel(VModel_t *vmodel)
       const gltf::BufferView &bufferView = vmodel->model.bufferViews[image.bufferView];
       im = stbi_load_from_memory(vmodel->model.buffers[bufferView.buffer].buffer + bufferView.byteOffset,
                                  bufferView.byteLength, &width, &height, &channels, 0);
-      // glDeleteBuffers(1, vmodel->VBO + image.bufferView);
-      // vmodel->VBO[image.bufferView] = 0;
-
-      // TODO(ANT) why doesnt this work??
-      // glTexBuffer(GL_TEXTURE_2D, GL_RGB, gltfBufferViewVBO[image.bufferView]);
     }
     else if (image.uri.length() != 0)
     {
@@ -636,6 +604,7 @@ static int renderNode(const VModel_t &vmodel, const gltf::Node &node, glm::mat4 
       {
         glm::mat4 nodeTransform = vmodel.nodeTransforms[skin.joints[i]];
         float *invMatrixData = (float *)gltf::getDataFromAccessor(vmodel.model, vmodel.model.accessors[skin.inverseBindMatrices], i);
+        assert(invMatrixData);
         glm::mat4 inverseBindMatrix = glm::mat4(
             invMatrixData[0], invMatrixData[1], invMatrixData[2], invMatrixData[3],
             invMatrixData[4], invMatrixData[5], invMatrixData[6], invMatrixData[7],
@@ -786,6 +755,7 @@ static int renderNode(const VModel_t &vmodel, const gltf::Node &node, glm::mat4 
                      reinterpret_cast<void *>(indexAccessor.byteOffset));
     }
   }
+  glBindVertexArray(0);
   return 0;
 }
 
