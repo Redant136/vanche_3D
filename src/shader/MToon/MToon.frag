@@ -103,7 +103,11 @@ void main()
   }
 
   vec4 color = texture(texture_base, UV);
-
+  if(!hasBaseColorTexture){
+    color = baseColorFactor;
+  }else{
+    color *= baseColorFactor;
+  }
   // if(!hasBaseColorTexture){
   //   color = baseColorFactor;
   // }else{
@@ -112,6 +116,7 @@ void main()
 
   if(color.w<alphaCutoff){
     discard;
+    return;
   }
   
   

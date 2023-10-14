@@ -11,6 +11,9 @@ layout (location = 6) in vec4 a_color_0;
 layout (location = 7) in vec4 a_joints;
 layout (location = 8) in vec4 a_weights;
 
+uniform mat4 node;// specific node transform
+uniform mat4 model;
+uniform mat4 worldTransform;// camera and global model transform
 
 uniform int texCoordIndex;
 
@@ -24,11 +27,6 @@ out VS_OUT{
 } vs_out;
 
 uniform mat4 u_jointMatrix[MAX_JOINT_MATRIX];// joint matrices
-
-uniform mat4 node;// specific node transform
-uniform mat4 model;// global model transform
-uniform mat4 view;// camera
-uniform mat4 projection;// camera
 
 void main()
 {
@@ -57,13 +55,14 @@ void main()
     }
     vec4 pos = vec4(a_pos,1.0);
     pos = skinMatrix * pos;
-    pos = projection * view * model * node * pos;
+    pos = node * pos;
+    vs_out.Pos = (model * pos).xyz;
+    pos = worldTransform * pos;
 
-    vec3 normal = a_normal;
+    vec3 normal = (worldTransform * vec4(a_normal,1)).xyz;
     vec4 tangent = a_tangent;
 
 
-    vs_out.Pos = pos.xyz;
     vs_out.Normal = normal;
     vs_out.Tangent = tangent.xyz;
     vs_out.Color = a_color_0;

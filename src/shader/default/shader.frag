@@ -58,13 +58,18 @@ void main()
   }
 
   vec4 color = texture(texture_base, UV);
-  if(!KHR_materials_unlit)
-    color += texture(texture_emisive, UV);
   if(!hasBaseColorTexture){
     color = baseColorFactor;
   }else{
     color *= baseColorFactor;
   }
+  // if(!KHR_materials_unlit)
+  //   color += texture(texture_emisive, UV);
+  if(color.w<alphaCutoff){
+    discard;
+    return;
+  }
+
   vec3 normal=fs_in.Normal+texture(texture_normal,UV).xyz;
 
   for(int i = 0; i < lights.length(); i++)
@@ -73,12 +78,9 @@ void main()
       continue;
     }
     vec3 lightDirection=normalize(lights[i].Position-fs_in.Pos);
-    vec4 diffuse=max(dot(normalize(normal),lightDirection),0.f)*vec4(lights[i].Color,1);
-    color=(lights[i].Intensity*diffuse)*color;
-  }
+    vec3 diffuse=max(dot(normalize(normal),lightDirection),0.f)*lights[i].Color;
 
-  if(color.w<alphaCutoff){
-    discard;
+    // color.xyz=(lights[i].Intensity*lights[i].Color+diffuse)*color.xyz;
   }
 
   FragColor = color;

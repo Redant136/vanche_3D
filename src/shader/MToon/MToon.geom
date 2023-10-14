@@ -72,7 +72,7 @@ void main(){
       outline=normalize(normal).xy*VRM_outlineWidthFactor;
     }
 
-    gl_Position = vec4(gs_in[i].Pos.xy+outline,gl_in[i].gl_Position.zw)+vec4(0,0,0.01,0);
+    gl_Position = vec4(gl_in[i].gl_Position.xy+outline,gl_in[i].gl_Position.zw)+vec4(0,0,0.01,0);
     setOut(i);
     gs_out.isOutline=1;
     EmitVertex();
