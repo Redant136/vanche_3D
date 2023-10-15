@@ -1056,7 +1056,7 @@ namespace gltf
     }
   }
 
-  static uchar *getDataFromAccessor(const glTFModel &model, const Accessor &accessor, uint index = 0)
+  static uchar *getDataFromAccessor(const glTFModel &model, const Accessor &accessor, uint index)
   {
     if(accessor.sparse.count>0){
       uchar *bfIndiceData = model.buffers[model.bufferViews[accessor.sparse.indices.bufferView].buffer].buffer;

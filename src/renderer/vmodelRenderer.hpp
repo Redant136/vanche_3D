@@ -4,6 +4,7 @@
 #include "../loader/model.hpp"
 #include <glm/glm.hpp>
 
+#define MAX_JOINT_MATRIX 128
 #define MAX_LIGHT_SOURCES 8
 
 struct LightSource_t
@@ -42,7 +43,7 @@ struct VModel_t
 {
   std::string path;
   gltf::glTFModel model;
-  void *vrmData;
+  bool updatedPos;
   glm::vec3 pos;
   uint*renderQueue;
   glm::mat4 *nodeTransforms;
@@ -52,6 +53,8 @@ struct VModel_t
   uint sampler_obj;
   bool **updatedMorphWeight;
   glm::vec3 ***morphs;
+  uint**morphsVBO;
+  uint UBO;
 };
 
 void shaderSetBool(const Shader_t &shader, const std::string &name, bool value);
@@ -78,7 +81,7 @@ void shaderSetMat4Arr(const Shader_t &shader, const std::string &name, uint size
 
 void initVModel(VModel_t *vmodel);
 int WORLDExecute(const gltf::glTFModel model);
-int renderVModel(const VModel_t &vmodel);
+int renderVModel(VModel_t &vmodel);
 void freeVModel(VModel_t*vmodel);
 
 #endif

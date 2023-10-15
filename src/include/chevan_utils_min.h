@@ -10,9 +10,13 @@
 #include <assert.h>
 #define CHEVAN_UTILS_INLINE inline
 #define CHVAL 0x86AC
-#define membuild(type, name, data) \
-  type name;                       \
-  memcpy(&name, data, sizeof(name));
+#define membuild(type, name, data)    \
+  type name;                          \
+  {                                   \
+    const void *d = data;             \
+    if (d)                            \
+      memcpy(&name, d, sizeof(name)); \
+  }
 #define mallocArr(type, size) malloc(sizeof(type) * (size))
 #define sizeofArr(arr) (sizeof(arr) / sizeof(arr[0]))
 #define mallocArr(type, size) malloc(sizeof(type) * (size)) // calloc technically slower as sets all bytes to 0

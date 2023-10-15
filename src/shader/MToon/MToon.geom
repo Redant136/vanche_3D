@@ -31,11 +31,6 @@ uniform struct KHR_texture_transform_data_t{
   float u_rotation;
 }KHR_texture_transform_data;
 
-uniform mat4 node;// specific node transform
-uniform mat4 model;// global model transform
-uniform mat4 view;// camera
-uniform mat4 projection;// camera
-
 uniform int VRM_outlineWidthMode;
 uniform float VRM_outlineWidthFactor;
 uniform sampler2D VRM_outlineWidthMultiplyTexture;

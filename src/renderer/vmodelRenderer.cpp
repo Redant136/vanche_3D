@@ -16,8 +16,6 @@
                              "../src/shader/skeletonRenderer/skeleton.frag"
 
 WORLD_t WORLD;
-glm::mat4 worldTransform;
-glm::mat4 modelTransform;
 
 void shaderSetBool(const Shader_t &shader, const std::string &name, bool value)
 {
@@ -274,6 +272,7 @@ static void sortRenderQueue(VModel_t *vmodel)
 void initVModel(VModel_t *vmodel)
 {
   vmodel->pos = glm::vec3(0, 0, 0);
+  vmodel->updatedPos = 1;
 
   // setup morph weights and matrix and nodeMatrix
   for (uint i = 0; i < vmodel->model.nodes.size(); i++)
@@ -337,42 +336,41 @@ void initVModel(VModel_t *vmodel)
   // morph targets
   vmodel->updatedMorphWeight = (bool **)malloc(sizeof(bool *) * vmodel->model.meshes.size());
   vmodel->morphs = (glm::vec3 ***)malloc(sizeof(glm::vec3 **) * vmodel->model.meshes.size());
+  vmodel->morphsVBO = (uint **)malloc(sizeof(uint *) * vmodel->model.meshes.size());
   for (uint i = 0; i < vmodel->model.meshes.size(); i++)
   {
     vmodel->updatedMorphWeight[i] = (bool *)calloc(vmodel->model.meshes[i].weights.size(), sizeof(bool));
     vmodel->morphs[i] = (glm::vec3 **)malloc(sizeof(glm::vec3 *) * vmodel->model.meshes[i].primitives.size());
+    vmodel->morphsVBO[i] = (uint *)malloc(sizeof(uint) * vmodel->model.meshes[i].primitives.size());
     for (uint j = 0; j < vmodel->model.meshes[i].primitives.size(); j++)
     {
-      const gltf::Accessor &accessor =
-          vmodel->model.accessors[vmodel->model.meshes[i].primitives[j].indices];
-      vmodel->morphs[i][j] = (glm::vec3 *)calloc(accessor.count * 3, sizeof(glm::vec3));
+      const gltf::Mesh::Primitive &primitive = vmodel->model.meshes[i].primitives[j];
+      assert(primitive.attributes.POSITION != -1);
+      vmodel->morphs[i][j] = (glm::vec3 *)calloc(vmodel->model.accessors[primitive.attributes.POSITION].count * 3, sizeof(glm::vec3));
       for (uint k = 0; k < vmodel->model.meshes[i].primitives[j].targets.size(); k++)
       {
-        if (vmodel->model.meshes[i].primitives[j].targets[k].POSITION != -1)
+        for (uint l = 0; l < vmodel->model.accessors[primitive.attributes.POSITION].count; l++)
         {
-          uchar *data = gltf::getDataFromAccessor(vmodel->model, vmodel->model.accessors[vmodel->model.meshes[i].primitives[j].targets[k].POSITION]);
-          glm::vec3 pos = glm::vec3(0, 0, 0);
-          if (data)
-            memcpy(&pos, data, sizeof(pos));
-          vmodel->morphs[i][j][k] += vmodel->model.meshes[i].weights[k] * pos;
-        }
-        if (vmodel->model.meshes[i].primitives[j].targets[k].NORMAL != -1)
-        {
-          uchar *data = gltf::getDataFromAccessor(vmodel->model, vmodel->model.accessors[vmodel->model.meshes[i].primitives[j].targets[k].NORMAL]);
-          glm::vec3 normal = glm::vec3(0, 0, 0);
-          if (data)
-            memcpy(&normal, data, sizeof(normal));
-          vmodel->morphs[i][j][k + accessor.count] += vmodel->model.meshes[i].weights[k] * normal;
-        }
-        if (vmodel->model.meshes[i].primitives[j].targets[k].TANGENT != -1)
-        {
-          uchar *data = gltf::getDataFromAccessor(vmodel->model, vmodel->model.accessors[vmodel->model.meshes[i].primitives[j].targets[k].TANGENT]);
-          glm::vec3 tangent = glm::vec3(0, 0, 0);
-          if (data)
-            memcpy(&tangent, data, sizeof(tangent));
-          vmodel->morphs[i][j][k + accessor.count * 2] += vmodel->model.meshes[i].weights[k] * tangent;
+          if (vmodel->model.meshes[i].primitives[j].targets[k].POSITION != -1)
+          {
+            membuild(glm::vec3, pos, gltf::getDataFromAccessor(vmodel->model, vmodel->model.accessors[vmodel->model.meshes[i].primitives[j].targets[k].POSITION], l));
+            vmodel->morphs[i][j][l * 3 + 0] += vmodel->model.meshes[i].weights[k] * pos;
+          }
+          if (vmodel->model.meshes[i].primitives[j].targets[k].NORMAL != -1)
+          {
+            membuild(glm::vec3, normal, gltf::getDataFromAccessor(vmodel->model, vmodel->model.accessors[vmodel->model.meshes[i].primitives[j].targets[k].NORMAL], l));
+            vmodel->morphs[i][j][l * 3 + 1] += vmodel->model.meshes[i].weights[k] * normal;
+          }
+          if (vmodel->model.meshes[i].primitives[j].targets[k].TANGENT != -1)
+          {
+            membuild(glm::vec3, tangent, gltf::getDataFromAccessor(vmodel->model, vmodel->model.accessors[vmodel->model.meshes[i].primitives[j].targets[k].TANGENT], l));
+            vmodel->morphs[i][j][l * 3 + 2] += vmodel->model.meshes[i].weights[k] * tangent;
+          }
         }
       }
+      glGenBuffers(1, vmodel->morphsVBO[i] + j);
+      glBindBuffer(GL_ARRAY_BUFFER, vmodel->morphsVBO[i][j]);
+      glBufferData(GL_ARRAY_BUFFER, sizeof(glm::vec3) * vmodel->model.accessors[primitive.attributes.POSITION].count * 3, vmodel->morphs[i][j], GL_DYNAMIC_DRAW);
     }
   }
 
@@ -478,6 +476,13 @@ void initVModel(VModel_t *vmodel)
         if (nullFilledVBO)
           glDeleteBuffers(1, &nullFilledVBO);
       }
+      glBindBuffer(GL_ARRAY_BUFFER,vmodel->morphsVBO[i][j]);
+      glVertexAttribPointer(9, 3, GLTF_COMPONENT_FLOAT, GL_FALSE, sizeof(glm::vec3) * 3, 0);
+      glEnableVertexAttribArray(9);
+      glVertexAttribPointer(10, 3, GLTF_COMPONENT_FLOAT, GL_FALSE, sizeof(glm::vec3) * 3, reinterpret_cast<void *>(sizeof(glm::vec3)));
+      glEnableVertexAttribArray(10);
+      glVertexAttribPointer(11, 3, GLTF_COMPONENT_FLOAT, GL_FALSE, sizeof(glm::vec3) * 3, reinterpret_cast<void *>(sizeof(glm::vec3) * 2));
+      glEnableVertexAttribArray(11);
       glBindVertexArray(0);
       primitivesVAO[j] = VAO;
     }
@@ -543,7 +548,16 @@ void initVModel(VModel_t *vmodel)
   }
   glGenSamplers(1, &vmodel->sampler_obj);
 
-  // TODO(ANT) other stuff here
+  // UBO
+  glUniformBlockBinding(WORLD.shaders.defaultShader.ID, glGetUniformBlockIndex(WORLD.shaders.defaultShader.ID, "Transforms"), 0);
+  glUniformBlockBinding(WORLD.shaders.mtoon.ID, glGetUniformBlockIndex(WORLD.shaders.mtoon.ID, "Transforms"), 0);
+  glUniformBlockBinding(WORLD.shaders.defaultShader.ID, glGetUniformBlockIndex(WORLD.shaders.defaultShader.ID, "InverseBindMatrices"), 1);
+  glUniformBlockBinding(WORLD.shaders.mtoon.ID, glGetUniformBlockIndex(WORLD.shaders.defaultShader.ID, "InverseBindMatrices"), 1);
+  glGenBuffers(1, &vmodel->UBO);
+  glBindBuffer(GL_UNIFORM_BUFFER, vmodel->UBO);
+  glBufferData(GL_UNIFORM_BUFFER, sizeof(glm::mat4) * (4+MAX_JOINT_MATRIX), 0, GL_STATIC_DRAW);
+  glBindBuffer(GL_UNIFORM_BUFFER, 0);
+  glBindBufferRange(GL_UNIFORM_BUFFER, 0, vmodel->UBO, 0, sizeof(glm::mat4) * (4+MAX_JOINT_MATRIX));
 }
 int WORLDExecute(const gltf::glTFModel model)
 {
@@ -597,25 +611,27 @@ static int renderNode(const VModel_t &vmodel, const gltf::Node &node, const glm:
   Shader_t currentShader = WORLD.shaders.defaultShader;
   if (node.mesh > -1)
   {
-    std::vector<glm::mat4> jointMatrices = std::vector<glm::mat4>();
+    glBindBuffer(GL_UNIFORM_BUFFER, vmodel.UBO);
+    glBufferSubData(GL_UNIFORM_BUFFER, sizeof(glm::mat4) * 2, sizeof(glm::mat4), &mat[0][0]);
+    glBindBuffer(GL_UNIFORM_BUFFER, 0);
+
     if (node.skin > -1)
     {
       assert(node.skin < vmodel.model.skins.size());
       const gltf::Skin &skin = vmodel.model.skins[node.skin];
       glm::mat4 nodeInverse = glm::inverse(mat);
-      jointMatrices = std::vector<glm::mat4>(skin.joints.size());
+      glm::mat4 *tmpBuffer=(glm::mat4*)malloc(sizeof(glm::mat4)*skin.joints.size());
       for (uint i = 0; i < skin.joints.size(); i++)
       {
-        glm::mat4 nodeTransform = vmodel.nodeTransforms[skin.joints[i]];
-        float *invMatrixData = (float *)gltf::getDataFromAccessor(vmodel.model, vmodel.model.accessors[skin.inverseBindMatrices], i);
-        assert(invMatrixData);
-        glm::mat4 inverseBindMatrix = glm::mat4(
-            invMatrixData[0], invMatrixData[1], invMatrixData[2], invMatrixData[3],
-            invMatrixData[4], invMatrixData[5], invMatrixData[6], invMatrixData[7],
-            invMatrixData[8], invMatrixData[9], invMatrixData[10], invMatrixData[11],
-            invMatrixData[12], invMatrixData[13], invMatrixData[14], invMatrixData[15]);
-        jointMatrices[i] = nodeInverse * nodeTransform * inverseBindMatrix;
+        tmpBuffer[i]=vmodel.nodeTransforms[skin.joints[i]];
       }
+      glBindBuffer(GL_UNIFORM_BUFFER, vmodel.UBO);
+      glBufferSubData(GL_UNIFORM_BUFFER, sizeof(glm::mat4) * 3, sizeof(glm::mat4), &nodeInverse[0][0]);
+      glBufferSubData(GL_UNIFORM_BUFFER, sizeof(glm::mat4) * 4, sizeof(glm::mat4)*skin.joints.size(), tmpBuffer);
+      glBindBuffer(GL_UNIFORM_BUFFER, 0);
+
+      glBindBufferRange(GL_UNIFORM_BUFFER, 1, vmodel.VBO[vmodel.model.accessors[skin.inverseBindMatrices].bufferView], 0, sizeof(glm::mat4) * skin.joints.size());
+      free(tmpBuffer);
     }
     assert(node.mesh < vmodel.model.meshes.size());
     const gltf::Mesh &mesh = vmodel.model.meshes[node.mesh];
@@ -641,10 +657,7 @@ static int renderNode(const VModel_t &vmodel, const gltf::Node &node, const glm:
         }
       }
       glUseProgram(currentShader.ID);
-      shaderSetMat4(currentShader, "worldTransform", worldTransform);
-      shaderSetMat4(currentShader, "node", mat);
-      shaderSetMat4(currentShader, "model", modelTransform);
-      shaderSetMat4Arr(currentShader, "u_jointMatrix", jointMatrices.size(), (float *)jointMatrices.data());
+
       glBindVertexArray(vmodel.VAO[node.mesh][i]);
       glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, vmodel.VBO[indexAccessor.bufferView]);
 
@@ -828,30 +841,31 @@ void drawSkeleton(const VModel_t &vmodel, glm::mat4 modelTransform, glm::mat4 vi
   }
 }
 
-int renderVModel(const VModel_t &vmodel)
+int renderVModel(VModel_t &vmodel)
 {
   glUseProgram(WORLD.shaders.defaultShader.ID);
 
   // model space to world space
-  glm::mat4 modelT = glm::mat4(1, 0, 0, vmodel.pos.x,
-                               0, 1, 0, vmodel.pos.y,
-                               0, 0, 1, vmodel.pos.z,
-                               0, 0, 0, 1);
-
-  // world space to camera space
-  if (WORLD.camera.updated)
+  if (WORLD.camera.updated || vmodel.updatedPos)
   {
     WORLD.camera.viewMatrix = glm::mat4_cast(vec4ToQua(WORLD.camera.rot)) * glm::lookAt(WORLD.camera.pos, WORLD.camera.pos + WORLD.FRONT, WORLD.UP);
     WORLD.camera.projectionMatrix = glm::perspective(WORLD.camera.zoom, (float)windowData.realWindowWidth / windowData.realWindowHeight, 0.1f, 100.f);
+    glm::mat4 modelTransform = glm::mat4(1, 0, 0, vmodel.pos.x,
+                                 0, 1, 0, vmodel.pos.y,
+                                 0, 0, 1, vmodel.pos.z,
+                                 0, 0, 0, 1);
+
+    // world space to camera space
+    glm::mat4 transforms[2]={WORLD.camera.projectionMatrix * WORLD.camera.viewMatrix * modelTransform,modelTransform};
     WORLD.camera.updated = false;
+    vmodel.updatedPos = false;
+
+    glBindBuffer(GL_UNIFORM_BUFFER, vmodel.UBO);
+    glBufferSubData(GL_UNIFORM_BUFFER, 0, sizeof(glm::mat4)*2, transforms);
+    glBindBuffer(GL_UNIFORM_BUFFER, 0);
   }
 
-  glm::mat4 viewMatrix = WORLD.camera.viewMatrix;
-  glm::mat4 projectionMatrix = WORLD.camera.projectionMatrix;
-
   // modelDraw
-  modelTransform = modelT;
-  worldTransform = projectionMatrix * viewMatrix * modelT;
   for (uint i = 0; i < vmodel.model.nodes.size(); i++)
   {
     renderNode(vmodel, vmodel.model.nodes[vmodel.renderQueue[i]], vmodel.nodeTransforms[vmodel.renderQueue[i]]);
@@ -879,5 +893,20 @@ void freeVModel(VModel_t *vmodel)
   free(vmodel->gltfImageTextureIndex);
   vmodel->gltfImageTextureIndex = 0;
   glDeleteSamplers(1, &vmodel->sampler_obj);
+  for (uint i = 0; i < vmodel->model.meshes.size(); i++)
+  {
+    for (uint j = 0; j < vmodel->model.meshes[i].primitives.size(); j++)
+    {
+      free(vmodel->morphs[i][j]);
+    }
+    glDeleteBuffers(vmodel->model.meshes[i].primitives.size(), vmodel->morphsVBO[i]);
+    free(vmodel->updatedMorphWeight[i]);
+    free(vmodel->morphs[i]);
+    free(vmodel->morphsVBO[i]);
+  }
+  free(vmodel->updatedMorphWeight);
+  free(vmodel->morphs);
+  free(vmodel->morphsVBO);
+  glDeleteBuffers(1, &vmodel->UBO);
   gltf::freeModel(&vmodel->model);
 }
