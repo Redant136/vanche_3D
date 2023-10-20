@@ -80,7 +80,7 @@ void main()
     vec3 lightDirection=normalize(lights[i].Position-fs_in.Pos);
     vec3 diffuse=max(dot(normalize(normal),lightDirection),0.f)*lights[i].Color;
 
-    // color.xyz=(lights[i].Intensity*lights[i].Color+diffuse)*color.xyz;
+    color.xyz=(lights[i].Intensity*lights[i].Color+diffuse)*color.xyz;
   }
 
   FragColor = color;

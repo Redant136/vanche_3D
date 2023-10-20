@@ -1,13 +1,16 @@
-morph target (calc each frame)
-  implement it
-  test
+VRMC_vrm expression
+  update morph weights function
+set lights as UBO
 VRMC_node_constraint
 VRMC_springBone
-VRMC_vrm
-animation
+VRMC_vrm look_at
+default shader lighting is broken rn!!!
 
-
+dlib face detection http://dlib.net/webcam_face_pose_ex.cpp.html
 uv animation
+animation
+morph target (calc each frame)
+  test
 
 gltf camera
 GI shading
@@ -17,3 +20,4 @@ min max accessor
 recheck sparse accessors
 fix emissive texture
 check default shader lighting
+VRMC_vrm third person

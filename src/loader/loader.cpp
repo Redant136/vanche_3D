@@ -2,8 +2,6 @@
 #include <nlohmann/json.hpp>
 #include <chevan_utils_print.hpp>
 
-#define _toStr(a) #a
-#define toStr(a) _toStr(a)
 typedef nlohmann::json json;
 struct BIN_t
 {
@@ -741,7 +739,7 @@ static std::vector<gltf::Extension> deserialize_extras(json extras)
   if (extras.contains("targetNames"))
   {
     gltf::Extension ext;
-    ext.name="targetNames";
+    ext.name = "targetNames";
     gltf::Extras::TargetNames *targetNames = new gltf::Extras::TargetNames();
     targetNames->targetNames = std::vector<std::string>();
     for (int i = 0; i < extras["targetNames"].size(); i++)
@@ -1644,7 +1642,7 @@ static gltf::glTFModel parseGLB(std::string path, BIN_t bin)
   printf("Loading model:%s\nglTF version %d size: %d, magic: %s\n", path.c_str(), header.version, header.dataSize, std::string(header.glTF,4).c_str());
   if (memcmp("glTF", header.glTF, 4))
   {
-    fprintf(stderr, "Error loading file at " __FILE__ ":" toStr(__LINE__) ".\nUnexpected magic: %s. File might be corrupted\n", header.glTF);
+    fprintf(stderr, "Error loading file at %s:%d.\nUnexpected magic: %s. File might be corrupted\n", __FILE__, __LINE__, header.glTF);
     exit(1);
   }
   bin.size -= sizeof(header);
@@ -1673,7 +1671,7 @@ static gltf::glTFModel parseGLB(std::string path, BIN_t bin)
       chunks[1] = c;
     else
     {
-      fprintf(stderr, "Error during loading file chunk %d at " __FILE__ ":" toStr(__LINE__) ".\nUnexpected chunk type:%X. File might be corrupted\n", nChunks, c.type);
+      fprintf(stderr, "Error during loading file chunk %d at %s:%d.\nUnexpected chunk type:%X. File might be corrupted\n", nChunks, __FILE__, __LINE__, c.type);
       exit(1);
     }
   }

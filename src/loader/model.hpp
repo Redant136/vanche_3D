@@ -929,7 +929,7 @@ namespace gltf
           };
           struct MaterialColorBind
           {
-            int material;
+            int material=-1;
             enum
             {
               color,
@@ -953,9 +953,9 @@ namespace gltf
           bool isBinary = false;
           enum BlockBlend
           {
-            none,
-            block,
-            blend
+            none = 0,
+            blend,
+            block
           };
           BlockBlend overrideBlink = none;
           BlockBlend overrideLookAt = none;
@@ -987,13 +987,15 @@ namespace gltf
     };
   }
 
-  namespace Extras{
-    struct TargetNames{
+  namespace Extras
+  {
+    struct TargetNames
+    {
       std::vector<std::string> targetNames;
     };
   }
 
-  template<typename T>
+  template <typename T>
   static int getMeshPrimitiveAttribVal(const T &attribute, std::string name)
   {
     int attrib = attribute.POSITION;
@@ -1058,13 +1060,14 @@ namespace gltf
 
   static uchar *getDataFromAccessor(const glTFModel &model, const Accessor &accessor, uint index)
   {
-    if(accessor.sparse.count>0){
+    if (accessor.sparse.count > 0)
+    {
       uchar *bfIndiceData = model.buffers[model.bufferViews[accessor.sparse.indices.bufferView].buffer].buffer;
       bfIndiceData += model.bufferViews[accessor.sparse.indices.bufferView].byteOffset;
       bfIndiceData += accessor.sparse.indices.byteOffset;
       for (uint l = 0; l < accessor.sparse.count; l++)
       {
-        ulong sparseIndex=CHVAL;
+        ulong sparseIndex = CHVAL;
         if (accessor.sparse.indices.componentType == gltf::Accessor::Sparse::Indices::UNSIGNED_BYTE)
           sparseIndex = *(((uint8_t *)bfIndiceData) + l);
         else if (accessor.sparse.indices.componentType == gltf::Accessor::Sparse::Indices::UNSIGNED_SHORT)
@@ -1072,7 +1075,7 @@ namespace gltf
         else
           sparseIndex = *(((uint32_t *)bfIndiceData) + l);
 
-        if(sparseIndex!=index)
+        if (sparseIndex != index)
           continue;
         uchar *bfValData = model.buffers[model.bufferViews[accessor.sparse.values.bufferView].buffer].buffer;
         bfValData += model.bufferViews[accessor.sparse.values.bufferView].byteOffset;
@@ -1170,6 +1173,19 @@ namespace gltf
     return -1;
   }
 
+  template <typename T>
+  static int findExtraIndex(string name, T obj)
+  {
+    for (int i = 0; i < obj.extras.size(); i++)
+    {
+      if (obj.extras[i].name == name)
+      {
+        return i;
+      }
+    }
+    return -1;
+  }
+
   static void freeModel(glTFModel *model)
   {
     for (uint i = 0; i < model->buffers.size(); i++)
@@ -1182,29 +1198,37 @@ namespace gltf
     }
     for (uint i = 0; i < model->extensions.size(); i++)
     {
-      if(model->extensions[i].name=="KHR_materials_unlit"){
-        delete (Extensions::KHR_materials_unlit*)model->extensions[i].data;
+      if (model->extensions[i].name == "KHR_materials_unlit")
+      {
+        delete (Extensions::KHR_materials_unlit *)model->extensions[i].data;
       }
-      else if(model->extensions[i].name=="KHR_texture_transform"){
-        delete (Extensions::KHR_texture_transform*)model->extensions[i].data;
+      else if (model->extensions[i].name == "KHR_texture_transform")
+      {
+        delete (Extensions::KHR_texture_transform *)model->extensions[i].data;
       }
-      else if(model->extensions[i].name=="KHR_materials_emissive_strength"){
-        delete (Extensions::KHR_materials_emissive_strength*)model->extensions[i].data;
+      else if (model->extensions[i].name == "KHR_materials_emissive_strength")
+      {
+        delete (Extensions::KHR_materials_emissive_strength *)model->extensions[i].data;
       }
-      else if(model->extensions[i].name=="VRM"){
-        delete (Extensions::VRM*)model->extensions[i].data;
+      else if (model->extensions[i].name == "VRM")
+      {
+        delete (Extensions::VRM *)model->extensions[i].data;
       }
-      else if(model->extensions[i].name=="VRMC_springBone"){
-        delete (Extensions::VRMC_springBone*)model->extensions[i].data;
+      else if (model->extensions[i].name == "VRMC_springBone")
+      {
+        delete (Extensions::VRMC_springBone *)model->extensions[i].data;
       }
-      else if(model->extensions[i].name=="VRMC_materials_mtoon"){
-        delete (Extensions::VRMC_materials_mtoon*)model->extensions[i].data;
+      else if (model->extensions[i].name == "VRMC_materials_mtoon")
+      {
+        delete (Extensions::VRMC_materials_mtoon *)model->extensions[i].data;
       }
-      else if(model->extensions[i].name=="VRMC_node_constraint"){
-        delete (Extensions::VRMC_node_constraint*)model->extensions[i].data;
+      else if (model->extensions[i].name == "VRMC_node_constraint")
+      {
+        delete (Extensions::VRMC_node_constraint *)model->extensions[i].data;
       }
-      else if(model->extensions[i].name=="VRMC_vrm"){
-        delete (Extensions::VRMC_vrm*)model->extensions[i].data;
+      else if (model->extensions[i].name == "VRMC_vrm")
+      {
+        delete (Extensions::VRMC_vrm *)model->extensions[i].data;
       }
     }
   }

@@ -476,7 +476,7 @@ void initVModel(VModel_t *vmodel)
         if (nullFilledVBO)
           glDeleteBuffers(1, &nullFilledVBO);
       }
-      glBindBuffer(GL_ARRAY_BUFFER,vmodel->morphsVBO[i][j]);
+      glBindBuffer(GL_ARRAY_BUFFER, vmodel->morphsVBO[i][j]);
       glVertexAttribPointer(9, 3, GLTF_COMPONENT_FLOAT, GL_FALSE, sizeof(glm::vec3) * 3, 0);
       glEnableVertexAttribArray(9);
       glVertexAttribPointer(10, 3, GLTF_COMPONENT_FLOAT, GL_FALSE, sizeof(glm::vec3) * 3, reinterpret_cast<void *>(sizeof(glm::vec3)));
@@ -551,13 +551,24 @@ void initVModel(VModel_t *vmodel)
   // UBO
   glUniformBlockBinding(WORLD.shaders.defaultShader.ID, glGetUniformBlockIndex(WORLD.shaders.defaultShader.ID, "Transforms"), 0);
   glUniformBlockBinding(WORLD.shaders.mtoon.ID, glGetUniformBlockIndex(WORLD.shaders.mtoon.ID, "Transforms"), 0);
-  glUniformBlockBinding(WORLD.shaders.defaultShader.ID, glGetUniformBlockIndex(WORLD.shaders.defaultShader.ID, "InverseBindMatrices"), 1);
-  glUniformBlockBinding(WORLD.shaders.mtoon.ID, glGetUniformBlockIndex(WORLD.shaders.defaultShader.ID, "InverseBindMatrices"), 1);
+  glUniformBlockBinding(WORLD.shaders.defaultShader.ID, glGetUniformBlockIndex(WORLD.shaders.defaultShader.ID, "Nodes"), 1);
+  glUniformBlockBinding(WORLD.shaders.mtoon.ID, glGetUniformBlockIndex(WORLD.shaders.mtoon.ID, "Nodes"), 1);
+  glUniformBlockBinding(WORLD.shaders.defaultShader.ID, glGetUniformBlockIndex(WORLD.shaders.defaultShader.ID, "InverseBindMatrices"), 2);
+  glUniformBlockBinding(WORLD.shaders.mtoon.ID, glGetUniformBlockIndex(WORLD.shaders.mtoon.ID, "InverseBindMatrices"), 2);
+
   glGenBuffers(1, &vmodel->UBO);
   glBindBuffer(GL_UNIFORM_BUFFER, vmodel->UBO);
-  glBufferData(GL_UNIFORM_BUFFER, sizeof(glm::mat4) * (4+MAX_JOINT_MATRIX), 0, GL_STATIC_DRAW);
+  glBufferData(GL_UNIFORM_BUFFER, sizeof(glm::mat4) * 2 + sizeof(int) * 4 + sizeof(int) * MAX_JOINT_MATRIX, 0, GL_STREAM_DRAW);
   glBindBuffer(GL_UNIFORM_BUFFER, 0);
-  glBindBufferRange(GL_UNIFORM_BUFFER, 0, vmodel->UBO, 0, sizeof(glm::mat4) * (4+MAX_JOINT_MATRIX));
+  glBindBufferRange(GL_UNIFORM_BUFFER, 0, vmodel->UBO, 0, sizeof(glm::mat4) * 2 + sizeof(int) * 4 + sizeof(int) * MAX_JOINT_MATRIX);
+
+  assert(vmodel->model.nodes.size() < MAX_NODES);
+  glGenBuffers(1, &vmodel->nodesUBO);
+  glBindBuffer(GL_UNIFORM_BUFFER, vmodel->nodesUBO);
+  glBufferData(GL_UNIFORM_BUFFER, sizeof(glm::mat4) * MAX_NODES, 0, GL_DYNAMIC_DRAW);
+  glBufferSubData(GL_UNIFORM_BUFFER, 0, sizeof(glm::mat4) * vmodel->model.nodes.size(), vmodel->nodeTransforms);
+  glBindBuffer(GL_UNIFORM_BUFFER, 0);
+  glBindBufferRange(GL_UNIFORM_BUFFER, 1, vmodel->nodesUBO, 0, sizeof(glm::mat4) * MAX_NODES);
 }
 int WORLDExecute(const gltf::glTFModel model)
 {
@@ -606,32 +617,24 @@ static void bindTexture(const VModel_t &vmodel, const Shader_t &currentShader, c
   glBindTexture(GL_TEXTURE_2D, vmodel.gltfImageTextureIndex[texture.source]);
   glBindSampler(GL_TEXTURE_2D, sampler_obj);
 }
-static int renderNode(const VModel_t &vmodel, const gltf::Node &node, const glm::mat4 mat)
+static int renderNode(const VModel_t &vmodel, const int _node, const glm::mat4 mat)
 {
+  const gltf::Node &node = vmodel.model.nodes[_node];
   Shader_t currentShader = WORLD.shaders.defaultShader;
   if (node.mesh > -1)
   {
     glBindBuffer(GL_UNIFORM_BUFFER, vmodel.UBO);
-    glBufferSubData(GL_UNIFORM_BUFFER, sizeof(glm::mat4) * 2, sizeof(glm::mat4), &mat[0][0]);
+    glBufferSubData(GL_UNIFORM_BUFFER, sizeof(glm::mat4) * 2, sizeof(int), &_node);
     glBindBuffer(GL_UNIFORM_BUFFER, 0);
-
     if (node.skin > -1)
     {
       assert(node.skin < vmodel.model.skins.size());
       const gltf::Skin &skin = vmodel.model.skins[node.skin];
-      glm::mat4 nodeInverse = glm::inverse(mat);
-      glm::mat4 *tmpBuffer=(glm::mat4*)malloc(sizeof(glm::mat4)*skin.joints.size());
-      for (uint i = 0; i < skin.joints.size(); i++)
-      {
-        tmpBuffer[i]=vmodel.nodeTransforms[skin.joints[i]];
-      }
+      assert(skin.joints.size() < MAX_JOINT_MATRIX);
       glBindBuffer(GL_UNIFORM_BUFFER, vmodel.UBO);
-      glBufferSubData(GL_UNIFORM_BUFFER, sizeof(glm::mat4) * 3, sizeof(glm::mat4), &nodeInverse[0][0]);
-      glBufferSubData(GL_UNIFORM_BUFFER, sizeof(glm::mat4) * 4, sizeof(glm::mat4)*skin.joints.size(), tmpBuffer);
+      glBufferSubData(GL_UNIFORM_BUFFER, sizeof(glm::mat4) * 2 + sizeof(int) * 4, sizeof(int) * skin.joints.size(), skin.joints.data());
       glBindBuffer(GL_UNIFORM_BUFFER, 0);
-
-      glBindBufferRange(GL_UNIFORM_BUFFER, 1, vmodel.VBO[vmodel.model.accessors[skin.inverseBindMatrices].bufferView], 0, sizeof(glm::mat4) * skin.joints.size());
-      free(tmpBuffer);
+      glBindBufferRange(GL_UNIFORM_BUFFER, 2, vmodel.VBO[vmodel.model.accessors[skin.inverseBindMatrices].bufferView], 0, sizeof(glm::mat4) * skin.joints.size());
     }
     assert(node.mesh < vmodel.model.meshes.size());
     const gltf::Mesh &mesh = vmodel.model.meshes[node.mesh];
@@ -841,6 +844,134 @@ void drawSkeleton(const VModel_t &vmodel, glm::mat4 modelTransform, glm::mat4 vi
   }
 }
 
+void vmodelSetMorphWeight(VModel_t *vmodel, uint mesh, uint weight, float weightVal)
+{
+  vmodel->model.meshes[mesh].weights[weight] = weightVal;
+  vmodel->updatedMorphWeight[mesh][weight] = 1;
+}
+
+void vmodelVRMSetMorphWeight(VModel_t *vmodel, uint mesh, std::string target, float weight)
+{
+  if (gltf::findExtensionIndex("VRMC_vrm", vmodel->model) == -1)
+    return;
+  int index = gltf::findExtraIndex("targetNames", vmodel->model.meshes[mesh]);
+  if (index < 0)
+    return;
+  gltf::Extras::TargetNames *targetNames = (gltf::Extras::TargetNames *)vmodel->model.extras[index].data;
+  for (uint i = 0; i < targetNames->targetNames.size(); i++)
+  {
+    if (targetNames->targetNames[i] == target)
+    {
+      vmodel->model.meshes[mesh].weights[i] = weight;
+      vmodel->updatedMorphWeight[mesh][i] = 1;
+    }
+  }
+}
+
+void vmodelSetVRMExpression(VModel_t *vmodel, float *values)
+{
+  typedef gltf::Extensions::VRMC_vrm::ExpressionPresets ExpressionPresets;
+  int index = gltf::findExtensionIndex("VRMC_vrm", vmodel->model);
+  if (index < 0)
+  {
+    fprintf(stderr, "Model is not a VRM model");
+    return;
+  }
+  gltf::Extensions::VRMC_vrm *VRM = (gltf::Extensions::VRMC_vrm *)vmodel->model.extensions[index].data;
+  ExpressionPresets::Expression exp;
+  int blockBlends[3] = {0, 0, 0};
+  ExpressionPresets::Expression *expressionsArray = (ExpressionPresets::Expression *)&VRM->expressions.preset;
+  for (int i = 0; i < sizeof(ExpressionPresets::Preset) / sizeof(ExpressionPresets::Expression); i++)
+  {
+    if (values[i] <= 0)
+      continue;
+    ExpressionPresets::Expression exp = expressionsArray[i];
+    blockBlends[0] = MAX(blockBlends[0], exp.overrideBlink);
+    blockBlends[1] = MAX(blockBlends[1], exp.overrideLookAt);
+    blockBlends[2] = MAX(blockBlends[2], exp.overrideMouth);
+  }
+#define valueof(exp) values[offsetof(ExpressionPresets::Preset, exp) / sizeof(ExpressionPresets::Expression)]
+#define SetMorphTargetWeight(exp, WEIGHT)                                                                                         \
+  for (int i = 0; i < VRM->expressions.preset.exp.morphTargetBinds.size(); i++)                                                   \
+  {                                                                                                                               \
+    const ExpressionPresets::Expression::MorphTargetBind &morphTarget = VRM->expressions.preset.exp.morphTargetBinds[i];          \
+    vmodel->updatedMorphWeight[vmodel->model.nodes[morphTarget.node].mesh][morphTarget.index] = 1;                                \
+    vmodel->model.meshes[vmodel->model.nodes[morphTarget.node].mesh].weights[morphTarget.weight] = morphTarget.weight * (WEIGHT); \
+  }
+  // TODO(ANT) Material Color bind
+  // TODO(ANT) Texture transform
+
+  // Blink
+  if (blockBlends[0] != ExpressionPresets::Expression::block)
+  {
+    float blinkWeight = valueof(blink);
+    float blinkWeightLeft = valueof(blinkLeft);
+    float blinkWeightRight = valueof(blinkRight);
+    blinkWeightLeft = blinkWeightLeft > 0 ? blinkWeightLeft : blinkWeight;
+    blinkWeightRight = blinkWeightRight > 0 ? blinkWeightRight : blinkWeight;
+
+    float emotionValue = 0;
+    if (valueof(happy) > 0 && VRM->expressions.preset.happy.overrideBlink == ExpressionPresets::Expression::blend)
+      emotionValue += valueof(happy);
+    if (valueof(angry) > 0 && VRM->expressions.preset.angry.overrideBlink == ExpressionPresets::Expression::blend)
+      emotionValue += valueof(angry);
+    if (valueof(sad) > 0 && VRM->expressions.preset.sad.overrideBlink == ExpressionPresets::Expression::blend)
+      emotionValue += valueof(sad);
+    if (valueof(relaxed) > 0 && VRM->expressions.preset.relaxed.overrideBlink == ExpressionPresets::Expression::blend)
+      emotionValue += valueof(relaxed);
+    if (valueof(surprised) > 0 && VRM->expressions.preset.surprised.overrideBlink == ExpressionPresets::Expression::blend)
+      emotionValue += valueof(surprised);
+    float factor = 1 - MAX(MIN(emotionValue, 1), 0);
+    blinkWeightLeft *= factor;
+    blinkWeightRight *= factor;
+    SetMorphTargetWeight(blinkLeft, blinkWeightLeft);
+    SetMorphTargetWeight(blinkRight, blinkWeightRight);
+  }
+  // LookAt
+  if (blockBlends[1] != ExpressionPresets::Expression::block)
+  {
+    float emotionValue = 0;
+    if (valueof(happy) > 0 && VRM->expressions.preset.happy.overrideLookAt == ExpressionPresets::Expression::blend)
+      emotionValue += valueof(happy);
+    if (valueof(angry) > 0 && VRM->expressions.preset.angry.overrideLookAt == ExpressionPresets::Expression::blend)
+      emotionValue += valueof(angry);
+    if (valueof(sad) > 0 && VRM->expressions.preset.sad.overrideLookAt == ExpressionPresets::Expression::blend)
+      emotionValue += valueof(sad);
+    if (valueof(relaxed) > 0 && VRM->expressions.preset.relaxed.overrideLookAt == ExpressionPresets::Expression::blend)
+      emotionValue += valueof(relaxed);
+    if (valueof(surprised) > 0 && VRM->expressions.preset.surprised.overrideLookAt == ExpressionPresets::Expression::blend)
+      emotionValue += valueof(surprised);
+    float factor = 1 - MAX(MIN(emotionValue, 1), 0);
+    SetMorphTargetWeight(lookUp, valueof(lookUp) * factor);
+    SetMorphTargetWeight(lookDown, valueof(lookDown) * factor);
+    SetMorphTargetWeight(lookLeft, valueof(lookLeft) * factor);
+    SetMorphTargetWeight(lookRight, valueof(lookRight) * factor);
+  }
+  // Mouth
+  if (blockBlends[2] != ExpressionPresets::Expression::block)
+  {
+    float emotionValue = 0;
+    if (valueof(happy) > 0 && VRM->expressions.preset.happy.overrideMouth == ExpressionPresets::Expression::blend)
+      emotionValue += valueof(happy);
+    if (valueof(angry) > 0 && VRM->expressions.preset.angry.overrideMouth == ExpressionPresets::Expression::blend)
+      emotionValue += valueof(angry);
+    if (valueof(sad) > 0 && VRM->expressions.preset.sad.overrideMouth == ExpressionPresets::Expression::blend)
+      emotionValue += valueof(sad);
+    if (valueof(relaxed) > 0 && VRM->expressions.preset.relaxed.overrideMouth == ExpressionPresets::Expression::blend)
+      emotionValue += valueof(relaxed);
+    if (valueof(surprised) > 0 && VRM->expressions.preset.surprised.overrideMouth == ExpressionPresets::Expression::blend)
+      emotionValue += valueof(surprised);
+    float factor = 1 - MAX(MIN(emotionValue, 1), 0);
+    SetMorphTargetWeight(aa, valueof(aa) * factor);
+    SetMorphTargetWeight(ih, valueof(ih) * factor);
+    SetMorphTargetWeight(ou, valueof(ou) * factor);
+    SetMorphTargetWeight(ee, valueof(ee) * factor);
+    SetMorphTargetWeight(oh, valueof(oh) * factor);
+  }
+#undef valueof
+#undef SetMorphTargetWeight
+}
+
 int renderVModel(VModel_t &vmodel)
 {
   glUseProgram(WORLD.shaders.defaultShader.ID);
@@ -851,28 +982,41 @@ int renderVModel(VModel_t &vmodel)
     WORLD.camera.viewMatrix = glm::mat4_cast(vec4ToQua(WORLD.camera.rot)) * glm::lookAt(WORLD.camera.pos, WORLD.camera.pos + WORLD.FRONT, WORLD.UP);
     WORLD.camera.projectionMatrix = glm::perspective(WORLD.camera.zoom, (float)windowData.realWindowWidth / windowData.realWindowHeight, 0.1f, 100.f);
     glm::mat4 modelTransform = glm::mat4(1, 0, 0, vmodel.pos.x,
-                                 0, 1, 0, vmodel.pos.y,
-                                 0, 0, 1, vmodel.pos.z,
-                                 0, 0, 0, 1);
+                                         0, 1, 0, vmodel.pos.y,
+                                         0, 0, 1, vmodel.pos.z,
+                                         0, 0, 0, 1);
 
     // world space to camera space
-    glm::mat4 transforms[2]={WORLD.camera.projectionMatrix * WORLD.camera.viewMatrix * modelTransform,modelTransform};
+    glm::mat4 transforms[2] = {WORLD.camera.projectionMatrix * WORLD.camera.viewMatrix * modelTransform, modelTransform};
     WORLD.camera.updated = false;
     vmodel.updatedPos = false;
 
     glBindBuffer(GL_UNIFORM_BUFFER, vmodel.UBO);
-    glBufferSubData(GL_UNIFORM_BUFFER, 0, sizeof(glm::mat4)*2, transforms);
+    glBufferSubData(GL_UNIFORM_BUFFER, 0, sizeof(glm::mat4) * 2, transforms);
     glBindBuffer(GL_UNIFORM_BUFFER, 0);
   }
 
   // modelDraw
   for (uint i = 0; i < vmodel.model.nodes.size(); i++)
   {
-    renderNode(vmodel, vmodel.model.nodes[vmodel.renderQueue[i]], vmodel.nodeTransforms[vmodel.renderQueue[i]]);
+    renderNode(vmodel, vmodel.renderQueue[i], vmodel.nodeTransforms[vmodel.renderQueue[i]]);
   }
   // drawSkeleton(vmodel, modelTransform, viewMatrix, projectionMatrix);
 
   // update pos and shit
+  return 0;
+}
+
+int updateVModel(VModel_t *vmodel)
+{
+  // update morphs
+
+  // TODO(ANT) update phys
+
+  glBindBuffer(GL_UNIFORM_BUFFER, vmodel->nodesUBO);
+  glBufferSubData(GL_UNIFORM_BUFFER, 0, sizeof(glm::mat4) * vmodel->model.nodes.size(), vmodel->nodeTransforms);
+  glBindBuffer(GL_UNIFORM_BUFFER, 0);
+
   return 0;
 }
 

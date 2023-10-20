@@ -4,8 +4,9 @@
 #include "../loader/model.hpp"
 #include <glm/glm.hpp>
 
-#define MAX_JOINT_MATRIX 128
+#define MAX_JOINT_MATRIX 256
 #define MAX_LIGHT_SOURCES 8
+#define MAX_NODES 512
 
 struct LightSource_t
 {
@@ -18,7 +19,7 @@ struct Camera_t
   glm::vec3 pos;
   glm::vec4 rot;
   float zoom;
-  bool updated=true;
+  bool updated = true;
   glm::mat4 viewMatrix, projectionMatrix;
 };
 struct Shader_t
@@ -45,15 +46,16 @@ struct VModel_t
   gltf::glTFModel model;
   bool updatedPos;
   glm::vec3 pos;
-  uint*renderQueue;
+  uint *renderQueue;
   glm::mat4 *nodeTransforms;
+  uint nodesUBO;
   uint **VAO;
   uint *VBO;
   uint *gltfImageTextureIndex;
   uint sampler_obj;
   bool **updatedMorphWeight;
   glm::vec3 ***morphs;
-  uint**morphsVBO;
+  uint **morphsVBO;
   uint UBO;
 };
 
@@ -81,7 +83,11 @@ void shaderSetMat4Arr(const Shader_t &shader, const std::string &name, uint size
 
 void initVModel(VModel_t *vmodel);
 int WORLDExecute(const gltf::glTFModel model);
+int updateVModel(VModel_t *vmodel);
 int renderVModel(VModel_t &vmodel);
-void freeVModel(VModel_t*vmodel);
+void freeVModel(VModel_t *vmodel);
 
+void vmodelSetMorphWeight(VModel_t *vmodel, uint mesh, uint weight, float weightVal);
+void vmodelVRMSetMorphWeight(VModel_t *vmodel, uint mesh, std::string target, float weight);
+void vmodelSetVRMExpressions(VModel_t *vmodel, float *value);
 #endif

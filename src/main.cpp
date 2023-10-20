@@ -47,6 +47,7 @@ void update()
   clock_t start_t, end_t;
   double total_t;
   start_t = clock();
+  updateVModel(&vmodel);
   renderVModel(vmodel);
 
   float X = 0, Z = 0;

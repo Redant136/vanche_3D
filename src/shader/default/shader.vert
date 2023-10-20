@@ -1,5 +1,6 @@
 #version 330 core
-#define MAX_JOINT_MATRIX 128
+#define MAX_JOINT_MATRIX 256
+#define MAX_NODES 512
 
 layout (location = 0) in vec3 a_pos;
 layout (location = 1) in vec3 a_normal;
@@ -15,15 +16,20 @@ layout (location = 10) in vec3 a_normMorph;
 layout (location = 11) in vec3 a_tanMorph;
 
 
-layout (std140) uniform Transforms{
+layout (std140,packed) uniform Transforms{
     mat4 worldTransform;// camera and global model transform
     mat4 model; // global model transform
-    mat4 node;// specific node transform
-    mat4 invNode;
-    mat4 jointNodes[MAX_JOINT_MATRIX];
+    int nodeIndex;// specific node transform index
+    int _pad1[3]; // for padding issues
+    int jointNodes[MAX_JOINT_MATRIX]; // array of joint nodes index
 };
+
+layout (std140) uniform Nodes{
+    mat4 nodes[MAX_NODES]; // all node transforms in the model
+};
+
 layout (std140) uniform InverseBindMatrices{
-    mat4 invBindMatrix[MAX_JOINT_MATRIX];
+    mat4 invBindMatrix[MAX_JOINT_MATRIX]; // inverse bind matrices
 }; 
 
 uniform int texCoordIndex;
@@ -48,25 +54,28 @@ void main()
     }
     vs_out.Normal = a_normal;
 
-    mat4 skinMatrix = mat4(1.f);
-    if(a_joints.x<jointNodes.length()&&a_joints.y<jointNodes.length()&&a_joints.z<jointNodes.length()&&a_joints.w<jointNodes.length()
-        &&a_joints.x>-1&&a_joints.y>-1&&a_joints.z>-1&&a_joints.w>-1)
+    mat4 skinMatrix = mat4(0.f);
+    mat4 invNode = inverse(nodes[nodeIndex]);
+    if(a_joints.x<jointNodes.length()&&a_joints.x>-1){
+        skinMatrix+=a_weights.x*invNode*nodes[jointNodes[int(a_joints.x)]]*invBindMatrix[int(a_joints.x)];
+    }
+    if(a_joints.y<jointNodes.length()&&a_joints.y>-1){
+        skinMatrix+=a_weights.y*invNode*nodes[jointNodes[int(a_joints.y)]]*invBindMatrix[int(a_joints.y)];
+    }
+    if(a_joints.z<jointNodes.length()&&a_joints.z>-1){
+        skinMatrix+=a_weights.z*invNode*nodes[jointNodes[int(a_joints.z)]]*invBindMatrix[int(a_joints.z)];
+    }
+    if(a_joints.w<jointNodes.length()&&a_joints.w>-1){
+        skinMatrix+=a_weights.w*invNode*nodes[jointNodes[int(a_joints.w)]]*invBindMatrix[int(a_joints.w)];   
+    }
+    if(skinMatrix == mat4(0.f))
     {
-        skinMatrix=
-            a_weights.x*invNode*jointNodes[int(a_joints.x)]*invBindMatrix[int(a_joints.x)]+
-            a_weights.y*invNode*jointNodes[int(a_joints.y)]*invBindMatrix[int(a_joints.y)]+
-            a_weights.z*invNode*jointNodes[int(a_joints.z)]*invBindMatrix[int(a_joints.z)]+
-            a_weights.w*invNode*jointNodes[int(a_joints.w)]*invBindMatrix[int(a_joints.w)];
-
-        if(skinMatrix == mat4(0.f))
-        {
-            skinMatrix = mat4(1.f);
-        }
+        skinMatrix = mat4(1.f);
     }
     vec4 pos = vec4(a_pos,1.0);
     pos = pos + vec4(a_posMorph,0);
     pos = skinMatrix * pos;
-    pos = node * pos;
+    pos = nodes[nodeIndex] * pos;
     vs_out.Pos = (model * pos).xyz;
     pos = worldTransform * pos;
 
