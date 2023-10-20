@@ -21,7 +21,7 @@ layout (std140) uniform Transforms{
     mat4 model; // global model transform
     int nodeIndex;// specific node transform index
     float _pad1,_pad2,_pad3; // for padding issues
-    ivec4 jointNodes[MAX_JOINT_MATRIX>>1]; // array of joint nodes index, I hate padding
+    ivec4 jointNodes[MAX_JOINT_MATRIX>>2]; // array of joint nodes index, I hate padding
 };
 
 layout (std140) uniform Nodes{
@@ -56,22 +56,22 @@ void main()
 
     mat4 skinMatrix = mat4(0.f);
     mat4 invNode = inverse(nodes[nodeIndex]);
-    if(a_joints.x<jointNodes.length()&&a_joints.x>-1){
+    if(a_joints.x<(jointNodes.length()<<2)&&a_joints.x>-1){
         int i=int(a_joints.x);
         i=(i&3)==0?jointNodes[i>>2].x:((i&3)==1?jointNodes[i>>2].y:((i&3)==2?jointNodes[i>>2].z:jointNodes[i>>2].w));
         skinMatrix+=a_weights.x*invNode*nodes[i]*invBindMatrix[int(a_joints.x)];
     }
-    if(a_joints.y<jointNodes.length()&&a_joints.y>-1){
+    if(a_joints.y<(jointNodes.length()<<2)&&a_joints.y>-1){
         int i=int(a_joints.y);
         i=(i&3)==0?jointNodes[i>>2].x:((i&3)==1?jointNodes[i>>2].y:((i&3)==2?jointNodes[i>>2].z:jointNodes[i>>2].w));
         skinMatrix+=a_weights.y*invNode*nodes[i]*invBindMatrix[int(a_joints.y)];
     }
-    if(a_joints.z<jointNodes.length()&&a_joints.z>-1){
+    if(a_joints.z<(jointNodes.length()<<2)&&a_joints.z>-1){
         int i=int(a_joints.z);
         i=(i&3)==0?jointNodes[i>>2].x:((i&3)==1?jointNodes[i>>2].y:((i&3)==2?jointNodes[i>>2].z:jointNodes[i>>2].w));
         skinMatrix+=a_weights.z*invNode*nodes[i]*invBindMatrix[int(a_joints.z)];
     }
-    if(a_joints.w<jointNodes.length()&&a_joints.w>-1){
+    if(a_joints.w<(jointNodes.length()<<2)&&a_joints.w>-1){
         int i=int(a_joints.w);
         i=(i&3)==0?jointNodes[i>>2].x:((i&3)==1?jointNodes[i>>2].y:((i&3)==2?jointNodes[i>>2].z:jointNodes[i>>2].w));
         skinMatrix+=a_weights.w*invNode*nodes[i]*invBindMatrix[int(a_joints.w)];   
