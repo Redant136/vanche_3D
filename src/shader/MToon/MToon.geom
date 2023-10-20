@@ -24,20 +24,13 @@ out VS_OUT{
   flat int isOutline;
 } gs_out;
 
-uniform sampler2D texture_normal;
-uniform bool KHR_texture_transform;
-uniform struct KHR_texture_transform_data_t{
-  vec2 u_offset, u_scale;
-  float u_rotation;
-}KHR_texture_transform_data;
-
 uniform int VRM_outlineWidthMode;
 uniform float VRM_outlineWidthFactor;
 uniform sampler2D VRM_outlineWidthMultiplyTexture;
 
 
 void setOut(int index){
-  gs_out.Pos=gl_Position.xyz;
+  gs_out.Pos=gs_in[index].Pos;
   gs_out.Normal=gs_in[index].Normal;
   gs_out.TexCoords=gs_in[index].TexCoords;
   gs_out.Tangent=gs_in[index].Tangent;
@@ -48,17 +41,7 @@ void setOut(int index){
 
 void main(){
   for(int i=0;i<3;i++){
-    vec2 UV=gs_in[i].TexCoords;
-    if(KHR_texture_transform){
-      UV = (
-        mat3(1,0,0, 0,1,0, KHR_texture_transform_data.u_offset.x, KHR_texture_transform_data.u_offset.y, 1)*
-        mat3( cos(KHR_texture_transform_data.u_rotation), sin(KHR_texture_transform_data.u_rotation), 0,
-              -sin(KHR_texture_transform_data.u_rotation), cos(KHR_texture_transform_data.u_rotation), 0,
-              0,             0, 1)*
-        mat3(KHR_texture_transform_data.u_scale.x,0,0, 0,KHR_texture_transform_data.u_scale.y,0, 0,0,1)*
-        vec3(gs_in[i].TexCoords,1)).xy;
-    }
-    vec3 normal=gs_in[i].Normal+texture(texture_normal,UV).xyz;
+    vec3 normal=gs_in[i].Normal;
 
     vec2 outline=vec2(0,0);
     if(VRM_outlineWidthMode==1){

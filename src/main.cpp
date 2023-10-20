@@ -16,30 +16,19 @@
 #define female2 "../models/VRM1_Constraint_Twist_Sample.vrm"
 #define modelPath seedsan
 
-float last_time=0;
+float last_time = 0;
 
 VModel_t vmodel;
 float angle = 0;
+float expressionsWeights[20] = {0};
 void init()
 {
   vmodel.path = modelPath;
   vmodel.model = loadModel(modelPath);
   WORLDExecute(vmodel.model);
   initVModel(&vmodel);
-
-  for (int i = 0; i < MAX_LIGHT_SOURCES; i++)
-  {
-    char lightName[sizeof("lights[000]")] = {0};
-    sprintf(lightName, "lights[%d]", i);
-    shaderSetVec3(WORLD.shaders.defaultShader, std::string(lightName) + ".Position", WORLD.lights[i].pos);
-    shaderSetVec3(WORLD.shaders.defaultShader, std::string(lightName) + ".Color", WORLD.lights[i].color);
-    shaderSetFloat(WORLD.shaders.defaultShader, std::string(lightName) + ".Intensity", WORLD.lights[i].intensity);
-    shaderSetVec3(WORLD.shaders.mtoon, std::string(lightName) + ".Position", WORLD.lights[i].pos);
-    shaderSetVec3(WORLD.shaders.mtoon, std::string(lightName) + ".Color", WORLD.lights[i].color);
-    shaderSetFloat(WORLD.shaders.mtoon, std::string(lightName) + ".Intensity", WORLD.lights[i].intensity);
-
-    // shaderSetFloatArr(WORLD.shader, std::string(lightName), 7, (float *)&WORLD.lights[i]);
-  }
+  expressionsWeights[5] = 1;
+  vmodelSetVRMExpressions(&vmodel, expressionsWeights);
 }
 
 void update()

@@ -33,6 +33,15 @@ layout (std140) uniform InverseBindMatrices{
 }; 
 
 uniform int texCoordIndex;
+uniform sampler2D texture_normal;
+// KHR_texture_transform
+uniform bool KHR_texture_transform;
+uniform struct KHR_texture_transform_data_t{
+  vec2 u_offset, u_scale;
+  float u_rotation;
+}KHR_texture_transform_data;
+
+
 out VS_OUT{
     vec3 Pos;
     vec3 Normal;
@@ -52,7 +61,17 @@ void main()
     }else if(texCoordIndex==2){
         vs_out.TexCoords=a_texCoords_2;
     }
-    vs_out.Normal = a_normal;
+    vec2 UV=vs_out.TexCoords;
+    if(KHR_texture_transform){
+        UV = (
+        mat3(1,0,0, 0,1,0, KHR_texture_transform_data.u_offset.x, KHR_texture_transform_data.u_offset.y, 1)*
+        mat3( cos(KHR_texture_transform_data.u_rotation), sin(KHR_texture_transform_data.u_rotation), 0,
+                -sin(KHR_texture_transform_data.u_rotation), cos(KHR_texture_transform_data.u_rotation), 0,
+                0,             0, 1)*
+        mat3(KHR_texture_transform_data.u_scale.x,0,0, 0,KHR_texture_transform_data.u_scale.y,0, 0,0,1)*
+        vec3(vs_out.TexCoords,1)).xy;
+    }
+    vs_out.TexCoords=UV;
 
     mat4 skinMatrix = mat4(0.f);
     mat4 invNode = inverse(nodes[nodeIndex]);
@@ -76,8 +95,7 @@ void main()
         i=(i&3)==0?jointNodes[i>>2].x:((i&3)==1?jointNodes[i>>2].y:((i&3)==2?jointNodes[i>>2].z:jointNodes[i>>2].w));
         skinMatrix+=a_weights.w*invNode*nodes[i]*invBindMatrix[int(a_joints.w)];   
     }
-    if(skinMatrix == mat4(0.f))
-    {
+    if(skinMatrix == mat4(0.f)) {
         skinMatrix = mat4(1.f);
     }
     vec4 pos = vec4(a_pos,1.0);
@@ -85,16 +103,14 @@ void main()
     pos = skinMatrix * pos;
     pos = nodes[nodeIndex] * pos;
     vs_out.Pos = (model * pos).xyz;
-    pos = worldTransform * pos;
+    gl_Position = worldTransform * pos;
 
-    vec3 normal = (worldTransform * vec4(a_normal,1)).xyz;
-    vec4 tangent = a_tangent;
-
-
+    vec3 normal = a_normal+texture(texture_normal,UV).xyz;
     vs_out.Normal = normal;
+    vec4 tangent = a_tangent;
     vs_out.Tangent = tangent.xyz;
+
     vs_out.Color = a_color_0;
     vs_out.BitTangent = vec3(0,0,0);
 
-    gl_Position = pos;
 }

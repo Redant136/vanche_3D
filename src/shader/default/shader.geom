@@ -22,7 +22,7 @@ out VS_OUT{
 } gs_out;
 
 void setOut(int index){
-  gs_out.Pos=gl_Position.xyz;
+  gs_out.Pos=gs_in[index].Pos;
   gs_out.Normal=gs_in[index].Normal;
   gs_out.TexCoords=gs_in[index].TexCoords;
   gs_out.Tangent=gs_in[index].Tangent;

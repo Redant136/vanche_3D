@@ -17,17 +17,19 @@ in VS_OUT{
 
 struct Light {
     vec3 Position;
-    vec3 Color;
     float Intensity;
+    vec3 Color;
+    float _pad1;
 };
-uniform Light lights[MAX_LIGHT_SOURCES];
+layout (std140) uniform Lights{
+  Light lights[MAX_LIGHT_SOURCES];
+};
 
 uniform vec4 baseColorFactor;
 uniform bool hasBaseColorTexture;
 uniform float alphaCutoff;
 
 uniform sampler2D texture_base;
-uniform sampler2D texture_normal;
 uniform sampler2D texture_emisive;
 uniform sampler2D texture_occlusion;
 uniform sampler2D texture_metalic;
@@ -36,13 +38,6 @@ uniform sampler2D texture_roughness;
 // extensions
 // KHR_materials_unlit
 uniform bool KHR_materials_unlit;
-
-// KHR_texture_transform
-uniform bool KHR_texture_transform;
-uniform struct KHR_texture_transform_data_t{
-  vec2 u_offset, u_scale;
-  float u_rotation;
-}KHR_texture_transform_data;
 
 uniform struct VRMData_t{
   vec3 shadeColor;
@@ -92,15 +87,6 @@ bool floatEquals(float a,float b){
 void main()
 {
   vec2 UV=fs_in.TexCoords;
-  if(KHR_texture_transform){
-    UV = (
-      mat3(1,0,0, 0,1,0, KHR_texture_transform_data.u_offset.x, KHR_texture_transform_data.u_offset.y, 1)*
-      mat3( cos(KHR_texture_transform_data.u_rotation), sin(KHR_texture_transform_data.u_rotation), 0,
-            -sin(KHR_texture_transform_data.u_rotation), cos(KHR_texture_transform_data.u_rotation), 0,
-            0,             0, 1)*
-      mat3(KHR_texture_transform_data.u_scale.x,0,0, 0,KHR_texture_transform_data.u_scale.y,0, 0,0,1)*
-      vec3(fs_in.TexCoords,1)).xy;
-  }
 
   vec4 color = texture(texture_base, UV);
   if(!hasBaseColorTexture){
@@ -121,7 +107,7 @@ void main()
   
   
 
-  vec3 normal=fs_in.Normal+texture(texture_normal,UV).xyz;
+  vec3 normal=fs_in.Normal;
 
   vec3 worldViewX=normalize(vec3(fs_in.Pos.z,0,-fs_in.Pos.x));
   vec3 worldViewY=cross(fs_in.Pos,worldViewX);

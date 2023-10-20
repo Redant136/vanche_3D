@@ -269,10 +269,14 @@ static void sortRenderQueue(VModel_t *vmodel)
 #define mtoon_texture_matcapTexture_gl_index 12
 #define mtoon_texture_rimMultiplyTexture_gl_index 13
 
+#define UBO_STREAM 0
+#define UBO_NODE_DYNAMIC 1
+#define UBO_INVBINDMAT_STATIC 2
+#define UBO_LIGHTS_STATIC 6
+
 void initVModel(VModel_t *vmodel)
 {
   vmodel->pos = glm::vec3(0, 0, 0);
-  vmodel->updatedPos = 1;
 
   // setup morph weights and matrix and nodeMatrix
   for (uint i = 0; i < vmodel->model.nodes.size(); i++)
@@ -334,12 +338,11 @@ void initVModel(VModel_t *vmodel)
   sortRenderQueue(vmodel);
 
   // morph targets
-  vmodel->updatedMorphWeight = (bool **)malloc(sizeof(bool *) * vmodel->model.meshes.size());
+  vmodel->updatedMorphWeight = (bool *)calloc(vmodel->model.meshes.size(), sizeof(bool));
   vmodel->morphs = (glm::vec3 ***)malloc(sizeof(glm::vec3 **) * vmodel->model.meshes.size());
   vmodel->morphsVBO = (uint **)malloc(sizeof(uint *) * vmodel->model.meshes.size());
   for (uint i = 0; i < vmodel->model.meshes.size(); i++)
   {
-    vmodel->updatedMorphWeight[i] = (bool *)calloc(vmodel->model.meshes[i].weights.size(), sizeof(bool));
     vmodel->morphs[i] = (glm::vec3 **)malloc(sizeof(glm::vec3 *) * vmodel->model.meshes[i].primitives.size());
     vmodel->morphsVBO[i] = (uint *)malloc(sizeof(uint) * vmodel->model.meshes[i].primitives.size());
     for (uint j = 0; j < vmodel->model.meshes[i].primitives.size(); j++)
@@ -549,26 +552,25 @@ void initVModel(VModel_t *vmodel)
   glGenSamplers(1, &vmodel->sampler_obj);
 
   // UBO
-  glUniformBlockBinding(WORLD.shaders.defaultShader.ID, glGetUniformBlockIndex(WORLD.shaders.defaultShader.ID, "Transforms"), 0);
-  glUniformBlockBinding(WORLD.shaders.mtoon.ID, glGetUniformBlockIndex(WORLD.shaders.mtoon.ID, "Transforms"), 0);
-  glUniformBlockBinding(WORLD.shaders.defaultShader.ID, glGetUniformBlockIndex(WORLD.shaders.defaultShader.ID, "Nodes"), 1);
-  glUniformBlockBinding(WORLD.shaders.mtoon.ID, glGetUniformBlockIndex(WORLD.shaders.mtoon.ID, "Nodes"), 1);
-  glUniformBlockBinding(WORLD.shaders.defaultShader.ID, glGetUniformBlockIndex(WORLD.shaders.defaultShader.ID, "InverseBindMatrices"), 2);
-  glUniformBlockBinding(WORLD.shaders.mtoon.ID, glGetUniformBlockIndex(WORLD.shaders.mtoon.ID, "InverseBindMatrices"), 2);
+  glUniformBlockBinding(WORLD.shaders.defaultShader.ID, glGetUniformBlockIndex(WORLD.shaders.defaultShader.ID, "Transforms"), UBO_STREAM);
+  glUniformBlockBinding(WORLD.shaders.mtoon.ID, glGetUniformBlockIndex(WORLD.shaders.mtoon.ID, "Transforms"), UBO_STREAM);
+  glUniformBlockBinding(WORLD.shaders.defaultShader.ID, glGetUniformBlockIndex(WORLD.shaders.defaultShader.ID, "Nodes"), UBO_NODE_DYNAMIC);
+  glUniformBlockBinding(WORLD.shaders.mtoon.ID, glGetUniformBlockIndex(WORLD.shaders.mtoon.ID, "Nodes"), UBO_NODE_DYNAMIC);
+  glUniformBlockBinding(WORLD.shaders.defaultShader.ID, glGetUniformBlockIndex(WORLD.shaders.defaultShader.ID, "InverseBindMatrices"), UBO_INVBINDMAT_STATIC);
+  glUniformBlockBinding(WORLD.shaders.mtoon.ID, glGetUniformBlockIndex(WORLD.shaders.mtoon.ID, "InverseBindMatrices"), UBO_INVBINDMAT_STATIC);
 
   glGenBuffers(1, &vmodel->UBO);
   glBindBuffer(GL_UNIFORM_BUFFER, vmodel->UBO);
   glBufferData(GL_UNIFORM_BUFFER, sizeof(glm::mat4) * 2 + sizeof(int) * 4 + sizeof(int) * MAX_JOINT_MATRIX, 0, GL_STREAM_DRAW);
   glBindBuffer(GL_UNIFORM_BUFFER, 0);
-  glBindBufferRange(GL_UNIFORM_BUFFER, 0, vmodel->UBO, 0, sizeof(glm::mat4) * 2 + sizeof(int) * 4 + sizeof(int) * MAX_JOINT_MATRIX);
+  glBindBufferRange(GL_UNIFORM_BUFFER, UBO_STREAM, vmodel->UBO, 0, sizeof(glm::mat4) * 2 + sizeof(int) * 4 + sizeof(int) * MAX_JOINT_MATRIX);
 
   assert(vmodel->model.nodes.size() < MAX_NODES);
   glGenBuffers(1, &vmodel->nodesUBO);
   glBindBuffer(GL_UNIFORM_BUFFER, vmodel->nodesUBO);
-  glBufferData(GL_UNIFORM_BUFFER, sizeof(glm::mat4) * MAX_NODES, 0, GL_DYNAMIC_DRAW);
-  glBufferSubData(GL_UNIFORM_BUFFER, 0, sizeof(glm::mat4) * vmodel->model.nodes.size(), vmodel->nodeTransforms);
+  glBufferData(GL_UNIFORM_BUFFER, sizeof(glm::mat4) * vmodel->model.nodes.size(), vmodel->nodeTransforms, GL_DYNAMIC_DRAW);
   glBindBuffer(GL_UNIFORM_BUFFER, 0);
-  glBindBufferRange(GL_UNIFORM_BUFFER, 1, vmodel->nodesUBO, 0, sizeof(glm::mat4) * MAX_NODES);
+  glBindBufferRange(GL_UNIFORM_BUFFER, UBO_NODE_DYNAMIC, vmodel->nodesUBO, 0, sizeof(glm::mat4) * vmodel->model.nodes.size());
 }
 int WORLDExecute(const gltf::glTFModel model)
 {
@@ -578,10 +580,18 @@ int WORLDExecute(const gltf::glTFModel model)
   WORLD.camera.pos = glm::vec3(0, 0, 1);
   WORLD.camera.rot = glm::vec4(1, 0, 0, 0);
   WORLD.camera.zoom = 45;
-  WORLD.lights[0] = {glm::vec3(5, 5, 5), glm::vec3(1, 1, 1), 0.3};
+  WORLD.lights[0] = {glm::vec3(5, 5, 5), 0.3, glm::vec3(1, 1, 1)};
   WORLD.shaders.defaultShader = createShader(defaultShaderSource);
   WORLD.shaders.skeletonShader = createShader(skeletonShaderSource);
   WORLD.shaders.mtoon = createShader(mtoonShaderSource);
+  glUniformBlockBinding(WORLD.shaders.defaultShader.ID, glGetUniformBlockIndex(WORLD.shaders.defaultShader.ID, "Lights"), UBO_LIGHTS_STATIC);
+  glUniformBlockBinding(WORLD.shaders.mtoon.ID, glGetUniformBlockIndex(WORLD.shaders.mtoon.ID, "Lights"), UBO_LIGHTS_STATIC);
+
+  glGenBuffers(1, &WORLD.lightsUBO);
+  glBindBuffer(GL_UNIFORM_BUFFER, WORLD.lightsUBO);
+  glBufferData(GL_UNIFORM_BUFFER, sizeof(glm::vec4) * 2 * MAX_LIGHT_SOURCES, WORLD.lights, GL_STATIC_DRAW);
+  glBindBuffer(GL_UNIFORM_BUFFER, 0);
+  glBindBufferRange(GL_UNIFORM_BUFFER, UBO_LIGHTS_STATIC, WORLD.lightsUBO, 0, sizeof(glm::vec4) * 2 * MAX_LIGHT_SOURCES);
   return 0;
 }
 
@@ -665,7 +675,7 @@ static int renderNode(const VModel_t &vmodel, const int _node, const glm::mat4 m
       glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, vmodel.VBO[indexAccessor.bufferView]);
 
       bool hasBaseColorTexture = 0;
-      bool doubleSided = 0;
+      bool doubleSided = 1;
       if (primitive.material > -1)
       {
         const gltf::Material &material = vmodel.model.materials[primitive.material];
@@ -847,7 +857,7 @@ void drawSkeleton(const VModel_t &vmodel, glm::mat4 modelTransform, glm::mat4 vi
 void vmodelSetMorphWeight(VModel_t *vmodel, uint mesh, uint weight, float weightVal)
 {
   vmodel->model.meshes[mesh].weights[weight] = weightVal;
-  vmodel->updatedMorphWeight[mesh][weight] = 1;
+  vmodel->updatedMorphWeight[mesh] = 1;
 }
 
 void vmodelVRMSetMorphWeight(VModel_t *vmodel, uint mesh, std::string target, float weight)
@@ -863,18 +873,18 @@ void vmodelVRMSetMorphWeight(VModel_t *vmodel, uint mesh, std::string target, fl
     if (targetNames->targetNames[i] == target)
     {
       vmodel->model.meshes[mesh].weights[i] = weight;
-      vmodel->updatedMorphWeight[mesh][i] = 1;
+      vmodel->updatedMorphWeight[mesh] = 1;
     }
   }
 }
 
-void vmodelSetVRMExpression(VModel_t *vmodel, float *values)
+void vmodelSetVRMExpressions(VModel_t *vmodel, float *values)
 {
   typedef gltf::Extensions::VRMC_vrm::ExpressionPresets ExpressionPresets;
   int index = gltf::findExtensionIndex("VRMC_vrm", vmodel->model);
   if (index < 0)
   {
-    fprintf(stderr, "Model is not a VRM model");
+    fprintf(stderr, "Model is not a VRM model\n");
     return;
   }
   gltf::Extensions::VRMC_vrm *VRM = (gltf::Extensions::VRMC_vrm *)vmodel->model.extensions[index].data;
@@ -891,15 +901,21 @@ void vmodelSetVRMExpression(VModel_t *vmodel, float *values)
     blockBlends[2] = MAX(blockBlends[2], exp.overrideMouth);
   }
 #define valueof(exp) values[offsetof(ExpressionPresets::Preset, exp) / sizeof(ExpressionPresets::Expression)]
-#define SetMorphTargetWeight(exp, WEIGHT)                                                                                         \
-  for (int i = 0; i < VRM->expressions.preset.exp.morphTargetBinds.size(); i++)                                                   \
-  {                                                                                                                               \
-    const ExpressionPresets::Expression::MorphTargetBind &morphTarget = VRM->expressions.preset.exp.morphTargetBinds[i];          \
-    vmodel->updatedMorphWeight[vmodel->model.nodes[morphTarget.node].mesh][morphTarget.index] = 1;                                \
-    vmodel->model.meshes[vmodel->model.nodes[morphTarget.node].mesh].weights[morphTarget.weight] = morphTarget.weight * (WEIGHT); \
+#define SetMorphTargetWeight(exp, WEIGHT)                                                                                        \
+  for (int i = 0; valueof(exp) > 0 && i < VRM->expressions.preset.exp.morphTargetBinds.size(); i++)                              \
+  {                                                                                                                              \
+    const ExpressionPresets::Expression::MorphTargetBind &morphTarget = VRM->expressions.preset.exp.morphTargetBinds[i];         \
+    vmodel->updatedMorphWeight[vmodel->model.nodes[morphTarget.node].mesh] = 1;                                                  \
+    vmodel->model.meshes[vmodel->model.nodes[morphTarget.node].mesh].weights[morphTarget.index] = morphTarget.weight * (WEIGHT); \
+  }                                                                                                                              \
+  for (int i = 0; valueof(exp) > 0 && i < VRM->expressions.preset.exp.materialColorBinds.size(); i++)                            \
+  {                                                                                                                              \
+    fprintf(stderr, "MaterialColorBinds not implemented yet.\n");                                                                \
+  }                                                                                                                              \
+  for (int i = 0; valueof(exp) > 0 && i < VRM->expressions.preset.exp.textureTransformBinds.size(); i++)                         \
+  {                                                                                                                              \
+    fprintf(stderr, "TextureTransformBinds not implemented yet.\n");                                                             \
   }
-  // TODO(ANT) Material Color bind
-  // TODO(ANT) Texture transform
 
   // Blink
   if (blockBlends[0] != ExpressionPresets::Expression::block)
@@ -968,16 +984,23 @@ void vmodelSetVRMExpression(VModel_t *vmodel, float *values)
     SetMorphTargetWeight(ee, valueof(ee) * factor);
     SetMorphTargetWeight(oh, valueof(oh) * factor);
   }
+
+  SetMorphTargetWeight(happy, valueof(happy));
+  SetMorphTargetWeight(angry, valueof(angry));
+  SetMorphTargetWeight(sad, valueof(sad));
+  SetMorphTargetWeight(relaxed, valueof(relaxed));
+  SetMorphTargetWeight(surprised, valueof(surprised));
+
 #undef valueof
 #undef SetMorphTargetWeight
 }
 
-int renderVModel(VModel_t &vmodel)
+int renderVModel(VModel_t vmodel)
 {
   glUseProgram(WORLD.shaders.defaultShader.ID);
 
   // model space to world space
-  if (WORLD.camera.updated || vmodel.updatedPos)
+  if (WORLD.camera.updated)
   {
     WORLD.camera.viewMatrix = glm::mat4_cast(vec4ToQua(WORLD.camera.rot)) * glm::lookAt(WORLD.camera.pos, WORLD.camera.pos + WORLD.FRONT, WORLD.UP);
     WORLD.camera.projectionMatrix = glm::perspective(WORLD.camera.zoom, (float)windowData.realWindowWidth / windowData.realWindowHeight, 0.1f, 100.f);
@@ -989,7 +1012,6 @@ int renderVModel(VModel_t &vmodel)
     // world space to camera space
     glm::mat4 transforms[2] = {WORLD.camera.projectionMatrix * WORLD.camera.viewMatrix * modelTransform, modelTransform};
     WORLD.camera.updated = false;
-    vmodel.updatedPos = false;
 
     glBindBuffer(GL_UNIFORM_BUFFER, vmodel.UBO);
     glBufferSubData(GL_UNIFORM_BUFFER, 0, sizeof(glm::mat4) * 2, transforms);
@@ -1002,17 +1024,51 @@ int renderVModel(VModel_t &vmodel)
     renderNode(vmodel, vmodel.renderQueue[i], vmodel.nodeTransforms[vmodel.renderQueue[i]]);
   }
   // drawSkeleton(vmodel, modelTransform, viewMatrix, projectionMatrix);
-
-  // update pos and shit
   return 0;
 }
 
 int updateVModel(VModel_t *vmodel)
 {
   // update morphs
+  for (uint i = 0; i < vmodel->model.meshes.size(); i++)
+  {
+    if (vmodel->updatedMorphWeight[i])
+    {
+      for (uint j = 0; j < vmodel->model.meshes[i].primitives.size(); j++)
+      {
+        glBindBuffer(GL_ARRAY_BUFFER, vmodel->morphsVBO[i][j]);
+        const gltf::Mesh::Primitive &primitive = vmodel->model.meshes[i].primitives[j];
+        memset(vmodel->morphs[i][j], 0, sizeof(glm::vec3) * vmodel->model.accessors[primitive.attributes.POSITION].count * 3);
+        for (uint k = 0; k < vmodel->model.meshes[i].primitives[j].targets.size(); k++)
+        {
+          for (uint l = 0; l < vmodel->model.accessors[primitive.attributes.POSITION].count; l++)
+          {
+            if (vmodel->model.meshes[i].primitives[j].targets[k].POSITION != -1)
+            {
+              membuild(glm::vec3, pos, gltf::getDataFromAccessor(vmodel->model, vmodel->model.accessors[vmodel->model.meshes[i].primitives[j].targets[k].POSITION], l));
+              vmodel->morphs[i][j][l * 3 + 0] += vmodel->model.meshes[i].weights[k] * pos;
+            }
+            if (vmodel->model.meshes[i].primitives[j].targets[k].NORMAL != -1)
+            {
+              membuild(glm::vec3, normal, gltf::getDataFromAccessor(vmodel->model, vmodel->model.accessors[vmodel->model.meshes[i].primitives[j].targets[k].NORMAL], l));
+              vmodel->morphs[i][j][l * 3 + 1] += vmodel->model.meshes[i].weights[k] * normal;
+            }
+            if (vmodel->model.meshes[i].primitives[j].targets[k].TANGENT != -1)
+            {
+              membuild(glm::vec3, tangent, gltf::getDataFromAccessor(vmodel->model, vmodel->model.accessors[vmodel->model.meshes[i].primitives[j].targets[k].TANGENT], l));
+              vmodel->morphs[i][j][l * 3 + 2] += vmodel->model.meshes[i].weights[k] * tangent;
+            }
+          }
+        }
+        glBufferSubData(GL_ARRAY_BUFFER, 0, sizeof(glm::vec3) * vmodel->model.accessors[primitive.attributes.POSITION].count * 3, vmodel->morphs[i][j]);
+      }
+      vmodel->updatedMorphWeight[i] = 0;
+    }
+  }
 
   // TODO(ANT) update phys
 
+  // node transforms
   glBindBuffer(GL_UNIFORM_BUFFER, vmodel->nodesUBO);
   glBufferSubData(GL_UNIFORM_BUFFER, 0, sizeof(glm::mat4) * vmodel->model.nodes.size(), vmodel->nodeTransforms);
   glBindBuffer(GL_UNIFORM_BUFFER, 0);
@@ -1044,7 +1100,6 @@ void freeVModel(VModel_t *vmodel)
       free(vmodel->morphs[i][j]);
     }
     glDeleteBuffers(vmodel->model.meshes[i].primitives.size(), vmodel->morphsVBO[i]);
-    free(vmodel->updatedMorphWeight[i]);
     free(vmodel->morphs[i]);
     free(vmodel->morphsVBO[i]);
   }
@@ -1052,5 +1107,6 @@ void freeVModel(VModel_t *vmodel)
   free(vmodel->morphs);
   free(vmodel->morphsVBO);
   glDeleteBuffers(1, &vmodel->UBO);
+  glDeleteBuffers(1, &vmodel->nodesUBO);
   gltf::freeModel(&vmodel->model);
 }

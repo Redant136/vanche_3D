@@ -593,7 +593,7 @@ static std::vector<gltf::Extension> deserialize_extensions(json extensions)
       }
       if (item.contains("expressions"))
       {
-        if (item["expression"].contains("preset"))
+        if (item["expressions"].contains("preset"))
         {
 #define BlockBlendParse(dst, src)                                           \
   std::string str = src;                                                    \
@@ -610,28 +610,28 @@ static std::vector<gltf::Extension> deserialize_extensions(json extensions)
     dst = gltf::Extensions::VRMC_vrm::ExpressionPresets::Expression::blend; \
   }
 #define ExpressionParse(EXP)                                                                                                                                                \
-  if (item["expression"]["preset"].contains(#EXP))                                                                                                                          \
+  if (item["expressions"]["preset"].contains(#EXP))                                                                                                                          \
   {                                                                                                                                                                         \
-    if (item["expression"]["preset"][#EXP].contains("morphTargetBinds"))                                                                                                    \
+    if (item["expressions"]["preset"][#EXP].contains("morphTargetBinds"))                                                                                                    \
     {                                                                                                                                                                       \
       vrm->expressions.preset.EXP.morphTargetBinds =                                                                                                                        \
-          std::vector<gltf::Extensions::VRMC_vrm::ExpressionPresets::Expression::MorphTargetBind>(item["expression"]["preset"][#EXP]["morphTargetBinds"].size());           \
-      for (int i = 0; i < item["expression"]["preset"][#EXP]["morphTargetBinds"].size(); i++)                                                                               \
+          std::vector<gltf::Extensions::VRMC_vrm::ExpressionPresets::Expression::MorphTargetBind>(item["expressions"]["preset"][#EXP]["morphTargetBinds"].size());           \
+      for (int i = 0; i < item["expressions"]["preset"][#EXP]["morphTargetBinds"].size(); i++)                                                                               \
       {                                                                                                                                                                     \
-        vrm->expressions.preset.EXP.morphTargetBinds[i].node = item["expression"]["preset"][#EXP]["morphTargetBinds"][i]["node"].get<int>();                                \
-        vrm->expressions.preset.EXP.morphTargetBinds[i].index = item["expression"]["preset"][#EXP]["morphTargetBinds"][i]["index"].get<int>();                              \
-        vrm->expressions.preset.EXP.morphTargetBinds[i].weight = item["expression"]["preset"][#EXP]["morphTargetBinds"][i]["weight"].get<float>();                          \
+        vrm->expressions.preset.EXP.morphTargetBinds[i].node = item["expressions"]["preset"][#EXP]["morphTargetBinds"][i]["node"].get<int>();                                \
+        vrm->expressions.preset.EXP.morphTargetBinds[i].index = item["expressions"]["preset"][#EXP]["morphTargetBinds"][i]["index"].get<int>();                              \
+        vrm->expressions.preset.EXP.morphTargetBinds[i].weight = item["expressions"]["preset"][#EXP]["morphTargetBinds"][i]["weight"].get<float>();                          \
       }                                                                                                                                                                     \
     }                                                                                                                                                                       \
-    if (item["expression"]["preset"][#EXP].contains("materialColorBinds"))                                                                                                  \
+    if (item["expressions"]["preset"][#EXP].contains("materialColorBinds"))                                                                                                  \
     {                                                                                                                                                                       \
       vrm->expressions.preset.EXP.materialColorBinds =                                                                                                                      \
-          std::vector<gltf::Extensions::VRMC_vrm::ExpressionPresets::Expression::MaterialColorBind>(item["expression"]["preset"][#EXP]["materialColorBinds"].size());       \
+          std::vector<gltf::Extensions::VRMC_vrm::ExpressionPresets::Expression::MaterialColorBind>(item["expressions"]["preset"][#EXP]["materialColorBinds"].size());       \
                                                                                                                                                                             \
-      for (int i = 0; i < item["expression"]["preset"][#EXP]["materialColorBinds"].size(); i++)                                                                             \
+      for (int i = 0; i < item["expressions"]["preset"][#EXP]["materialColorBinds"].size(); i++)                                                                             \
       {                                                                                                                                                                     \
-        vrm->expressions.preset.EXP.materialColorBinds[i].material = item["expression"]["preset"][#EXP]["materialColorBinds"][i]["material"].get<int>();                    \
-        std::string str = item["expression"]["preset"][#EXP]["materialColorBinds"][i]["type"].get<std::string>();                                                           \
+        vrm->expressions.preset.EXP.materialColorBinds[i].material = item["expressions"]["preset"][#EXP]["materialColorBinds"][i]["material"].get<int>();                    \
+        std::string str = item["expressions"]["preset"][#EXP]["materialColorBinds"][i]["type"].get<std::string>();                                                           \
         if (str == "color")                                                                                                                                                 \
         {                                                                                                                                                                   \
           vrm->expressions.preset.EXP.materialColorBinds[i].type = gltf::Extensions::VRMC_vrm::ExpressionPresets::Expression::MaterialColorBind::color;                     \
@@ -656,46 +656,46 @@ static std::vector<gltf::Extension> deserialize_extensions(json extensions)
         {                                                                                                                                                                   \
           vrm->expressions.preset.EXP.materialColorBinds[i].type = gltf::Extensions::VRMC_vrm::ExpressionPresets::Expression::MaterialColorBind::outlineColor;              \
         }                                                                                                                                                                   \
-        vrm->expressions.preset.EXP.materialColorBinds[i].targetValue[0] = item["expression"]["preset"][#EXP]["materialColorBinds"][i]["targetValue"][0].get<float>();      \
-        vrm->expressions.preset.EXP.materialColorBinds[i].targetValue[1] = item["expression"]["preset"][#EXP]["materialColorBinds"][i]["targetValue"][1].get<float>();      \
-        vrm->expressions.preset.EXP.materialColorBinds[i].targetValue[2] = item["expression"]["preset"][#EXP]["materialColorBinds"][i]["targetValue"][2].get<float>();      \
-        vrm->expressions.preset.EXP.materialColorBinds[i].targetValue[3] = item["expression"]["preset"][#EXP]["materialColorBinds"][i]["targetValue"][3].get<float>();      \
+        vrm->expressions.preset.EXP.materialColorBinds[i].targetValue[0] = item["expressions"]["preset"][#EXP]["materialColorBinds"][i]["targetValue"][0].get<float>();      \
+        vrm->expressions.preset.EXP.materialColorBinds[i].targetValue[1] = item["expressions"]["preset"][#EXP]["materialColorBinds"][i]["targetValue"][1].get<float>();      \
+        vrm->expressions.preset.EXP.materialColorBinds[i].targetValue[2] = item["expressions"]["preset"][#EXP]["materialColorBinds"][i]["targetValue"][2].get<float>();      \
+        vrm->expressions.preset.EXP.materialColorBinds[i].targetValue[3] = item["expressions"]["preset"][#EXP]["materialColorBinds"][i]["targetValue"][3].get<float>();      \
       }                                                                                                                                                                     \
     }                                                                                                                                                                       \
-    if (item["expression"]["preset"][#EXP].contains("textureTransformBinds"))                                                                                               \
+    if (item["expressions"]["preset"][#EXP].contains("textureTransformBinds"))                                                                                               \
     {                                                                                                                                                                       \
       vrm->expressions.preset.EXP.textureTransformBinds =                                                                                                                   \
-          std::vector<gltf::Extensions::VRMC_vrm::ExpressionPresets::Expression::TextureTransformBind>(item["expression"]["preset"][#EXP]["textureTransformBinds"].size()); \
-      for (int i = 0; i < item["expression"]["preset"][#EXP]["textureTransformBinds"].size(); i++)                                                                          \
+          std::vector<gltf::Extensions::VRMC_vrm::ExpressionPresets::Expression::TextureTransformBind>(item["expressions"]["preset"][#EXP]["textureTransformBinds"].size()); \
+      for (int i = 0; i < item["expressions"]["preset"][#EXP]["textureTransformBinds"].size(); i++)                                                                          \
       {                                                                                                                                                                     \
-        vrm->expressions.preset.EXP.textureTransformBinds[i].material = item["expression"]["preset"][#EXP]["textureTransformBinds"][i]["material"].get<int>();              \
-        if (item["expression"]["preset"][#EXP]["textureTransformBinds"][i].contains("scale"))                                                                               \
+        vrm->expressions.preset.EXP.textureTransformBinds[i].material = item["expressions"]["preset"][#EXP]["textureTransformBinds"][i]["material"].get<int>();              \
+        if (item["expressions"]["preset"][#EXP]["textureTransformBinds"][i].contains("scale"))                                                                               \
         {                                                                                                                                                                   \
-          vrm->expressions.preset.EXP.textureTransformBinds[i].scale[0] = item["expression"]["preset"][#EXP]["textureTransformBinds"][i]["scale"][0].get<float>();          \
-          vrm->expressions.preset.EXP.textureTransformBinds[i].scale[1] = item["expression"]["preset"][#EXP]["textureTransformBinds"][i]["scale"][1].get<float>();          \
+          vrm->expressions.preset.EXP.textureTransformBinds[i].scale[0] = item["expressions"]["preset"][#EXP]["textureTransformBinds"][i]["scale"][0].get<float>();          \
+          vrm->expressions.preset.EXP.textureTransformBinds[i].scale[1] = item["expressions"]["preset"][#EXP]["textureTransformBinds"][i]["scale"][1].get<float>();          \
         }                                                                                                                                                                   \
-        if (item["expression"]["preset"][#EXP]["textureTransformBinds"][i].contains("offset"))                                                                              \
+        if (item["expressions"]["preset"][#EXP]["textureTransformBinds"][i].contains("offset"))                                                                              \
         {                                                                                                                                                                   \
-          vrm->expressions.preset.EXP.textureTransformBinds[i].offset[0] = item["expression"]["preset"][#EXP]["textureTransformBinds"][i]["offset"][0].get<float>();        \
-          vrm->expressions.preset.EXP.textureTransformBinds[i].offset[1] = item["expression"]["preset"][#EXP]["textureTransformBinds"][i]["offset"][1].get<float>();        \
+          vrm->expressions.preset.EXP.textureTransformBinds[i].offset[0] = item["expressions"]["preset"][#EXP]["textureTransformBinds"][i]["offset"][0].get<float>();        \
+          vrm->expressions.preset.EXP.textureTransformBinds[i].offset[1] = item["expressions"]["preset"][#EXP]["textureTransformBinds"][i]["offset"][1].get<float>();        \
         }                                                                                                                                                                   \
       }                                                                                                                                                                     \
     }                                                                                                                                                                       \
-    if (item["expression"]["preset"][#EXP].contains("isBinary"))                                                                                                            \
+    if (item["expressions"]["preset"][#EXP].contains("isBinary"))                                                                                                            \
     {                                                                                                                                                                       \
-      vrm->expressions.preset.EXP.isBinary = item["expression"]["preset"][#EXP]["isBinary"].get<bool>();                                                                    \
+      vrm->expressions.preset.EXP.isBinary = item["expressions"]["preset"][#EXP]["isBinary"].get<bool>();                                                                    \
     }                                                                                                                                                                       \
-    if (item["expression"]["preset"][#EXP].contains("overrideBlink"))                                                                                                       \
+    if (item["expressions"]["preset"][#EXP].contains("overrideBlink"))                                                                                                       \
     {                                                                                                                                                                       \
-      BlockBlendParse(vrm->expressions.preset.EXP.overrideBlink, item["expression"]["preset"][#EXP]["overrideBlink"].get<std::string>());                                   \
+      BlockBlendParse(vrm->expressions.preset.EXP.overrideBlink, item["expressions"]["preset"][#EXP]["overrideBlink"].get<std::string>());                                   \
     }                                                                                                                                                                       \
-    if (item["expression"]["preset"][#EXP].contains("overrideLookAt"))                                                                                                      \
+    if (item["expressions"]["preset"][#EXP].contains("overrideLookAt"))                                                                                                      \
     {                                                                                                                                                                       \
-      BlockBlendParse(vrm->expressions.preset.EXP.overrideLookAt, item["expression"]["preset"][#EXP]["overrideLookAt"].get<std::string>());                                 \
+      BlockBlendParse(vrm->expressions.preset.EXP.overrideLookAt, item["expressions"]["preset"][#EXP]["overrideLookAt"].get<std::string>());                                 \
     }                                                                                                                                                                       \
-    if (item["expression"]["preset"][#EXP].contains("overrideMouth"))                                                                                                       \
+    if (item["expressions"]["preset"][#EXP].contains("overrideMouth"))                                                                                                       \
     {                                                                                                                                                                       \
-      BlockBlendParse(vrm->expressions.preset.EXP.overrideLookAt, item["expression"]["preset"][#EXP]["overrideMouth"].get<std::string>());                                  \
+      BlockBlendParse(vrm->expressions.preset.EXP.overrideLookAt, item["expressions"]["preset"][#EXP]["overrideMouth"].get<std::string>());                                  \
     }                                                                                                                                                                       \
   }
           ExpressionParse(happy);

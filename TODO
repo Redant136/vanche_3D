@@ -1,23 +1,18 @@
-VRMC_vrm expression
-  update morph weights function
-set lights as UBO
-VRMC_node_constraint
-VRMC_springBone
-VRMC_vrm look_at
-default shader lighting is broken rn!!!
+emotion morph
 
 dlib face detection http://dlib.net/webcam_face_pose_ex.cpp.html
 uv animation
 animation
-morph target (calc each frame)
-  test
+VRMC_node_constraint
+VRMC_springBone
 
+VRMC_vrm look_at
+VRMC_vrm expression materialColorBinds
+VRMC_vrm expression textureTransformBinds
 gltf camera
 GI shading
 finish screen size outline mode
 multiple texcoord
 min max accessor
-recheck sparse accessors
 fix emissive texture
-check default shader lighting
 VRMC_vrm third person

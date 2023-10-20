@@ -11,8 +11,9 @@
 struct LightSource_t
 {
   glm::vec3 pos;
-  glm::vec3 color;
   float intensity;
+  glm::vec3 color;
+  float _padding;
 };
 struct Camera_t
 {
@@ -31,6 +32,7 @@ extern struct WORLD_t
   glm::vec3 UP;
   glm::vec3 FRONT;
   glm::vec3 RIGHT;
+  uint lightsUBO;
   LightSource_t lights[MAX_LIGHT_SOURCES];
   Camera_t camera;
   struct
@@ -44,7 +46,6 @@ struct VModel_t
 {
   std::string path;
   gltf::glTFModel model;
-  bool updatedPos;
   glm::vec3 pos;
   uint *renderQueue;
   glm::mat4 *nodeTransforms;
@@ -53,7 +54,7 @@ struct VModel_t
   uint *VBO;
   uint *gltfImageTextureIndex;
   uint sampler_obj;
-  bool **updatedMorphWeight;
+  bool *updatedMorphWeight;
   glm::vec3 ***morphs;
   uint **morphsVBO;
   uint UBO;
@@ -84,10 +85,10 @@ void shaderSetMat4Arr(const Shader_t &shader, const std::string &name, uint size
 void initVModel(VModel_t *vmodel);
 int WORLDExecute(const gltf::glTFModel model);
 int updateVModel(VModel_t *vmodel);
-int renderVModel(VModel_t &vmodel);
+int renderVModel(VModel_t vmodel);
 void freeVModel(VModel_t *vmodel);
 
 void vmodelSetMorphWeight(VModel_t *vmodel, uint mesh, uint weight, float weightVal);
 void vmodelVRMSetMorphWeight(VModel_t *vmodel, uint mesh, std::string target, float weight);
-void vmodelSetVRMExpressions(VModel_t *vmodel, float *value);
+void vmodelSetVRMExpressions(VModel_t *vmodel, float *values);
 #endif
