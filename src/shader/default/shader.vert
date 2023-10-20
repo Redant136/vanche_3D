@@ -16,12 +16,12 @@ layout (location = 10) in vec3 a_normMorph;
 layout (location = 11) in vec3 a_tanMorph;
 
 
-layout (std140,packed) uniform Transforms{
+layout (std140) uniform Transforms{
     mat4 worldTransform;// camera and global model transform
     mat4 model; // global model transform
     int nodeIndex;// specific node transform index
-    int _pad1[3]; // for padding issues
-    int jointNodes[MAX_JOINT_MATRIX]; // array of joint nodes index
+    float _pad1,_pad2,_pad3; // for padding issues
+    ivec4 jointNodes[MAX_JOINT_MATRIX>>1]; // array of joint nodes index, I hate padding
 };
 
 layout (std140) uniform Nodes{
@@ -57,16 +57,24 @@ void main()
     mat4 skinMatrix = mat4(0.f);
     mat4 invNode = inverse(nodes[nodeIndex]);
     if(a_joints.x<jointNodes.length()&&a_joints.x>-1){
-        skinMatrix+=a_weights.x*invNode*nodes[jointNodes[int(a_joints.x)]]*invBindMatrix[int(a_joints.x)];
+        int i=int(a_joints.x);
+        i=(i&3)==0?jointNodes[i>>2].x:((i&3)==1?jointNodes[i>>2].y:((i&3)==2?jointNodes[i>>2].z:jointNodes[i>>2].w));
+        skinMatrix+=a_weights.x*invNode*nodes[i]*invBindMatrix[int(a_joints.x)];
     }
     if(a_joints.y<jointNodes.length()&&a_joints.y>-1){
-        skinMatrix+=a_weights.y*invNode*nodes[jointNodes[int(a_joints.y)]]*invBindMatrix[int(a_joints.y)];
+        int i=int(a_joints.y);
+        i=(i&3)==0?jointNodes[i>>2].x:((i&3)==1?jointNodes[i>>2].y:((i&3)==2?jointNodes[i>>2].z:jointNodes[i>>2].w));
+        skinMatrix+=a_weights.y*invNode*nodes[i]*invBindMatrix[int(a_joints.y)];
     }
     if(a_joints.z<jointNodes.length()&&a_joints.z>-1){
-        skinMatrix+=a_weights.z*invNode*nodes[jointNodes[int(a_joints.z)]]*invBindMatrix[int(a_joints.z)];
+        int i=int(a_joints.z);
+        i=(i&3)==0?jointNodes[i>>2].x:((i&3)==1?jointNodes[i>>2].y:((i&3)==2?jointNodes[i>>2].z:jointNodes[i>>2].w));
+        skinMatrix+=a_weights.z*invNode*nodes[i]*invBindMatrix[int(a_joints.z)];
     }
     if(a_joints.w<jointNodes.length()&&a_joints.w>-1){
-        skinMatrix+=a_weights.w*invNode*nodes[jointNodes[int(a_joints.w)]]*invBindMatrix[int(a_joints.w)];   
+        int i=int(a_joints.w);
+        i=(i&3)==0?jointNodes[i>>2].x:((i&3)==1?jointNodes[i>>2].y:((i&3)==2?jointNodes[i>>2].z:jointNodes[i>>2].w));
+        skinMatrix+=a_weights.w*invNode*nodes[i]*invBindMatrix[int(a_joints.w)];   
     }
     if(skinMatrix == mat4(0.f))
     {
