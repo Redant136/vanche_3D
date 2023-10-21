@@ -94,21 +94,15 @@ void main()
   }else{
     color *= baseColorFactor;
   }
-  // if(!hasBaseColorTexture){
-  //   color = baseColorFactor;
-  // }else{
-  //   color *= baseColorFactor;
-  // }
 
   if(color.w<alphaCutoff){
     discard;
     return;
   }
-  
-  
 
   vec3 normal=fs_in.Normal;
 
+  // MATCAP
   vec3 worldViewX=normalize(vec3(fs_in.Pos.z,0,-fs_in.Pos.x));
   vec3 worldViewY=cross(fs_in.Pos,worldViewX);
   vec2 matcapUV=vec2(dot(worldViewX,normal),dot(worldViewY,normal))* 0.495 + 0.5;
@@ -122,6 +116,7 @@ void main()
   color.xyz+=rim;
 
 
+  // shade toony
   for(int i = 0; i < lights.length(); i++)
   {
     if(lights[i].Intensity<=0){

@@ -35,7 +35,6 @@ layout (std140) uniform InverseBindMatrices{
 uniform int texCoordIndex;
 uniform sampler2D texture_normal;
 // KHR_texture_transform
-uniform bool KHR_texture_transform;
 uniform struct KHR_texture_transform_data_t{
   vec2 u_offset, u_scale;
   float u_rotation;
@@ -62,15 +61,13 @@ void main()
         vs_out.TexCoords=a_texCoords_2;
     }
     vec2 UV=vs_out.TexCoords;
-    if(KHR_texture_transform){
-        UV = (
+    UV = (
         mat3(1,0,0, 0,1,0, KHR_texture_transform_data.u_offset.x, KHR_texture_transform_data.u_offset.y, 1)*
         mat3( cos(KHR_texture_transform_data.u_rotation), sin(KHR_texture_transform_data.u_rotation), 0,
                 -sin(KHR_texture_transform_data.u_rotation), cos(KHR_texture_transform_data.u_rotation), 0,
                 0,             0, 1)*
         mat3(KHR_texture_transform_data.u_scale.x,0,0, 0,KHR_texture_transform_data.u_scale.y,0, 0,0,1)*
         vec3(vs_out.TexCoords,1)).xy;
-    }
     vs_out.TexCoords=UV;
 
     mat4 skinMatrix = mat4(0.f);

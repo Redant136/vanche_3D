@@ -492,6 +492,13 @@ void initVModel(VModel_t *vmodel)
     vmodel->VAO[i] = primitivesVAO;
   }
 
+  vmodel->materialColorTransforms = (glm::vec4 *)calloc(vmodel->model.materials.size() * 6, sizeof(glm::vec4));
+  vmodel->materialTextureTransform = (glm::vec2 *)calloc(vmodel->model.materials.size() * 2, sizeof(glm::vec2));
+  for (uint i = 0; i < vmodel->model.materials.size(); i++)
+  {
+    vmodel->materialTextureTransform[i * 2 + 1] = glm::vec2(1, 1);
+  }
+
   // textures
   vmodel->gltfImageTextureIndex = (uint *)malloc(vmodel->model.images.size() * sizeof(uint));
   for (uint i = 0; i < vmodel->model.images.size(); i++)
@@ -597,22 +604,6 @@ int WORLDExecute(const gltf::glTFModel model)
 
 static void bindTexture(const VModel_t &vmodel, const Shader_t &currentShader, const gltf::Texture &texture, uint &texCoord, uint sampler_obj, uint GL_TextureIndex)
 {
-  if (gltf::findExtensionIndex("KHR_texture_transform", texture) != -1)
-  {
-    gltf::Extensions::KHR_texture_transform *ext = (gltf::Extensions::KHR_texture_transform *)texture.extensions[gltf::findExtensionIndex("KHR_texture_transform", texture)].data;
-    texCoord = ext->texCoord;
-    membuild(glm::vec2, offset, ext->offset);
-    membuild(glm::vec2, scale, ext->scale);
-    shaderSetBool(currentShader, "KHR_texture_transform", true);
-    shaderSetVec2(currentShader, "KHR_texture_transform_data.u_offset", offset);
-    shaderSetFloat(currentShader, "KHR_texture_transform_data.u_rotation", ext->rotation);
-    shaderSetVec2(currentShader, "u_scale", scale);
-  }
-  else
-  {
-    shaderSetBool(currentShader, "KHR_texture_transform", false);
-  }
-
   if (texture.sampler != -1)
   {
     const gltf::Sampler &sampler = vmodel.model.samplers[texture.sampler];
@@ -698,6 +689,7 @@ static int renderNode(const VModel_t &vmodel, const int _node, const glm::mat4 m
         if (material.pbrMetallicRoughness.baseColorFactor.size() > 0)
         {
           membuild(glm::vec4, baseColorFactor, material.pbrMetallicRoughness.baseColorFactor.data());
+          baseColorFactor += vmodel.materialColorTransforms[primitive.material * 6 + gltf::Extensions::VRMC_vrm::ExpressionPresets::Expression::MaterialColorBind::color];
           shaderSetVec4(currentShader, "baseColorFactor", baseColorFactor);
         }
         else
@@ -731,6 +723,28 @@ static int renderNode(const VModel_t &vmodel, const int _node, const glm::mat4 m
           glBindTexture(GL_TEXTURE_2D, 0);
         }
 
+        // KHR_texture_transform
+        if (gltf::findExtensionIndex("KHR_texture_transform", material) != -1)
+        {
+          gltf::Extensions::KHR_texture_transform *ext = (gltf::Extensions::KHR_texture_transform *)material.extensions[gltf::findExtensionIndex("KHR_texture_transform", material)].data;
+          texCoord = ext->texCoord;
+          membuild(glm::vec2, offset, ext->offset);
+          membuild(glm::vec2, scale, ext->scale);
+          offset += vmodel.materialTextureTransform[primitive.material * 2];
+          scale += vmodel.materialTextureTransform[primitive.material * 2 + 1];
+          shaderSetVec2(currentShader, "KHR_texture_transform_data.u_offset", offset);
+          shaderSetFloat(currentShader, "KHR_texture_transform_data.u_rotation", ext->rotation);
+          shaderSetVec2(currentShader, "KHR_texture_transform_data.u_scale", scale);
+        }
+        else
+        {
+          glm::vec2 offset = vmodel.materialTextureTransform[primitive.material * 2];
+          glm::vec2 scale = vmodel.materialTextureTransform[primitive.material * 2 + 1];
+          shaderSetVec2(currentShader, "KHR_texture_transform_data.u_offset", offset);
+          shaderSetFloat(currentShader, "KHR_texture_transform_data.u_rotation", 0);
+          shaderSetVec2(currentShader, "KHR_texture_transform_data.u_scale", scale);
+        }
+
         if (material.alphaMode == gltf::Material::OPAQUE)
         {
           glDisable(GL_BLEND);
@@ -752,8 +766,9 @@ static int renderNode(const VModel_t &vmodel, const int _node, const glm::mat4 m
             glDepthMask(false);
           else
             glDepthMask(true);
-          shaderSetVec3(currentShader, "VRMData.shadeColor",
-                        glm::vec3(vrmMtoon->shadeColorFactor[0], vrmMtoon->shadeColorFactor[1], vrmMtoon->shadeColorFactor[2]));
+          membuild(glm::vec3, shadeColor, vrmMtoon->shadeColorFactor);
+          shadeColor += glm::vec3(vmodel.materialColorTransforms[primitive.material * 6 + gltf::Extensions::VRMC_vrm::ExpressionPresets::Expression::MaterialColorBind::shadeColor]);
+          shaderSetVec3(currentShader, "VRMData.shadeColor", shadeColor);
           if (vrmMtoon->shadeMultiplyTexture.index != -1)
           {
             assert(texCoord == vrmMtoon->shadeMultiplyTexture.texCoord);
@@ -781,8 +796,9 @@ static int renderNode(const VModel_t &vmodel, const int _node, const glm::mat4 m
             shaderSetFloat(currentShader, "VRMData.shadingShiftTextureScale", 0);
           }
           shaderSetFloat(currentShader, "VRMData.shadingToonyFactor", vrmMtoon->shadingToonyFactor);
-
-          shaderSetVec3(currentShader, "VRMData.matcapFactor", glm::vec3(vrmMtoon->matcapFactor[0], vrmMtoon->matcapFactor[1], vrmMtoon->matcapFactor[2]));
+          membuild(glm::vec3, matcapColor, vrmMtoon->matcapFactor);
+          matcapColor += glm::vec3(vmodel.materialColorTransforms[primitive.material * 6 + gltf::Extensions::VRMC_vrm::ExpressionPresets::Expression::MaterialColorBind::matcapColor]);
+          shaderSetVec3(currentShader, "VRMData.matcapFactor", matcapColor);
           if (vrmMtoon->matcapTexture.index != -1)
           {
             assert(texCoord == vrmMtoon->matcapTexture.texCoord);
@@ -795,7 +811,9 @@ static int renderNode(const VModel_t &vmodel, const int _node, const glm::mat4 m
             glActiveTexture(GL_TEXTURE0 + mtoon_texture_matcapTexture_gl_index);
             glBindTexture(GL_TEXTURE_2D, 0);
           }
-          shaderSetVec3(currentShader, "VRMData.parametricRimColorFactor", glm::vec3(vrmMtoon->parametricRimColorFactor[0], vrmMtoon->parametricRimColorFactor[1], vrmMtoon->parametricRimColorFactor[2]));
+          membuild(glm::vec3, rimColor, vrmMtoon->parametricRimColorFactor);
+          rimColor += glm::vec3(vmodel.materialColorTransforms[primitive.material * 6 + gltf::Extensions::VRMC_vrm::ExpressionPresets::Expression::MaterialColorBind::rimColor]);
+          shaderSetVec3(currentShader, "VRMData.parametricRimColorFactor", rimColor);
           shaderSetFloat(currentShader, "VRMData.parametricRimFresnelPowerFactor", vrmMtoon->parametricRimFresnelPowerFactor);
           shaderSetFloat(currentShader, "VRMData.parametricRimLiftFactor", vrmMtoon->parametricRimLiftFactor);
           if (vrmMtoon->rimMultiplyTexture.index != -1)
@@ -813,6 +831,11 @@ static int renderNode(const VModel_t &vmodel, const int _node, const glm::mat4 m
           shaderSetFloat(currentShader, "VRMData.rimLightingMixFactor", vrmMtoon->rimLightingMixFactor);
           shaderSetInt(currentShader, "VRM_outlineWidthMode", vrmMtoon->outlineWidthMode);
           shaderSetFloat(currentShader, "VRM_outlineWidthFactor", vrmMtoon->outlineWidthFactor);
+
+          membuild(glm::vec3, outlineColor, vrmMtoon->outlineColorFactor);
+          outlineColor += glm::vec3(vmodel.materialColorTransforms[primitive.material * 6 + gltf::Extensions::VRMC_vrm::ExpressionPresets::Expression::MaterialColorBind::outlineColor]);
+          shaderSetVec3(currentShader, "VRMData.outlineColorFactor", outlineColor);
+          shaderSetFloat(currentShader, "VRMData.outlineLightingMixFactor", vrmMtoon->outlineLightingMixFactor);
         }
       }
       shaderSetBool(currentShader, "hasBaseColorTexture", hasBaseColorTexture);
@@ -901,20 +924,53 @@ void vmodelSetVRMExpressions(VModel_t *vmodel, float *values)
     blockBlends[2] = MAX(blockBlends[2], exp.overrideMouth);
   }
 #define valueof(exp) values[offsetof(ExpressionPresets::Preset, exp) / sizeof(ExpressionPresets::Expression)]
-#define SetMorphTargetWeight(exp, WEIGHT)                                                                                        \
-  for (int i = 0; valueof(exp) > 0 && i < VRM->expressions.preset.exp.morphTargetBinds.size(); i++)                              \
-  {                                                                                                                              \
-    const ExpressionPresets::Expression::MorphTargetBind &morphTarget = VRM->expressions.preset.exp.morphTargetBinds[i];         \
-    vmodel->updatedMorphWeight[vmodel->model.nodes[morphTarget.node].mesh] = 1;                                                  \
-    vmodel->model.meshes[vmodel->model.nodes[morphTarget.node].mesh].weights[morphTarget.index] = morphTarget.weight * (WEIGHT); \
-  }                                                                                                                              \
-  for (int i = 0; valueof(exp) > 0 && i < VRM->expressions.preset.exp.materialColorBinds.size(); i++)                            \
-  {                                                                                                                              \
-    fprintf(stderr, "MaterialColorBinds not implemented yet.\n");                                                                \
-  }                                                                                                                              \
-  for (int i = 0; valueof(exp) > 0 && i < VRM->expressions.preset.exp.textureTransformBinds.size(); i++)                         \
-  {                                                                                                                              \
-    fprintf(stderr, "TextureTransformBinds not implemented yet.\n");                                                             \
+#define SetMorphTargetWeight(exp, WEIGHT)                                                                                                                                        \
+  for (int i = 0; i < VRM->expressions.preset.exp.morphTargetBinds.size(); i++)                                                                                                  \
+  {                                                                                                                                                                              \
+    const ExpressionPresets::Expression::MorphTargetBind &morphTarget = VRM->expressions.preset.exp.morphTargetBinds[i];                                                         \
+    vmodel->updatedMorphWeight[vmodel->model.nodes[morphTarget.node].mesh] = 1;                                                                                                  \
+    vmodel->model.meshes[vmodel->model.nodes[morphTarget.node].mesh].weights[morphTarget.index] = morphTarget.weight * (WEIGHT);                                                 \
+  }                                                                                                                                                                              \
+  for (int i = 0; valueof(exp) > 0 && i < VRM->expressions.preset.exp.materialColorBinds.size(); i++)                                                                            \
+  {                                                                                                                                                                              \
+    const ExpressionPresets::Expression::MaterialColorBind &colorBind = VRM->expressions.preset.exp.materialColorBinds[i];                                                       \
+    glm::vec4 initial = glm::vec4(0);                                                                                                                                            \
+    gltf::Extensions::VRMC_materials_mtoon *vrm_mtoon = (gltf::Extensions::VRMC_materials_mtoon *)vmodel->model.materials[colorBind.material]                                    \
+                                                            .extensions[gltf::findExtensionIndex("VRMC_materials_mtoon", vmodel->model.materials[colorBind.material])]           \
+                                                            .data;                                                                                                               \
+    if (colorBind.type == ExpressionPresets::Expression::MaterialColorBind::color)                                                                                               \
+    {                                                                                                                                                                            \
+      float *tmp = vmodel->model.materials[colorBind.material].pbrMetallicRoughness.baseColorFactor.data();                                                                      \
+      initial = glm::vec4(tmp[0], tmp[1], tmp[2], tmp[3]);                                                                                                                       \
+    }                                                                                                                                                                            \
+    else if (colorBind.type == ExpressionPresets::Expression::MaterialColorBind::emissionColor)                                                                                  \
+    {                                                                                                                                                                            \
+      fprintf(stderr, "prob with emissive textures, pls fix");                                                                                                                   \
+    }                                                                                                                                                                            \
+    else if (colorBind.type == ExpressionPresets::Expression::MaterialColorBind::shadeColor)                                                                                     \
+    {                                                                                                                                                                            \
+      initial = glm::vec4(vrm_mtoon->shadeColorFactor[0], vrm_mtoon->shadeColorFactor[1], vrm_mtoon->shadeColorFactor[2], 0);                                                    \
+    }                                                                                                                                                                            \
+    else if (colorBind.type == ExpressionPresets::Expression::MaterialColorBind::matcapColor)                                                                                    \
+    {                                                                                                                                                                            \
+      initial = glm::vec4(vrm_mtoon->matcapFactor[0], vrm_mtoon->matcapFactor[1], vrm_mtoon->matcapFactor[2], 0);                                                                \
+    }                                                                                                                                                                            \
+    else if (colorBind.type == ExpressionPresets::Expression::MaterialColorBind::rimColor)                                                                                       \
+    {                                                                                                                                                                            \
+      initial = glm::vec4(vrm_mtoon->parametricRimColorFactor[0], vrm_mtoon->parametricRimColorFactor[1], vrm_mtoon->parametricRimColorFactor[2], 0);                            \
+    }                                                                                                                                                                            \
+    else if (colorBind.type == ExpressionPresets::Expression::MaterialColorBind::outlineColor)                                                                                   \
+    {                                                                                                                                                                            \
+      initial = glm::vec4(vrm_mtoon->outlineColorFactor[0], vrm_mtoon->outlineColorFactor[1], vrm_mtoon->outlineColorFactor[2], 0);                                              \
+    }                                                                                                                                                                            \
+    vmodel->materialColorTransforms[colorBind.material * 6 + colorBind.type] =                                                                                                   \
+        (glm::vec4(colorBind.targetValue[0], colorBind.targetValue[1], colorBind.targetValue[2], colorBind.targetValue[3]) - initial) * ((float)(WEIGHT));                       \
+  }                                                                                                                                                                              \
+  for (int i = 0; i < VRM->expressions.preset.exp.textureTransformBinds.size(); i++)                                                                                             \
+  {                                                                                                                                                                              \
+    ExpressionPresets::Expression::TextureTransformBind transform = VRM->expressions.preset.exp.textureTransformBinds[i];                                                        \
+    vmodel->materialTextureTransform[transform.material * 2] = glm::vec2(transform.offset[0], transform.offset[1]) * ((float)(WEIGHT));                                          \
+    vmodel->materialTextureTransform[transform.material * 2 + 1] = glm::vec2(transform.scale[0], transform.scale[1]) * ((float)(WEIGHT));                                        \
   }
 
   // Blink
@@ -1106,6 +1162,8 @@ void freeVModel(VModel_t *vmodel)
   free(vmodel->updatedMorphWeight);
   free(vmodel->morphs);
   free(vmodel->morphsVBO);
+  free(vmodel->materialColorTransforms);
+  free(vmodel->materialTextureTransform);
   glDeleteBuffers(1, &vmodel->UBO);
   glDeleteBuffers(1, &vmodel->nodesUBO);
   gltf::freeModel(&vmodel->model);

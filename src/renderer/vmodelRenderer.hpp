@@ -57,6 +57,8 @@ struct VModel_t
   bool *updatedMorphWeight;
   glm::vec3 ***morphs;
   uint **morphsVBO;
+  glm::vec4 *materialColorTransforms;
+  glm::vec2 *materialTextureTransform;
   uint UBO;
 };
 

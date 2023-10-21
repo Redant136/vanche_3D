@@ -27,7 +27,7 @@ void init()
   vmodel.model = loadModel(modelPath);
   WORLDExecute(vmodel.model);
   initVModel(&vmodel);
-  expressionsWeights[5] = 1;
+  expressionsWeights[2] = 1;
   vmodelSetVRMExpressions(&vmodel, expressionsWeights);
 }
 
