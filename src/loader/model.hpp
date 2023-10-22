@@ -929,7 +929,7 @@ namespace gltf
           };
           struct MaterialColorBind
           {
-            int material=-1;
+            int material = -1;
             enum
             {
               color,
@@ -1067,16 +1067,20 @@ namespace gltf
       bfIndiceData += accessor.sparse.indices.byteOffset;
       for (uint l = 0; l < accessor.sparse.count; l++)
       {
-        ulong sparseIndex = CHVAL;
+        uint32_t sparseIndex = 0;
+        assert(gltf::gltf_sizeof(accessor.sparse.indices.componentType) * l < model.bufferViews[accessor.sparse.indices.bufferView].byteLength);
         if (accessor.sparse.indices.componentType == gltf::Accessor::Sparse::Indices::UNSIGNED_BYTE)
-          sparseIndex = *(((uint8_t *)bfIndiceData) + l);
+          sparseIndex = *(uint8_t *)(bfIndiceData + l * gltf_sizeof(accessor.sparse.indices.componentType));
         else if (accessor.sparse.indices.componentType == gltf::Accessor::Sparse::Indices::UNSIGNED_SHORT)
-          sparseIndex = *(((uint16_t *)bfIndiceData) + l);
+          sparseIndex = *(uint16_t *)(bfIndiceData + l * gltf_sizeof(accessor.sparse.indices.componentType));
         else
-          sparseIndex = *(((uint32_t *)bfIndiceData) + l);
+          sparseIndex = *(uint32_t *)(bfIndiceData + l * gltf_sizeof(accessor.sparse.indices.componentType));
 
+        if (sparseIndex > index)
+          break;
         if (sparseIndex != index)
           continue;
+        assert(gltf::gltf_num_components(accessor.type) * gltf::gltf_sizeof(accessor.componentType) * l < model.bufferViews[accessor.sparse.values.bufferView].byteLength);
         uchar *bfValData = model.buffers[model.bufferViews[accessor.sparse.values.bufferView].buffer].buffer;
         bfValData += model.bufferViews[accessor.sparse.values.bufferView].byteOffset;
         bfValData += accessor.sparse.values.byteOffset;
@@ -1088,7 +1092,7 @@ namespace gltf
       return 0;
     const BufferView &bfView = model.bufferViews[accessor.bufferView];
     uint byteStride = bfView.byteStride;
-    if (byteStride == 0)
+    if (byteStride <= 0)
     {
       int componentSizeInBytes = gltf::gltf_sizeof(accessor.componentType);
       int numComponents = gltf::gltf_num_components(accessor.type);

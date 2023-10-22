@@ -1,6 +1,4 @@
-VRMC_vrm expression materialColorBinds
-VRMC_vrm expression textureTransformBinds
-
+draw model twice changing face culling to draw outline instead of what I'm doing
 dlib face detection http://dlib.net/webcam_face_pose_ex.cpp.html
 uv animation
 animation

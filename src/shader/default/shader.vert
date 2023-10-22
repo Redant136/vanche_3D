@@ -95,16 +95,15 @@ void main()
     if(skinMatrix == mat4(0.f)) {
         skinMatrix = mat4(1.f);
     }
-    vec4 pos = vec4(a_pos,1.0);
-    pos = pos + vec4(a_posMorph,0);
+    vec4 pos = vec4(a_pos + a_posMorph, 1.0);
     pos = skinMatrix * pos;
     pos = nodes[nodeIndex] * pos;
     vs_out.Pos = (model * pos).xyz;
     gl_Position = worldTransform * pos;
 
-    vec3 normal = a_normal+texture(texture_normal,UV).xyz;
+    vec3 normal = a_normal + texture(texture_normal,UV).xyz + a_normMorph;
     vs_out.Normal = normal;
-    vec4 tangent = a_tangent;
+    vec4 tangent = a_tangent + vec4(a_tanMorph,0);
     vs_out.Tangent = tangent.xyz;
 
     vs_out.Color = a_color_0;

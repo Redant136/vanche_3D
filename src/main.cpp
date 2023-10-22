@@ -14,6 +14,7 @@
 #define wave "../models/wave/scene.gltf"
 #define seedsan "../models/Seed-san.vrm"
 #define female2 "../models/VRM1_Constraint_Twist_Sample.vrm"
+#define monkey "../models/SuzanneMorphSparse.glb"
 #define modelPath seedsan
 
 float last_time = 0;

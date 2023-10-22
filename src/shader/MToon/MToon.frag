@@ -134,7 +134,7 @@ void main()
     color.xyz = lerp(color.xyz,shadeColor,1-lightIntensity) * lights[i].Color;
   }
   if(fs_in.isOutline==1){
-    FragColor=vec4(lerp(VRMData.outlineColorFactor,color.xyz,VRMData.outlineLightingMixFactor),1);
+    FragColor=vec4(VRMData.outlineColorFactor*lerp(vec3(1,1,1),color.xyz,VRMData.outlineLightingMixFactor),1);
     return;
   }
 
