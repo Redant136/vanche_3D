@@ -71,18 +71,6 @@ vec3 lerp(vec3 a,vec3 b,float w){
 vec4 lerp(vec4 a,vec4 b,float w){
     return a+w*(b-a);
 }
-float distanceSquare(vec2 a,vec2 b){
-    return (a.x-b.x)*(a.x-b.x)+(a.y-b.y)*(a.y-b.y);
-}
-float distanceSquare(vec3 a,vec3 b){
-    return (a.x-b.x)*(a.x-b.x)+(a.y-b.y)*(a.y-b.y)+(a.z-b.z)*(a.z-b.z);
-}
-float distanceSquare(vec4 a,vec4 b){
-    return (a.x-b.x)*(a.x-b.x)+(a.y-b.y)*(a.y-b.y)+(a.z-b.z)*(a.z-b.z)+(a.w-b.w)*(a.w-b.w);
-}
-bool floatEquals(float a,float b){
-    return (a-b)<0.001&&(a-b)>-0.001;
-}
 
 void main()
 {

@@ -40,7 +40,7 @@ void setOut(int index){
 
 
 void main(){
-  for(int i=0;i<3;i++){
+  for(int i=2;i>=0;i--){
     vec3 normal=gs_in[i].Normal;
 
     vec2 outline=vec2(0,0);
@@ -50,7 +50,7 @@ void main(){
       outline=normalize(normal).xy*VRM_outlineWidthFactor;
     }
 
-    gl_Position = vec4(gl_in[i].gl_Position.xy+outline,gl_in[i].gl_Position.zw)+vec4(0,0,0.01,0);
+    gl_Position = vec4(gl_in[i].gl_Position.xy+outline,gl_in[i].gl_Position.zw);
     setOut(i);
     gs_out.isOutline=1;
     EmitVertex();

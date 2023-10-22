@@ -502,10 +502,6 @@ void initVModel(VModel_t *vmodel)
 
   vmodel->materialColorTransforms = (glm::vec4 *)calloc(vmodel->model.materials.size() * 6, sizeof(glm::vec4));
   vmodel->materialTextureTransform = (glm::vec2 *)calloc(vmodel->model.materials.size() * 2, sizeof(glm::vec2));
-  for (uint i = 0; i < vmodel->model.materials.size(); i++)
-  {
-    vmodel->materialTextureTransform[i * 2 + 1] = glm::vec2(1, 1);
-  }
 
   // textures
   vmodel->gltfImageTextureIndex = (uint *)malloc(vmodel->model.images.size() * sizeof(uint));
@@ -747,7 +743,7 @@ static int renderNode(const VModel_t &vmodel, const int _node, const glm::mat4 m
         else
         {
           glm::vec2 offset = vmodel.materialTextureTransform[primitive.material * 2];
-          glm::vec2 scale = vmodel.materialTextureTransform[primitive.material * 2 + 1];
+          glm::vec2 scale = glm::vec2(1, 1) + vmodel.materialTextureTransform[primitive.material * 2 + 1];
           shaderSetVec2(currentShader, "KHR_texture_transform_data.u_offset", offset);
           shaderSetFloat(currentShader, "KHR_texture_transform_data.u_rotation", 0);
           shaderSetVec2(currentShader, "KHR_texture_transform_data.u_scale", scale);
@@ -978,9 +974,9 @@ void vmodelSetVRMExpressions(VModel_t *vmodel, float *values)
   for (int i = 0; i < VRM->expressions.preset.exp.textureTransformBinds.size(); i++)                                                                                   \
   {                                                                                                                                                                    \
     ExpressionPresets::Expression::TextureTransformBind transform = VRM->expressions.preset.exp.textureTransformBinds[i];                                              \
-    glm::vec2 offset = glm::vec2(transform.offset[0], transform.offset[1]);                                                                                            \
+    membuild(glm::vec2, offset, transform.offset);                                                                                                                     \
     offset *= (WEIGHT);                                                                                                                                                \
-    glm::vec2 scale = glm::vec2(transform.scale[0], transform.scale[1]);                                                                                               \
+    membuild(glm::vec2, scale, transform.scale);                                                                                                                       \
     scale *= (WEIGHT);                                                                                                                                                 \
     vmodel->materialTextureTransform[transform.material * 2] = offset;                                                                                                 \
     vmodel->materialTextureTransform[transform.material * 2 + 1] = scale;                                                                                              \
