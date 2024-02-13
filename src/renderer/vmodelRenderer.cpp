@@ -104,7 +104,7 @@ void shaderSetMat4Arr(const Shader_t &shader, const std::string &name, uint size
 
 static Shader_t createShader(std::string vertexPath, std::string geometryPath, std::string fragmentPath)
 {
-  size_t vLength, gLength, fLength;
+  size_t vLength = 0, gLength = 0, fLength = 0;
   char *vertexCode = 0, *geometryCode = 0, *fragmentCode = 0;
   ch_bufferFile(vertexPath.c_str(), (void **)&vertexCode, &vLength);
   ch_bufferFile(geometryPath.c_str(), (void **)&geometryCode, &gLength);
@@ -122,8 +122,7 @@ static Shader_t createShader(std::string vertexPath, std::string geometryPath, s
   if (!status)
   {
     glGetShaderInfoLog(vertex, 1024, NULL, infoLog);
-    fprintf(stderr, "SHADER COMPILATION ERROR\n error of type %d in %s\ninfo log: %s", status, vertexPath.c_str(), infoLog);
-    exit(1);
+    chprinterr("SHADER COMPILATION ERROR\n error of type %d in %s\ninfo log: %s", status, vertexPath.c_str(), infoLog);
   }
 
   geometry = glCreateShader(GL_GEOMETRY_SHADER);
@@ -134,8 +133,7 @@ static Shader_t createShader(std::string vertexPath, std::string geometryPath, s
   if (!status)
   {
     glGetShaderInfoLog(geometry, 1024, NULL, infoLog);
-    fprintf(stderr, "SHADER COMPILATION ERROR\n error of type %d in %s\ninfo log: %s", status, geometryPath.c_str(), infoLog);
-    exit(1);
+    chprinterr("SHADER COMPILATION ERROR\n error of type %d in %s\ninfo log: %s", status, geometryPath.c_str(), infoLog);
   }
 
   fragment = glCreateShader(GL_FRAGMENT_SHADER);
@@ -146,8 +144,7 @@ static Shader_t createShader(std::string vertexPath, std::string geometryPath, s
   if (!status)
   {
     glGetShaderInfoLog(fragment, 1024, NULL, infoLog);
-    fprintf(stderr, "SHADER COMPILATION ERROR\n error of type %d in %s\ninfo log: %s", status, fragmentPath.c_str(), infoLog);
-    exit(1);
+    chprinterr("SHADER COMPILATION ERROR\n error of type %d in %s\ninfo log: %s", status, fragmentPath.c_str(), infoLog);
   }
 
   uint ID = glCreateProgram();
@@ -159,8 +156,7 @@ static Shader_t createShader(std::string vertexPath, std::string geometryPath, s
   if (!status)
   {
     glGetProgramInfoLog(ID, 1024, NULL, infoLog);
-    fprintf(stderr, "SHADER LINKING ERROR\n error of type: %d\ninfo log: %s", status, infoLog);
-    exit(1);
+    chprinterr("SHADER LINKING ERROR\n error of type: %d\ninfo log: %s", status, infoLog);
   }
   glDeleteShader(vertex);
   glDeleteShader(geometry);
@@ -174,7 +170,7 @@ static Shader_t createShader(std::string vertexPath, std::string geometryPath, s
   return shader;
 }
 
-static void updateVModelNodeTransform(VModel_t *vmodel, uint node, glm::mat4 parentTransform)
+static glm::mat4 getNodeTransform(const VModel_t *vmodel, uint node, const glm::mat4& parentTransform)
 {
   glm::mat4 mat = glm::mat4(1), T = glm::mat4(1), R = glm::mat4(1), S = glm::mat4(1);
   S = glm::scale(glm::mat4(1.f), glm::vec3(vmodel->model.nodes[node].scale[0], vmodel->model.nodes[node].scale[1], vmodel->model.nodes[node].scale[2]));
@@ -186,80 +182,8 @@ static void updateVModelNodeTransform(VModel_t *vmodel, uint node, glm::mat4 par
       vmodel->model.nodes[node].matrix[8], vmodel->model.nodes[node].matrix[9], vmodel->model.nodes[node].matrix[10], vmodel->model.nodes[node].matrix[11],
       vmodel->model.nodes[node].matrix[12], vmodel->model.nodes[node].matrix[13], vmodel->model.nodes[node].matrix[14], vmodel->model.nodes[node].matrix[15]);
 
-  vmodel->nodeTransforms[node] = parentTransform * mat * T * R * S;
-  for (uint i : vmodel->model.nodes[node].children)
-  {
-    updateVModelNodeTransform(vmodel, i, vmodel->nodeTransforms[node]);
-  }
+  return parentTransform * mat * T * R * S;
 }
-
-static void mergeSortRenderQueue(VModel_t *vmodel, uint *queue, uint length)
-{
-  if (length < 2)
-    return;
-  mergeSortRenderQueue(vmodel, queue, length / 2);
-  mergeSortRenderQueue(vmodel, queue + length / 2, length - length / 2);
-  uint *dst = (uint *)malloc(length * sizeof(uint));
-  // order is: no mesh, no material, OPAQUE, MASK, BLEND no zwrite, BLEND zwrite
-  for (uint i = 0, j = 0; i + j < length;)
-  {
-    int sc1 = 0, sc2 = 0;
-    if (vmodel->model.nodes[queue[i]].mesh != -1)
-    {
-      sc1 = 10;
-      for (uint k = 0; k < vmodel->model.meshes[vmodel->model.nodes[queue[i]].mesh].primitives.size(); k++)
-      {
-        if (vmodel->model.meshes[vmodel->model.nodes[queue[i]].mesh].primitives[k].material == -1)
-          continue;
-        gltf::Material &mat = vmodel->model.materials[vmodel->model.meshes[vmodel->model.nodes[queue[i]].mesh].primitives[k].material];
-        int sc = mat.alphaMode;
-        sc *= 10;
-        if (int ext = gltf::findExtensionIndex("VRMC_materials_mtoon", mat) != -1)
-        {
-          sc += ((gltf::Extensions::VRMC_materials_mtoon *)mat.extensions[ext].data)->transparentWithZWrite ? 0 : (sc == 20 ? 10 : 0);
-          sc += ((gltf::Extensions::VRMC_materials_mtoon *)mat.extensions[ext].data)->renderQueueOffsetNumber;
-        }
-        // MAX
-        sc1 = sc1 > sc ? sc1 : sc;
-      }
-    }
-    if (vmodel->model.nodes[queue[length / 2 + j]].mesh != -1)
-    {
-      sc2 = 10;
-      for (uint k = 0; k < vmodel->model.meshes[vmodel->model.nodes[queue[length / 2 + j]].mesh].primitives.size(); k++)
-      {
-        if (vmodel->model.meshes[vmodel->model.nodes[queue[length / 2 + j]].mesh].primitives[k].material == -1)
-          continue;
-        gltf::Material &mat = vmodel->model.materials[vmodel->model.meshes[vmodel->model.nodes[queue[length / 2 + j]].mesh].primitives[k].material];
-        int sc = 2 + mat.alphaMode;
-        sc *= 10;
-        if (int ext = gltf::findExtensionIndex("VRMC_materials_mtoon", mat) != -1)
-        {
-          sc += ((gltf::Extensions::VRMC_materials_mtoon *)mat.extensions[ext].data)->transparentWithZWrite ? 0 : 10;
-          sc += ((gltf::Extensions::VRMC_materials_mtoon *)mat.extensions[ext].data)->renderQueueOffsetNumber;
-        }
-        sc2 = sc2 > sc ? sc2 : sc;
-      }
-    }
-
-    if ((sc1 > sc2 || i >= length / 2) && j < length - length / 2)
-    {
-      dst[i + j] = queue[length / 2 + j];
-      j++;
-    }
-    else
-    {
-      dst[i + j] = queue[i];
-      i++;
-    }
-  }
-  memcpy(queue, dst, sizeof(uint) * length);
-  free(dst);
-}
-static void sortRenderQueue(VModel_t *vmodel)
-{
-  mergeSortRenderQueue(vmodel, vmodel->renderQueue, vmodel->model.nodes.size());
-};
 
 #define texture_base_gl_index 0
 #define texture_normal_gl_index 1
@@ -273,6 +197,57 @@ static void sortRenderQueue(VModel_t *vmodel)
 #define UBO_NODE_DYNAMIC 1
 #define UBO_INVBINDMAT_STATIC 2
 #define UBO_LIGHTS_STATIC 6
+
+static void updateStoredAccessorBuffers(VModel_t *vmodel)
+{
+  for (uint i = 0; i < vmodel->model.accessors.size(); i++)
+  {
+    size_t eleSize = gltf::gltf_num_components(vmodel->model.accessors[i].type) * gltf::gltf_sizeof(vmodel->model.accessors[i].componentType);
+    if (vmodel->model.accessors[i].sparse.count > 0)
+    {
+      uchar *bfIndiceData = vmodel->model.buffers[vmodel->model.bufferViews[vmodel->model.accessors[i].sparse.indices.bufferView].buffer].buffer +
+                            vmodel->model.bufferViews[vmodel->model.accessors[i].sparse.indices.bufferView].byteOffset +
+                            vmodel->model.accessors[i].sparse.indices.byteOffset;
+
+      if (vmodel->model.accessors[i].bufferView == -1)
+        memset(vmodel->accessorBuffers[i], 0, eleSize * vmodel->model.accessors[i].count);
+      else
+        memcpy(vmodel->accessorBuffers[i],
+               (vmodel->model.buffers[vmodel->model.bufferViews[vmodel->model.accessors[i].bufferView].buffer].buffer +
+                vmodel->model.bufferViews[vmodel->model.accessors[i].bufferView].byteOffset) +
+                   vmodel->model.accessors[i].byteOffset,
+               eleSize * vmodel->model.accessors[i].count);
+      for (uint j = 0; j < vmodel->model.accessors[i].sparse.count; j++)
+      {
+        uint sparseIndex;
+        switch (vmodel->model.accessors[i].sparse.indices.componentType)
+        {
+        case gltf::Accessor::Sparse::Indices::UNSIGNED_BYTE:
+          sparseIndex = *(uint8_t *)(bfIndiceData + j);
+        case gltf::Accessor::Sparse::Indices::UNSIGNED_SHORT:
+          sparseIndex = *(uint16_t *)(bfIndiceData + j * 2);
+        case gltf::Accessor::Sparse::Indices::UNSIGNED_INT:
+        default:
+          sparseIndex = *(uint32_t *)(bfIndiceData + j * 4);
+        }
+        memcpy(vmodel->accessorBuffers[i] + eleSize * sparseIndex,
+               vmodel->model.buffers[vmodel->model.bufferViews[vmodel->model.accessors[i].sparse.values.bufferView].buffer].buffer +
+                   vmodel->model.bufferViews[vmodel->model.accessors[i].sparse.values.bufferView].byteOffset + vmodel->model.accessors[i].sparse.values.byteOffset +
+                   eleSize * j,
+               eleSize);
+      }
+    }
+#if 0
+// debug
+    for (uint j = 0; j < vmodel->model.accessors[i].count; j++)
+    {
+      membuild(glm::vec3, a1, gltf::getDataFromAccessor(vmodel->model, vmodel->model.accessors[i], j));
+      membuild(glm::vec3, a2, vmodel->accessorBuffers[i] + j * eleSize);
+      assert(a1 == a2);
+    }
+#endif
+  }
+}
 
 void initVModel(VModel_t *vmodel)
 {
@@ -318,33 +293,31 @@ void initVModel(VModel_t *vmodel)
     vmodel->VBO[i] = VBO;
   }
 
-  // node transform
-  vmodel->nodeTransforms = (glm::mat4 *)malloc(vmodel->model.nodes.size() * sizeof(glm::mat4));
-  for (uint i = 0; i < vmodel->model.nodes.size(); i++)
+  // Acessor buffers
+  vmodel->accessorBuffers = (uchar **)malloc(vmodel->model.accessors.size() * sizeof(uchar *));
+  for (uint i = 0; i < vmodel->model.accessors.size(); i++)
   {
-    vmodel->nodeTransforms[i] = glm::mat4(1.f);
+    gltf::BufferView &bfView = vmodel->model.bufferViews[vmodel->model.accessors[i].bufferView];
+    if (vmodel->model.accessors[i].sparse.count > 0)
+    {
+      vmodel->accessorBuffers[i] = (uchar *)calloc(gltf::gltf_num_components(vmodel->model.accessors[i].type) *
+                                                       gltf::gltf_sizeof(vmodel->model.accessors[i].componentType),
+                                                   vmodel->model.accessors[i].count);
+    }else{
+      vmodel->accessorBuffers[i] = (vmodel->model.buffers[bfView.buffer].buffer + bfView.byteOffset) + vmodel->model.accessors[i].byteOffset;
+    }
   }
-  const gltf::Scene &scene = vmodel->model.scenes[vmodel->model.scene > -1 ? vmodel->model.scene : 0];
-  for (uint i : scene.nodes)
-  {
-    updateVModelNodeTransform(vmodel, i, glm::mat4(1.f));
-  }
-
-  vmodel->renderQueue = (uint *)malloc(vmodel->model.nodes.size() * sizeof(uint));
-  for (uint i = 0; i < vmodel->model.nodes.size(); i++)
-  {
-    vmodel->renderQueue[i] = i;
-  }
-  sortRenderQueue(vmodel);
+  updateStoredAccessorBuffers(vmodel);
 
   // morph targets
   vmodel->updatedMorphWeight = (bool *)calloc(vmodel->model.meshes.size(), sizeof(bool));
   vmodel->morphs = (glm::vec3 ***)malloc(sizeof(glm::vec3 **) * vmodel->model.meshes.size());
-  vmodel->morphsVBO = (uint **)malloc(sizeof(uint *) * vmodel->model.meshes.size());
+  vmodel->morphsVBO = (uint *)malloc(sizeof(uint) * vmodel->model.meshes.size());
   for (uint i = 0; i < vmodel->model.meshes.size(); i++)
   {
     vmodel->morphs[i] = (glm::vec3 **)malloc(sizeof(glm::vec3 *) * vmodel->model.meshes[i].primitives.size());
-    vmodel->morphsVBO[i] = (uint *)malloc(sizeof(uint) * vmodel->model.meshes[i].primitives.size());
+    uint size = 0;
+    glGenBuffers(1, &vmodel->morphsVBO[i]);
     for (uint j = 0; j < vmodel->model.meshes[i].primitives.size(); j++)
     {
       const gltf::Mesh::Primitive &primitive = vmodel->model.meshes[i].primitives[j];
@@ -362,27 +335,37 @@ void initVModel(VModel_t *vmodel)
         {
           if (vmodel->model.meshes[i].primitives[j].targets[k].POSITION != -1)
           {
-            membuild(glm::vec3, pos, gltf::getDataFromAccessor(vmodel->model, vmodel->model.accessors[vmodel->model.meshes[i].primitives[j].targets[k].POSITION], l));
+            // membuild(glm::vec3, pos, gltf::getDataFromAccessor(vmodel->model, vmodel->model.accessors[vmodel->model.meshes[i].primitives[j].targets[k].POSITION], l));
+            membuild(glm::vec3,pos,vmodel->accessorBuffers[vmodel->model.meshes[i].primitives[j].targets[k].POSITION]+l*sizeof(glm::vec3));
             pos *= vmodel->model.meshes[i].weights[k];
             vmodel->morphs[i][j][l * 3 + 0] += pos;
           }
           if (vmodel->model.meshes[i].primitives[j].targets[k].NORMAL != -1)
           {
-            membuild(glm::vec3, normal, gltf::getDataFromAccessor(vmodel->model, vmodel->model.accessors[vmodel->model.meshes[i].primitives[j].targets[k].NORMAL], l));
+            // membuild(glm::vec3, normal, gltf::getDataFromAccessor(vmodel->model, vmodel->model.accessors[vmodel->model.meshes[i].primitives[j].targets[k].NORMAL], l));
+            membuild(glm::vec3, normal, vmodel->accessorBuffers[vmodel->model.meshes[i].primitives[j].targets[k].NORMAL]+l*sizeof(glm::vec3));
             normal *= vmodel->model.meshes[i].weights[k];
             vmodel->morphs[i][j][l * 3 + 1] += normal;
           }
           if (vmodel->model.meshes[i].primitives[j].targets[k].TANGENT != -1)
           {
-            membuild(glm::vec3, tangent, gltf::getDataFromAccessor(vmodel->model, vmodel->model.accessors[vmodel->model.meshes[i].primitives[j].targets[k].TANGENT], l));
+            // membuild(glm::vec3, tangent, gltf::getDataFromAccessor(vmodel->model, vmodel->model.accessors[vmodel->model.meshes[i].primitives[j].targets[k].TANGENT], l));
+            membuild(glm::vec3,tangent,vmodel->accessorBuffers[vmodel->model.meshes[i].primitives[j].targets[k].TANGENT]+l*sizeof(glm::vec3));
             tangent *= vmodel->model.meshes[i].weights[k];
             vmodel->morphs[i][j][l * 3 + 2] += tangent;
           }
         }
       }
-      glGenBuffers(1, &vmodel->morphsVBO[i][j]);
-      glBindBuffer(GL_ARRAY_BUFFER, vmodel->morphsVBO[i][j]);
-      glBufferData(GL_ARRAY_BUFFER, sizeof(glm::vec3) * vmodel->model.accessors[primitive.attributes.POSITION].count * 3, vmodel->morphs[i][j], GL_DYNAMIC_DRAW);
+      size += sizeof(glm::vec3) * vmodel->model.accessors[primitive.attributes.POSITION].count * 3;
+    }
+    glBindBuffer(GL_ARRAY_BUFFER, vmodel->morphsVBO[i]);
+    glBufferData(GL_ARRAY_BUFFER, size, 0, GL_STREAM_DRAW);
+    uint offset = 0;
+    for (uint j = 0; j < vmodel->model.meshes[i].primitives.size(); j++)
+    {
+      const gltf::Mesh::Primitive &primitive = vmodel->model.meshes[i].primitives[j];
+      glBufferSubData(GL_ARRAY_BUFFER, offset, sizeof(glm::vec3) * vmodel->model.accessors[primitive.attributes.POSITION].count * 3, vmodel->morphs[i][j]);
+      offset += sizeof(glm::vec3) * vmodel->model.accessors[primitive.attributes.POSITION].count * 3;
     }
   }
 
@@ -397,6 +380,7 @@ void initVModel(VModel_t *vmodel)
   {
     const gltf::Mesh &mesh = vmodel->model.meshes[i];
     uint *primitivesVAO = (uint *)malloc(mesh.primitives.size() * sizeof(uint));
+    uint offset = 0;
     for (uint j = 0; j < mesh.primitives.size(); j++)
     {
       uint VAO;
@@ -487,14 +471,15 @@ void initVModel(VModel_t *vmodel)
         if (nullFilledVBO)
           glDeleteBuffers(1, &nullFilledVBO);
       }
-      glBindBuffer(GL_ARRAY_BUFFER, vmodel->morphsVBO[i][j]);
-      glVertexAttribPointer(9, 3, GL_FLOAT, GL_FALSE, sizeof(glm::vec3) * 3, 0);
+      glBindBuffer(GL_ARRAY_BUFFER, vmodel->morphsVBO[i]);
+      glVertexAttribPointer(9, 3, GL_FLOAT, GL_FALSE, sizeof(glm::vec3) * 3, reinterpret_cast<void *>(offset));
       glEnableVertexAttribArray(9);
-      glVertexAttribPointer(10, 3, GL_FLOAT, GL_FALSE, sizeof(glm::vec3) * 3, reinterpret_cast<void *>(sizeof(glm::vec3)));
+      glVertexAttribPointer(10, 3, GL_FLOAT, GL_FALSE, sizeof(glm::vec3) * 3, reinterpret_cast<void *>(offset + sizeof(glm::vec3)));
       glEnableVertexAttribArray(10);
-      glVertexAttribPointer(11, 3, GL_FLOAT, GL_FALSE, sizeof(glm::vec3) * 3, reinterpret_cast<void *>(sizeof(glm::vec3) * 2));
+      glVertexAttribPointer(11, 3, GL_FLOAT, GL_FALSE, sizeof(glm::vec3) * 3, reinterpret_cast<void *>(offset + sizeof(glm::vec3) * 2));
       glEnableVertexAttribArray(11);
       glBindVertexArray(0);
+      offset += sizeof(glm::vec3) * vmodel->model.accessors[primitive.attributes.POSITION].count * 3;
       primitivesVAO[j] = VAO;
     }
     vmodel->VAO[i] = primitivesVAO;
@@ -579,7 +564,7 @@ void initVModel(VModel_t *vmodel)
   assert(vmodel->model.nodes.size() < MAX_NODES);
   glGenBuffers(1, &vmodel->nodesUBO);
   glBindBuffer(GL_UNIFORM_BUFFER, vmodel->nodesUBO);
-  glBufferData(GL_UNIFORM_BUFFER, sizeof(glm::mat4) * vmodel->model.nodes.size(), vmodel->nodeTransforms, GL_DYNAMIC_DRAW);
+  glBufferData(GL_UNIFORM_BUFFER, sizeof(glm::mat4) * vmodel->model.nodes.size(), 0, GL_DYNAMIC_DRAW);
   glBindBuffer(GL_UNIFORM_BUFFER, 0);
   glBindBufferRange(GL_UNIFORM_BUFFER, UBO_NODE_DYNAMIC, vmodel->nodesUBO, 0, sizeof(glm::mat4) * vmodel->model.nodes.size());
 }
@@ -622,10 +607,15 @@ static void bindTexture(const VModel_t &vmodel, const Shader_t &currentShader, c
   glBindTexture(GL_TEXTURE_2D, vmodel.gltfImageTextureIndex[texture.source]);
   glBindSampler(GL_TEXTURE_2D, sampler_obj);
 }
-static int renderNode(const VModel_t &vmodel, const int _node, const glm::mat4 mat)
+
+static int renderNode(const VModel_t &vmodel, const int _node, const glm::mat4 parentMat)
 {
+  glm::mat4 mat = getNodeTransform(&vmodel, _node, parentMat);
   const gltf::Node &node = vmodel.model.nodes[_node];
   Shader_t currentShader = WORLD.shaders.defaultShader;
+  glBindBuffer(GL_UNIFORM_BUFFER, vmodel.nodesUBO);
+  glBufferSubData(GL_UNIFORM_BUFFER, sizeof(glm::mat4) * _node, sizeof(glm::mat4), &mat);
+  glBindBuffer(GL_UNIFORM_BUFFER, 0);
   if (node.mesh > -1)
   {
     glBindBuffer(GL_UNIFORM_BUFFER, vmodel.UBO);
@@ -853,32 +843,10 @@ static int renderNode(const VModel_t &vmodel, const int _node, const glm::mat4 m
     }
   }
   glBindVertexArray(0);
-  return 0;
-}
-
-void drawSkeleton(const VModel_t &vmodel, glm::mat4 modelTransform, glm::mat4 viewMatrix, glm::mat4 projectionMatrix)
-{
-  glUseProgram(WORLD.shaders.skeletonShader.ID);
-  shaderSetMat4(WORLD.shaders.skeletonShader, "model", modelTransform);
-  shaderSetMat4(WORLD.shaders.skeletonShader, "view", viewMatrix);
-  shaderSetMat4(WORLD.shaders.skeletonShader, "projection", projectionMatrix);
-  float point[3] = {0, 0, 0};
-  uint VBO, VAO;
-  glGenVertexArrays(1, &VAO);
-  glGenBuffers(1, &VBO);
-  glBindVertexArray(VAO);
-  glBindBuffer(GL_ARRAY_BUFFER, VBO);
-  glBufferData(GL_ARRAY_BUFFER, sizeof(point), &point, GL_STATIC_DRAW);
-  glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 3 * sizeof(float), (void *)0);
-  glEnableVertexAttribArray(0);
-  glBindVertexArray(0);
-  glUseProgram(WORLD.shaders.skeletonShader.ID);
-  glBindVertexArray(VAO); // seeing as we only have a single VAO there's no need to bind it every time, but we'll do so to keep things a bit more organized
-  for (int i = 0; i < vmodel.model.nodes.size(); i++)
-  {
-    shaderSetMat4(WORLD.shaders.skeletonShader, "node", vmodel.nodeTransforms[i]);
-    glDrawArrays(GL_POINTS, 0, 1);
+  for(int i=0;i<node.children.size();i++){
+    renderNode(vmodel,node.children[i],mat);
   }
+  return 0;
 }
 
 void vmodelSetMorphWeight(VModel_t *vmodel, uint mesh, uint weight, float weightVal)
@@ -935,7 +903,7 @@ void vmodelSetVRMExpressions(VModel_t *vmodel, float *values)
     vmodel->updatedMorphWeight[vmodel->model.nodes[morphTarget.node].mesh] = 1;                                                                                        \
     vmodel->model.meshes[vmodel->model.nodes[morphTarget.node].mesh].weights[morphTarget.index] = morphTarget.weight * (WEIGHT);                                       \
   }                                                                                                                                                                    \
-  for (int i = 0; valueof(exp) > 0 && i < VRM->expressions.preset.exp.materialColorBinds.size(); i++)                                                                  \
+  for (int i = 0; i < VRM->expressions.preset.exp.materialColorBinds.size(); i++)                                                                                      \
   {                                                                                                                                                                    \
     const ExpressionPresets::Expression::MaterialColorBind &colorBind = VRM->expressions.preset.exp.materialColorBinds[i];                                             \
     glm::vec4 initial = glm::vec4(0);                                                                                                                                  \
@@ -1084,24 +1052,25 @@ int renderVModel(VModel_t vmodel)
   }
 
   // modelDraw
-  for (uint i = 0; i < vmodel.model.nodes.size(); i++)
+  for (uint i : vmodel.model.scenes[vmodel.model.scene > -1 ? vmodel.model.scene : 0].nodes)
   {
-    renderNode(vmodel, vmodel.renderQueue[i], vmodel.nodeTransforms[vmodel.renderQueue[i]]);
+    chfpass(renderNode,vmodel, i, glm::mat4(1.f));
   }
-  // drawSkeleton(vmodel, modelTransform, viewMatrix, projectionMatrix);
   return 0;
 }
 
 int updateVModel(VModel_t *vmodel)
 {
+  updateStoredAccessorBuffers(vmodel);
   // update morphs
   for (uint i = 0; i < vmodel->model.meshes.size(); i++)
   {
     if (vmodel->updatedMorphWeight[i])
     {
+      glBindBuffer(GL_ARRAY_BUFFER, vmodel->morphsVBO[i]);
+      uint offset = 0;
       for (uint j = 0; j < vmodel->model.meshes[i].primitives.size(); j++)
       {
-        glBindBuffer(GL_ARRAY_BUFFER, vmodel->morphsVBO[i][j]);
         const gltf::Mesh::Primitive &primitive = vmodel->model.meshes[i].primitives[j];
         memset(vmodel->morphs[i][j], 0, sizeof(glm::vec3) * vmodel->model.accessors[primitive.attributes.POSITION].count * 3);
         for (uint k = 0; k < vmodel->model.meshes[i].primitives[j].targets.size(); k++)
@@ -1110,25 +1079,29 @@ int updateVModel(VModel_t *vmodel)
           {
             if (vmodel->model.meshes[i].primitives[j].targets[k].POSITION != -1)
             {
-              membuild(glm::vec3, pos, gltf::getDataFromAccessor(vmodel->model, vmodel->model.accessors[vmodel->model.meshes[i].primitives[j].targets[k].POSITION], l));
+              // membuild(glm::vec3, pos, gltf::getDataFromAccessor(vmodel->model, vmodel->model.accessors[vmodel->model.meshes[i].primitives[j].targets[k].POSITION], l));
+              membuild(glm::vec3, pos, vmodel->accessorBuffers[vmodel->model.meshes[i].primitives[j].targets[k].POSITION]+l*sizeof(glm::vec3));
               pos *= vmodel->model.meshes[i].weights[k];
               vmodel->morphs[i][j][l * 3 + 0] += pos;
             }
             if (vmodel->model.meshes[i].primitives[j].targets[k].NORMAL != -1)
             {
-              membuild(glm::vec3, normal, gltf::getDataFromAccessor(vmodel->model, vmodel->model.accessors[vmodel->model.meshes[i].primitives[j].targets[k].NORMAL], l));
+              // membuild(glm::vec3, normal, gltf::getDataFromAccessor(vmodel->model, vmodel->model.accessors[vmodel->model.meshes[i].primitives[j].targets[k].NORMAL], l));
+              membuild(glm::vec3, normal, vmodel->accessorBuffers[vmodel->model.meshes[i].primitives[j].targets[k].NORMAL]+l);
               normal *= vmodel->model.meshes[i].weights[k];
               vmodel->morphs[i][j][l * 3 + 1] += normal;
             }
             if (vmodel->model.meshes[i].primitives[j].targets[k].TANGENT != -1)
             {
-              membuild(glm::vec3, tangent, gltf::getDataFromAccessor(vmodel->model, vmodel->model.accessors[vmodel->model.meshes[i].primitives[j].targets[k].TANGENT], l));
+              // membuild(glm::vec3, tangent, gltf::getDataFromAccessor(vmodel->model, vmodel->model.accessors[vmodel->model.meshes[i].primitives[j].targets[k].TANGENT], l));
+              membuild(glm::vec3,tangent,vmodel->accessorBuffers[vmodel->model.meshes[i].primitives[j].targets[k].TANGENT]+l);
               tangent *= vmodel->model.meshes[i].weights[k];
               vmodel->morphs[i][j][l * 3 + 2] += tangent;
             }
           }
         }
-        glBufferSubData(GL_ARRAY_BUFFER, 0, sizeof(glm::vec3) * vmodel->model.accessors[primitive.attributes.POSITION].count * 3, vmodel->morphs[i][j]);
+        glBufferSubData(GL_ARRAY_BUFFER, offset, sizeof(glm::vec3) * vmodel->model.accessors[primitive.attributes.POSITION].count * 3, vmodel->morphs[i][j]);
+        offset += sizeof(glm::vec3) * vmodel->model.accessors[primitive.attributes.POSITION].count * 3;
       }
       vmodel->updatedMorphWeight[i] = 0;
     }
@@ -1137,9 +1110,6 @@ int updateVModel(VModel_t *vmodel)
   // TODO(ANT) update phys
 
   // node transforms
-  glBindBuffer(GL_UNIFORM_BUFFER, vmodel->nodesUBO);
-  glBufferSubData(GL_UNIFORM_BUFFER, 0, sizeof(glm::mat4) * vmodel->model.nodes.size(), vmodel->nodeTransforms);
-  glBindBuffer(GL_UNIFORM_BUFFER, 0);
 
   return 0;
 }
@@ -1167,16 +1137,21 @@ void freeVModel(VModel_t *vmodel)
     {
       free(vmodel->morphs[i][j]);
     }
-    glDeleteBuffers(vmodel->model.meshes[i].primitives.size(), vmodel->morphsVBO[i]);
     free(vmodel->morphs[i]);
-    free(vmodel->morphsVBO[i]);
   }
-  free(vmodel->updatedMorphWeight);
   free(vmodel->morphs);
+  glDeleteBuffers(vmodel->model.meshes.size(), vmodel->morphsVBO);
   free(vmodel->morphsVBO);
+  free(vmodel->updatedMorphWeight);
   free(vmodel->materialColorTransforms);
   free(vmodel->materialTextureTransform);
   glDeleteBuffers(1, &vmodel->UBO);
   glDeleteBuffers(1, &vmodel->nodesUBO);
   gltf::freeModel(&vmodel->model);
+  for (int i = 0; i < vmodel->model.accessors.size(); i++)
+  {
+    if (vmodel->model.accessors[i].sparse.count > 0)
+      free(vmodel->accessorBuffers[i]);
+  }
+  free(vmodel->accessorBuffers);
 }

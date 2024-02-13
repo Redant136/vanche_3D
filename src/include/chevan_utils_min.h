@@ -1,16 +1,16 @@
 #pragma once
 #ifndef CHEVAN_UTILS_MIN_H
 #define CHEVAN_UTILS_MIN_H
-#define CHEVAN_UTILS_VERSION "3.0.0"
+#define CHEVAN_UTILS_VERSION "3.2.0"
 #include <stdio.h>
 #include <stddef.h>
 #include <stdlib.h>
 #include <stdint.h>
 #include <string.h>
 #include <assert.h>
-#define CHEVAN_UTILS_INLINE inline
 #define CHVAL 0x86AC
-static void membuild(void *dst, const void *src, const size_t size)
+#define CHARG_EVAL(F,...) F(__VA_ARGS__)
+static inline void membuild(void *dst, const void *src, const size_t size)
 {
   if(src)
     memcpy(dst, src, size);
@@ -22,14 +22,21 @@ static void membuild(void *dst, const void *src, const size_t size)
   membuild(&name, data, sizeof(name));
 #define mallocArr(type, size) malloc(sizeof(type) * (size))
 #define sizeofArr(arr) (sizeof(arr) / sizeof(arr[0]))
-#define mallocArr(type, size) malloc(sizeof(type) * (size)) // calloc technically slower as sets all bytes to 0
-#define fcompare(a, b) ((a - b) < 0.0001 && (b - a) < 0.0001)
-#define USER_NOT_IMPLEMENTED_ERROR(usr) assert(0 && "this has yet to be implemented. Please ask " #usr " to create it")
-#define AC_NOT_IMPLEMENTED_ERROR assert(0 && "this has yet to be implemented. Please kindly ask Antoine Chevalier to get off his ass and get to work")
+#define fcompare(a, b) ((a) - (b) < 0.00001 && (b) - (a) < 0.00001)
 #ifndef M_PI
 #define M_PI 3.1415926535897932384626433832
 #endif
-#define ch_printErr(...) fprintf(stderr,__VA_ARGS__);exit(1);
+#ifndef M_PI_2
+#define M_PI_2 1.57079632679489661923
+#endif
+
+#define cherrorCodeMessage(code,...) {int _code=code;if(_code){fprintf(stderr,__VA_ARGS__);exit(_code);}}
+#define chprinterr(...) cherrorCodeMessage(1,__VA_ARGS__)
+#define cherrorCode(code) cherrorCodeMessage(code, "%s:%d: Process exited with error code %d.\n", __FILE__, __LINE__, _code)
+#define chferror(fname, ...) cherrorCodeMessage(fname(__VA_ARGS__),"Function %s exited with code %d.\n", #fname, _code)
+#define chiniterr(var) cherrorCodeMessage(var == CHVAL, "%s:%d: Variable " #var " was not changed and still has the value 0x%X.\n", __FILE__, __LINE__, CHVAL)
+#define chassert(cond,reason) if(!(cond)){cherrorCodeMessage(1,"%s:%d: Assertion "#cond" has failed.\n%s\n",__FILE__,__LINE__,reason)}
+#define chfpass(fname,...) {int _code=fname(__VA_ARGS__);if(_code)return _code;}
 
 typedef unsigned char uchar;
 typedef unsigned short ushort;
@@ -38,23 +45,29 @@ typedef unsigned long ulong;
 typedef unsigned long long ullong;
 typedef long long llong;
 
+#define BitmapGenType(type, name, size) type name[size / (sizeof(type) * 8) + 1];
+#define BitmapGen(name, size) BitmapGenType(unsigned int, name, size)
+#define BitmapCheck(a, i) ((a[i / (sizeof(i) * 8)] >> (i % (sizeof(i) * 8))) & 1)
+
 #ifndef MAX
 #define MAX(a, b) ((a) > (b) ? (a) : (b))
 #endif
 #ifndef MIN
 #define MIN(a, b) ((a) < (b) ? (a) : (b))
 #endif
+#define SETMIN(set,a) (set)=MIN(set,a)
+#define SETMAX(set,a) (set)=MAX(set,a) 
 enum Cardinal8dir
 {
-  CENTER,
+  CENTER = 0,
   NORTH,
-  SOUTH,
-  EAST,
-  WEST,
   NORTH_EAST,
-  NORTH_WEST,
+  EAST,
   SOUTH_EAST,
-  SOUTH_WEST
+  SOUTH,
+  SOUTH_WEST,
+  WEST,
+  NORTH_WEST
 };
 
 typedef struct color3_t
@@ -125,24 +138,35 @@ static void *ch_bufferFile(const char *file, void **targetBuffer, size_t *buffer
   {
     fseek(fp, 0, SEEK_END);
     size_t _bufferLength = CHVAL;
-    if(!bufferLength)
+    if (!bufferLength)
       bufferLength = &_bufferLength;
     *bufferLength = ftell(fp);
-    
+
     fseek(fp, 0, SEEK_SET);
     *targetBuffer = malloc(*bufferLength);
     fread(*targetBuffer, *bufferLength, 1, fp);
     fclose(fp);
     return *targetBuffer;
   }
-  return NULL;
+  return 0;
+}
+static int ch_writeFile(const char *file, void *buffer, size_t length)
+{
+  FILE *fp = fopen(file, "wb");
+  if (fp)
+  {
+    fwrite(buffer, 1, length, fp);
+    fclose(fp);
+    return 0;
+  }
+  return 1;
 }
 
-static void ch_printMem(uchar*mem,size_t length){
-  uchar p[4096];
-  memcpy(p,mem,length);
-  for(int i=0;i<length;i++){
-    printf("%02X ",p[i]);
+static void ch_printMem(const uchar *mem, const size_t length)
+{
+  for (int i = 0; i < length; i++)
+  {
+    printf("%02X ", mem[i]);
   }
   printf("\n");
 }

@@ -77,8 +77,7 @@ static std::vector<gltf::Extension> deserialize_extensions(json extensions)
     }
     else if (ext.name == gltf::SUPPORTED_EXTENSIONS.VRM)
     {
-      fprintf(stderr, "vrm 0.0 not supported\n");
-      // exit(1);
+      chprinterr("vrm 0.0 not supported\n");
       // gltf::Extensions::VRM tmpExt = deserializeVRM(x.value());
       gltf::Extensions::VRM *vrm = new gltf::Extensions::VRM();
       // *vrm = tmpExt;
@@ -189,6 +188,7 @@ static std::vector<gltf::Extension> deserialize_extensions(json extensions)
         }
         springBone->springs.push_back(spr);
       }
+      ext.data=springBone;
     }
     else if (ext.name == gltf::SUPPORTED_EXTENSIONS.VRMC_materials_mtoon)
     {
@@ -724,8 +724,7 @@ static std::vector<gltf::Extension> deserialize_extensions(json extensions)
     }
     else
     {
-      fprintf(stderr, "%s: extension not supported\n", x.key().c_str());
-      exit(1);
+      chprinterr("%s: extension not supported\n", x.key().c_str());
       continue;
     }
     vec.push_back(ext);
@@ -766,9 +765,7 @@ static gltf::glTFModel parseGLTFJSON(json glTF_data)
 #define jsonConvertCastMacro(item, dst, id, type, castType) jsonFunctionMacro(item, id, dst.id = (castType)item.value().get<type>();)
 #define jsonArrayMacro(item, dst, id, type, i) jsonFunctionMacro( \
     item, id, dst.id.resize(item.value().size()); for (uint i = 0; i < item.value().size(); i++) { dst.id[i] = item.value()[i].get<type>(); });
-#define jsonUnknownMacro(item, location)                                                                      \
-  fprintf(stderr, "%s:%d: %s unknow item in object %s\n", __FILE__, __LINE__, item.key().c_str(), #location); \
-  exit(1);
+#define jsonUnknownMacro(item, location) chprinterr("%s:%d: %s unknow item in object %s\n", __FILE__, __LINE__, item.key().c_str(), #location);
 
   gltf::glTFModel gltf;
 
@@ -1642,8 +1639,7 @@ static gltf::glTFModel parseGLB(std::string path, BIN_t bin)
   printf("Loading model:%s\nglTF version %d size: %d, magic: %s\n", path.c_str(), header.version, header.dataSize, std::string(header.glTF,4).c_str());
   if (memcmp("glTF", header.glTF, 4))
   {
-    fprintf(stderr, "Error loading file at %s:%d.\nUnexpected magic: %s. File might be corrupted\n", __FILE__, __LINE__, header.glTF);
-    exit(1);
+    chprinterr("Error loading file at %s:%d.\nUnexpected magic: %s. File might be corrupted\n", __FILE__, __LINE__, header.glTF);
   }
   bin.size -= sizeof(header);
 
@@ -1656,7 +1652,7 @@ static gltf::glTFModel parseGLB(std::string path, BIN_t bin)
 #define JSON_GLB_CHUNK 0x4E4F534A
 #define BIN_GLB_CHUNK 0x004E4942
   int dataSize = 12, nChunks = 0;
-  chunk_t chunks[2];
+  chunk_t chunks[2] = {{0}, {0}};
   while (dataSize < header.dataSize)
   {
     chunk_t c = {CHVAL, CHVAL, 0};
@@ -1670,10 +1666,7 @@ static gltf::glTFModel parseGLB(std::string path, BIN_t bin)
     else if (c.type == BIN_GLB_CHUNK)
       chunks[1] = c;
     else
-    {
-      fprintf(stderr, "Error during loading file chunk %d at %s:%d.\nUnexpected chunk type:%X. File might be corrupted\n", nChunks, __FILE__, __LINE__, c.type);
-      exit(1);
-    }
+      chprinterr("Error during loading file chunk %d at %s:%d.\nUnexpected chunk type:%X. File might be corrupted\n", nChunks, __FILE__, __LINE__, c.type);
   }
 
   json jsonData = json::parse(chunks[0].data, chunks[0].data + chunks[0].length);
@@ -1681,8 +1674,7 @@ static gltf::glTFModel parseGLB(std::string path, BIN_t bin)
 
   if (model.buffers.size() != 1)
   {
-    fprintf(stderr, "only 1 buffer should be present in file");
-    exit(1);
+    chprinterr("only 1 buffer should be present in file");
   }
   model.buffers[0].buffer = (uchar *)malloc(chunks[1].length);
   memcpy(model.buffers[0].buffer, chunks[1].data, chunks[1].length);
@@ -1717,8 +1709,7 @@ gltf::glTFModel loadModel(std::string path)
   bin.data = (uchar *)ch_bufferFile(path.c_str(), (void **)&bin.data, &bin.size);
   if (!bin.data)
   {
-    fprintf(stderr, "Could not open file:%s\n", path.c_str());
-    exit(1);
+    chprinterr("Could not open file:%s\n", path.c_str());
   }
 
   switch (filetype)

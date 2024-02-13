@@ -1,15 +1,19 @@
-dlib face detection http://dlib.net/webcam_face_pose_ex.cpp.html
+fix emissive texture
+1 vbo per mesh for transforms
+dlib face detection in seperate thread
 uv animation
 animation
 VRMC_node_constraint
 VRMC_springBone
+fix mtoon outline
 
+select correct face
+free entire model extensions, not just model. Missing subelements free
 VRMC_vrm look_at
 gltf camera
 GI shading
 finish screen size outline mode
 multiple texcoord
 min max accessor
-fix emissive texture
 vrm emissive color change
 VRMC_vrm third person

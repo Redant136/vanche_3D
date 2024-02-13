@@ -47,19 +47,18 @@ struct VModel_t
   std::string path;
   gltf::glTFModel model;
   glm::vec3 pos;
-  uint *renderQueue;
-  glm::mat4 *nodeTransforms;
-  uint nodesUBO;
   uint **VAO;
   uint *VBO;
   uint *gltfImageTextureIndex;
   uint sampler_obj;
   bool *updatedMorphWeight;
   glm::vec3 ***morphs;
-  uint **morphsVBO;
+  uint *morphsVBO;
   glm::vec4 *materialColorTransforms;
   glm::vec2 *materialTextureTransform;
   uint UBO;
+  uint nodesUBO;
+  uchar**accessorBuffers;
 };
 
 void shaderSetBool(const Shader_t &shader, const std::string &name, bool value);

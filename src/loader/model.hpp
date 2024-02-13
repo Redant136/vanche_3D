@@ -1018,17 +1018,16 @@ namespace gltf
     {
     case GLTF_COMPONENT_BYTE:
     case GLTF_COMPONENT_UBYTE:
-      return sizeof(char);
+      return 1;
     case GLTF_COMPONENT_SHORT:
     case GLTF_COMPONENT_USHORT:
-      return sizeof(short);
+      return 2;
     case GLTF_COMPONENT_INT:
     case GLTF_COMPONENT_UINT:
-      return sizeof(int);
     case GLTF_COMPONENT_FLOAT:
-      return sizeof(float);
+      return 4;
     case GLTF_COMPONENT_DOUBLE:
-      return sizeof(double);
+      return 8;
     default:
       assert(0);
       return 0;
@@ -1058,39 +1057,65 @@ namespace gltf
     }
   }
 
-  static uchar *getDataFromAccessor(const glTFModel &model, const Accessor &accessor, uint index)
+  static uchar *getDataFromAccessor(glTFModel &model, const Accessor &accessor, uint index)
   {
     if (accessor.sparse.count > 0)
     {
-      uchar *bfIndiceData = model.buffers[model.bufferViews[accessor.sparse.indices.bufferView].buffer].buffer;
-      bfIndiceData += model.bufferViews[accessor.sparse.indices.bufferView].byteOffset;
-      bfIndiceData += accessor.sparse.indices.byteOffset;
-      for (uint l = 0; l < accessor.sparse.count; l++)
+      uchar *bfIndiceData = model.buffers[model.bufferViews[accessor.sparse.indices.bufferView].buffer].buffer +
+                            model.bufferViews[accessor.sparse.indices.bufferView].byteOffset +
+                            accessor.sparse.indices.byteOffset;
+      int minIndex = 0, maxIndex = accessor.sparse.count - 1;
+      uint32_t minSparseIndex = CHVAL, maxSparseIndex = CHVAL;
+      switch (accessor.sparse.indices.componentType)
       {
-        uint32_t sparseIndex = 0;
-        assert(gltf::gltf_sizeof(accessor.sparse.indices.componentType) * l < model.bufferViews[accessor.sparse.indices.bufferView].byteLength);
-        if (accessor.sparse.indices.componentType == gltf::Accessor::Sparse::Indices::UNSIGNED_BYTE)
-          sparseIndex = *(uint8_t *)(bfIndiceData + l * gltf_sizeof(accessor.sparse.indices.componentType));
-        else if (accessor.sparse.indices.componentType == gltf::Accessor::Sparse::Indices::UNSIGNED_SHORT)
-          sparseIndex = *(uint16_t *)(bfIndiceData + l * gltf_sizeof(accessor.sparse.indices.componentType));
-        else
-          sparseIndex = *(uint32_t *)(bfIndiceData + l * gltf_sizeof(accessor.sparse.indices.componentType));
+      case gltf::Accessor::Sparse::Indices::UNSIGNED_BYTE:
+        minSparseIndex = *(uint8_t *)(bfIndiceData);
+        maxSparseIndex = *(uint8_t *)(bfIndiceData + maxIndex);
+        break;
+      case gltf::Accessor::Sparse::Indices::UNSIGNED_SHORT:
+        minSparseIndex = *(uint16_t *)(bfIndiceData);
+        maxSparseIndex = *(uint16_t *)(bfIndiceData + maxIndex * 2);
+        break;
+      case gltf::Accessor::Sparse::Indices::UNSIGNED_INT:
+      default:
+        minSparseIndex = *(uint32_t *)(bfIndiceData);
+        maxSparseIndex = *(uint32_t *)(bfIndiceData + maxIndex * 4);
+        break;
+      }
+      assert(minSparseIndex != CHVAL && maxSparseIndex != CHVAL);
 
-        if (sparseIndex > index)
-          break;
-        if (sparseIndex != index)
-          continue;
-        assert(gltf::gltf_num_components(accessor.type) * gltf::gltf_sizeof(accessor.componentType) * l < model.bufferViews[accessor.sparse.values.bufferView].byteLength);
-        uchar *bfValData = model.buffers[model.bufferViews[accessor.sparse.values.bufferView].buffer].buffer;
-        bfValData += model.bufferViews[accessor.sparse.values.bufferView].byteOffset;
-        bfValData += accessor.sparse.values.byteOffset;
-        bfValData += gltf::gltf_num_components(accessor.type) * gltf::gltf_sizeof(accessor.componentType) * l;
-        return bfValData;
+      // binary search
+      if (index >= minSparseIndex && index <= maxSparseIndex)
+      {
+        while (minIndex <= maxIndex)
+        {
+          uint sparseIndex = CHVAL;
+          uint l = minIndex + ((maxIndex - minIndex) >> 1);
+          switch (accessor.sparse.indices.componentType)
+          {
+          case gltf::Accessor::Sparse::Indices::UNSIGNED_BYTE:
+            sparseIndex = *(uint8_t *)(bfIndiceData + l);
+          case gltf::Accessor::Sparse::Indices::UNSIGNED_SHORT:
+            sparseIndex = *(uint16_t *)(bfIndiceData + l * 2);
+          case gltf::Accessor::Sparse::Indices::UNSIGNED_INT:
+          default:
+            sparseIndex = *(uint32_t *)(bfIndiceData + l * 4);
+          }
+
+          if (sparseIndex == index)
+            return model.buffers[model.bufferViews[accessor.sparse.values.bufferView].buffer].buffer +
+                   model.bufferViews[accessor.sparse.values.bufferView].byteOffset + accessor.sparse.values.byteOffset +
+                   gltf::gltf_num_components(accessor.type) * gltf::gltf_sizeof(accessor.componentType) * l;
+          else if (index < sparseIndex)
+            maxIndex = l - 1;
+          else
+            minIndex = l + 1;
+        }
       }
     }
     if (accessor.bufferView == -1)
       return 0;
-    const BufferView &bfView = model.bufferViews[accessor.bufferView];
+    BufferView &bfView = model.bufferViews[accessor.bufferView];
     uint byteStride = bfView.byteStride;
     if (byteStride <= 0)
     {
@@ -1102,65 +1127,10 @@ namespace gltf
         byteStride = -1;
       else
         byteStride = componentSizeInBytes * numComponents;
+      bfView.byteStride = byteStride;
     }
-    assert(accessor.count > index);
 
     uchar *data = (model.buffers[bfView.buffer].buffer + bfView.byteOffset) + accessor.byteOffset + (byteStride)*index;
-    // MAX-MIN
-    if (0)
-    {
-      for (int i = 0; i < accessor.max.size(); i++)
-      {
-        if (accessor.componentType == GLTF_COMPONENT_BYTE)
-        {
-          membuild(char, a, data + i);
-          a = MAX(accessor.max[i], MIN(accessor.min[i], a));
-          memcpy(data + i, &a, sizeof(a));
-        }
-        else if (accessor.componentType == GLTF_COMPONENT_UBYTE)
-        {
-          membuild(uchar, a, data + i);
-          a = MAX(accessor.max[i], MIN(accessor.min[i], a));
-          memcpy(data + i, &a, sizeof(a));
-        }
-        else if (accessor.componentType == GLTF_COMPONENT_SHORT)
-        {
-          membuild(int16_t, a, data + i * sizeof(int16_t));
-          a = MAX(accessor.max[i], MIN(accessor.min[i], a));
-          memcpy(data + i * sizeof(int16_t), &a, sizeof(a));
-        }
-        else if (accessor.componentType == GLTF_COMPONENT_USHORT)
-        {
-          membuild(uint16_t, a, data + i * sizeof(uint16_t));
-          a = MAX(accessor.max[i], MIN(accessor.min[i], a));
-          memcpy(data + i * sizeof(uint16_t), &a, sizeof(a));
-        }
-        else if (accessor.componentType == GLTF_COMPONENT_INT)
-        {
-          membuild(int32_t, a, data + i * sizeof(int32_t));
-          a = MAX(accessor.max[i], MIN(accessor.min[i], a));
-          memcpy(data + i * sizeof(int32_t), &a, sizeof(a));
-        }
-        else if (accessor.componentType == GLTF_COMPONENT_UINT)
-        {
-          membuild(uint32_t, a, data + i * sizeof(uint32_t));
-          a = MAX(accessor.max[i], MIN(accessor.min[i], a));
-          memcpy(data + i * sizeof(uint32_t), &a, sizeof(a));
-        }
-        else if (accessor.componentType == GLTF_COMPONENT_FLOAT)
-        {
-          membuild(float, a, data + i * sizeof(float));
-          a = MAX(accessor.max[i], MIN(accessor.min[i], a));
-          memcpy(data + i * sizeof(float), &a, sizeof(a));
-        }
-        else if (accessor.componentType == GLTF_COMPONENT_DOUBLE)
-        {
-          membuild(double, a, data + i * sizeof(double));
-          a = MAX(accessor.max[i], MIN(accessor.min[i], a));
-          memcpy(data + i * sizeof(double), &a, sizeof(a));
-        }
-      }
-    }
     return data;
   }
 

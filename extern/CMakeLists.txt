@@ -7,13 +7,12 @@ if(NOT glfw_FOUND)
   add_subdirectory(glfw)
 endif()
 
-# add_subdirectory(glm)
-
 set(JSON_BuildTests OFF CACHE INTERNAL "")
 add_subdirectory(json)
 
 add_subdirectory(glm)
 
+add_subdirectory(dlib)
 
 
 
