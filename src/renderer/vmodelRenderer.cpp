@@ -1028,6 +1028,78 @@ void vmodelSetVRMExpressions(VModel_t *vmodel, float *values)
 #undef SetMorphTargetWeight
 }
 
+int vmodelGetVRMNode(VModel_t *vmodel, std::string name){
+  int vrmIndex=gltf::findExtensionIndex("VRMC_vrm",vmodel->model);
+  if (vrmIndex < 0)
+  {
+    fprintf(stderr, "Model is not a VRM model\n");
+    return -1;
+  }
+  gltf::Extensions::VRMC_vrm *VRM = (gltf::Extensions::VRMC_vrm *)vmodel->model.extensions[vrmIndex].data;
+#define _vmodelCheckNodeName(NAME) \
+  else if (name == #NAME)               \
+    return VRM->humanoid.humanBones.NAME.node;
+  if (name == "hips") return VRM->humanoid.humanBones.hips.node;
+  _vmodelCheckNodeName(spine)
+  _vmodelCheckNodeName(chest)
+  _vmodelCheckNodeName(upperChest)
+  _vmodelCheckNodeName(neck)
+  _vmodelCheckNodeName(head)
+  _vmodelCheckNodeName(leftEye)
+  _vmodelCheckNodeName(rightEye)
+  _vmodelCheckNodeName(jaw)
+  _vmodelCheckNodeName(leftUpperLeg)
+  _vmodelCheckNodeName(leftLowerLeg)
+  _vmodelCheckNodeName(leftFoot)
+  _vmodelCheckNodeName(leftToes)
+  _vmodelCheckNodeName(rightUpperLeg)
+  _vmodelCheckNodeName(rightLowerLeg)
+  _vmodelCheckNodeName(rightFoot)
+  _vmodelCheckNodeName(rightToes)
+  _vmodelCheckNodeName(leftShoulder)
+  _vmodelCheckNodeName(leftUpperArm)
+  _vmodelCheckNodeName(leftLowerArm)
+  _vmodelCheckNodeName(leftHand)
+  _vmodelCheckNodeName(rightShoulder)
+  _vmodelCheckNodeName(rightUpperArm)
+  _vmodelCheckNodeName(rightLowerArm)
+  _vmodelCheckNodeName(rightHand)
+  _vmodelCheckNodeName(leftThumbMetacarpal)
+  _vmodelCheckNodeName(leftThumbProximal)
+  _vmodelCheckNodeName(leftThumbDistal)
+  _vmodelCheckNodeName(leftIndexProximal)
+  _vmodelCheckNodeName(leftIndexIntermediate)
+  _vmodelCheckNodeName(leftIndexDistal)
+  _vmodelCheckNodeName(leftMiddleProximal)
+  _vmodelCheckNodeName(leftMiddleIntermediate)
+  _vmodelCheckNodeName(leftMiddleDistal)
+  _vmodelCheckNodeName(leftRingProximal)
+  _vmodelCheckNodeName(leftRingIntermediate)
+  _vmodelCheckNodeName(leftRingDistal)
+  _vmodelCheckNodeName(leftLittleProximal)
+  _vmodelCheckNodeName(leftLittleIntermediate)
+  _vmodelCheckNodeName(leftLittleDistal)
+  _vmodelCheckNodeName(rightThumbMetacarpal)
+  _vmodelCheckNodeName(rightThumbProximal)
+  _vmodelCheckNodeName(rightThumbDistal)
+  _vmodelCheckNodeName(rightIndexProximal)
+  _vmodelCheckNodeName(rightIndexIntermediate)
+  _vmodelCheckNodeName(rightIndexDistal)
+  _vmodelCheckNodeName(rightMiddleProximal)
+  _vmodelCheckNodeName(rightMiddleIntermediate)
+  _vmodelCheckNodeName(rightMiddleDistal)
+  _vmodelCheckNodeName(rightRingProximal)
+  _vmodelCheckNodeName(rightRingIntermediate)
+  _vmodelCheckNodeName(rightRingDistal)
+  _vmodelCheckNodeName(rightLittleProximal)
+  _vmodelCheckNodeName(rightLittleIntermediate)
+  _vmodelCheckNodeName(rightLittleDistal)
+  else{
+    fprintf(stderr,"No such node");
+    return -1;
+  }
+}
+
 int renderVModel(VModel_t vmodel)
 {
   glUseProgram(WORLD.shaders.defaultShader.ID);

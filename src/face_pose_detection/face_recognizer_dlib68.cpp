@@ -120,7 +120,9 @@ int recognizer_init(int cameraID)
   // check if open
   if (!capture.isOpened())
   {
-    return VANCHE_FRECOG_NO_CAMERA;
+    capture.open(cameraID,cv::CAP_ANY);
+    if(!capture.isOpened())
+      return VANCHE_FRECOG_NO_CAMERA;
   }
 
   printf("Camera is %.0fx%.0f.\n", capture.get(cv::CAP_PROP_FRAME_WIDTH), capture.get(cv::CAP_PROP_FRAME_HEIGHT));

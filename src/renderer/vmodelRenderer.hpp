@@ -92,4 +92,6 @@ void freeVModel(VModel_t *vmodel);
 void vmodelSetMorphWeight(VModel_t *vmodel, uint mesh, uint weight, float weightVal);
 void vmodelVRMSetMorphWeight(VModel_t *vmodel, uint mesh, std::string target, float weight);
 void vmodelSetVRMExpressions(VModel_t *vmodel, float *values);
+int vmodelGetVRMNode(VModel_t*vmodel,std::string name);
+
 #endif

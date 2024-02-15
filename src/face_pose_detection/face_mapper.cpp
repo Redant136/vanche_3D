@@ -1,11 +1,12 @@
 #include "face_mapper.hpp"
 #include <glm/gtx/string_cast.hpp>
 
-static uint32_t TRACKER_MAP = 0b00001;
-#define TRACK_MOUTH (TRACKER_MAP & 1 << 0)
-#define TRACK_EYES (TRACKER_MAP & 1 << 1)
-#define TRACK_PUPILS (TRACKER_MAP & 1 << 2)
-#define TRACK_EMOTION (TRACKER_MAP & 1 << 3)
+static uint32_t TRACKER_MAP = 0x03;
+#define TRACK_NEUTRAL (TRACKER_MAP & 1 << 0)
+#define TRACK_MOUTH (TRACKER_MAP & 1 << 1)
+#define TRACK_EYES (TRACKER_MAP & 1 << 2)
+#define TRACK_PUPILS (TRACKER_MAP & 1 << 3)
+#define TRACK_EMOTION (TRACKER_MAP & 1 << 4)
 
 union
 {
@@ -46,9 +47,10 @@ union
       glm::vec2 *custom;
     } other;
   };
-  glm::vec2 *deltas[0];
+  glm::vec2 *deltas[1];
 } tracker_deltas;
 union Model_Expressions_Weights_t model_expressions;
+struct Model_Sensitivity_t model_sensitivity;
 
 int mapper_init()
 {
@@ -67,7 +69,7 @@ int mapper_init()
     tracker_deltas.emotions_deltas.relaxed = tracker_deltas.emotions_deltas.happy + 68 * 3;
     tracker_deltas.emotions_deltas.surprised = tracker_deltas.emotions_deltas.happy + 68 * 4;
 
-    // time 5 cause 5 vowels
+    // mouth
     tracker_deltas.mouth_deltas.aa = (glm::vec2 *)calloc(5 * 68, sizeof(glm::vec2));
     tracker_deltas.mouth_deltas.ih = tracker_deltas.mouth_deltas.aa + 68 * 1;
     tracker_deltas.mouth_deltas.ou = tracker_deltas.mouth_deltas.aa + 68 * 2;
@@ -80,27 +82,27 @@ int mapper_init()
     tracker_deltas.eyes_deltas.blinkLeft = tracker_deltas.eyes_deltas.blink + 68 * 1;
     tracker_deltas.eyes_deltas.blinkLeft = tracker_deltas.eyes_deltas.blink + 68 * 2;
 
+    // other
+    tracker_deltas.other.neutral=(glm::vec2*)calloc(2*68,sizeof(glm::vec2));
+    tracker_deltas.other.custom = tracker_deltas.other.neutral + 68 * 1;
 
-
-
-    void *tracker_deltaData;
+    void *tracker_deltaData=0;
     ch_bufferFile("../dlib68Trackers.bin", &tracker_deltaData, 0);
-    memcpy(tracker_deltas.mouth_deltas.aa,tracker_deltaData,sizeof(glm::vec2)*68*5);
+    memcpy(tracker_deltas.mouth_deltas.aa, tracker_deltaData, sizeof(glm::vec2) * 68 * 5);
   }
   return 0;
 }
 
 static int partial_deriv_solve(glm::vec2 *points)
 {
-
 #ifdef VANCHE_FACE_ENGINE_dlib68
-  const float epsilon = 100;
+  const float epsilon = 105;
   glm::vec2 cost[68];
   glm::vec2 estimate[68] = {glm::vec2(0, 0)};
   // get estimate
   for (int i = 0; i < 68; i++)
   {
-    for (int j = 0; j < sizeof(model_expressions) / sizeof(float); j++)
+    for (int j = 0; j < sizeof(Model_Expressions_Weights_t) / sizeof(float); j++)
     {
       if (tracker_deltas.deltas[j])
         estimate[i] += model_expressions.data[j] * tracker_deltas.deltas[j][i];
@@ -109,13 +111,20 @@ static int partial_deriv_solve(glm::vec2 *points)
   // get delta
   for (int i = 0; i < 68; i++)
   {
-    cost[i] = points[i] - estimate[i];
+    cost[i] = estimate[i] - points[i];
   }
-  // partial deriv
 
-  // mouth
-  if(TRACK_MOUTH){
-    float changes[5]={0};
+  // partial deriv
+  if(TRACK_NEUTRAL){
+    float change=0;
+    for(int i=0;i<68;i++)
+      change += tracker_deltas.other.neutral[i].x * cost[i].x + tracker_deltas.other.neutral[i].y * cost[i].y;
+    model_expressions.neutral = MIN(1, MAX(0, model_expressions.neutral - model_sensitivity.neutral * epsilon * change));
+    SETMIN(model_expressions.neutral,1);
+  }
+  if (TRACK_MOUTH)
+  {
+    float changes[5] = {0};
     for (int i = 48; i < 68; i++)
     {
       changes[0] += tracker_deltas.mouth_deltas.aa[i].x * cost[i].x + tracker_deltas.mouth_deltas.aa[i].y * cost[i].y;
@@ -124,11 +133,23 @@ static int partial_deriv_solve(glm::vec2 *points)
       changes[3] += tracker_deltas.mouth_deltas.ee[i].x * cost[i].x + tracker_deltas.mouth_deltas.ee[i].y * cost[i].y;
       changes[4] += tracker_deltas.mouth_deltas.oh[i].x * cost[i].x + tracker_deltas.mouth_deltas.oh[i].y * cost[i].y;
     }
-    model_expressions.aa = MAX(model_expressions.aa + epsilon * changes[0], 0);
-    model_expressions.ih = MAX(model_expressions.ih + epsilon * changes[1], 0);
-    model_expressions.ou = MAX(model_expressions.ou + epsilon * changes[2], 0);
-    model_expressions.ee = MAX(model_expressions.ee + epsilon * changes[3], 0);
-    model_expressions.oh = MAX(model_expressions.oh + epsilon * changes[4], 0);
+    model_expressions.aa = MIN(1, MAX(0, model_expressions.aa - model_sensitivity.aa * epsilon * changes[0]));
+    model_expressions.ih = MIN(1, MAX(0, model_expressions.ih - model_sensitivity.ih * epsilon * changes[1]));
+    model_expressions.ou = MIN(1, MAX(0, model_expressions.ou - model_sensitivity.ou * epsilon * changes[2]));
+    model_expressions.ee = MIN(1, MAX(0, model_expressions.ee - model_sensitivity.ee * epsilon * changes[3]));
+    model_expressions.oh = MIN(1, MAX(0, model_expressions.oh - model_sensitivity.oh * epsilon * changes[4]));
+
+    // float min = model_expressions.aa;
+    // SETMIN(min, model_expressions.ih);
+    // SETMIN(min, model_expressions.ou);
+    // SETMIN(min, model_expressions.ee);
+    // SETMIN(min, model_expressions.oh);
+    // model_expressions.aa -= min;
+    // model_expressions.ih -= min;
+    // model_expressions.ou -= min;
+    // model_expressions.ee -= min;
+    // model_expressions.oh -= min;
+    // printf("%f\n%f\n%f\n%f\n%f\n\n", model_expressions.aa, model_expressions.ih, model_expressions.ou, model_expressions.ee, model_expressions.oh);
   }
 #endif
   return 0;
@@ -136,35 +157,7 @@ static int partial_deriv_solve(glm::vec2 *points)
 
 int map_points(glm::vec2 *points)
 {
-  partial_deriv_solve(points);
+  if (VANCHE_FMAPPER_SOLVER == VANCHE_FMAPPER_derivSolver)
+    partial_deriv_solve(points);
   return 0;
 }
-
-#if 0
-
-  glm::vec2 aa[] = {
-      /*48:*/ glm::vec2(-6, 0),
-      /*49:*/ glm::vec2(-5, 2),
-      /*50:*/ glm::vec2(-2, 5),
-      /*51:*/ glm::vec2(0, 5),
-      /*52:*/ glm::vec2(2, 5),
-      /*53:*/ glm::vec2(5, 2),
-      /*54:*/ glm::vec2(6, 0),
-
-      /*55:*/ glm::vec2(4, 12),
-      /*56:*/ glm::vec2(2, 16),
-      /*57:*/ glm::vec2(0, 17),
-      /*58:*/ glm::vec2(-2, 16),
-      /*59:*/ glm::vec2(-4, 12),
-
-      /*60:*/ glm::vec2(-4, 1),
-      /*61:*/ glm::vec2(-2, 2),
-      /*62:*/ glm::vec2(0, 2),
-      /*63:*/ glm::vec2(2, 2),
-      /*64:*/ glm::vec2(4, 1),
-      /*65:*/ glm::vec2(3, 18),
-      /*66:*/ glm::vec2(0, 19),
-      /*67:*/ glm::vec2(-3, 18)};
-  memcpy(mouthVowelsOffsets.aa, aa, sizeof(aa));
-
-#endif

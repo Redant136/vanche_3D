@@ -27,12 +27,6 @@ static int camera_opened = 1;
 VModel_t vmodel;
 float angle = 0;
 
-struct
-{
-  int aa_n, ih_n, ou_n, ee_n, oh_n;
-  glm::vec2 aa[68], ih[68], ou[68], ee[68], oh[68];
-} tmp_face;
-
 void init()
 {
   vmodel.path = modelPath;
@@ -42,7 +36,7 @@ void init()
   WORLD.camera.pos.y = 1.4;
   WORLD.camera.pos.z = 0.4;
   // id of the camera to be opened
-  camera_opened = recognizer_init(0);
+  camera_opened = recognizer_init();
   if (camera_opened && camera_opened != VANCHE_FRECOG_NO_CAMERA)
     fprintf(stderr,"Error while opening camera: %d",camera_opened);
 
@@ -50,12 +44,13 @@ void init()
   if (camera_opened)
   {
     chferror(mapper_init);
-    chferror(recognizer_calibrate);
+    int err=recognizer_calibrate();
+    if(err&&err!=VANCHE_FRECOG_NO_FACE){
+      chprinterr("An error occured while calibrating the camera with code: %d", err);
+    }
   }
   else
     fprintf(stderr, "Camera failed to open. Running without face recognition\n");
-
-  memset(&tmp_face,0,sizeof(tmp_face));
 }
 
 void update()
@@ -111,15 +106,6 @@ void update()
     angle -= 0.1;
     WORLD.camera.updated = true;
   }
-  if (glfwGetKey(window, GLFW_KEY_C) == GLFW_PRESS)
-  {
-    int camCode = recognizer_calibrate();
-    if (camCode == VANCHE_FRECOG_CAMERA_READ_ERR)
-    {
-      fprintf(stderr, "Camera read error");
-      exit(camCode);
-    }
-  }
 
   WORLD.camera.pos.z += X * cos(angle) + Z * sin(angle);
   WORLD.camera.pos.x += -X * sin(angle) + Z * cos(angle);
@@ -129,60 +115,29 @@ void update()
   WORLD.camera.rot.w = 0;
   if (camera_opened)
   {
+    if (glfwGetKey(window, GLFW_KEY_C) == GLFW_PRESS)
+    {
+      int camCode = recognizer_calibrate();
+      if (camCode == VANCHE_FRECOG_CAMERA_READ_ERR)
+      {
+        fprintf(stderr, "Camera read error");
+        exit(camCode);
+      }
+    }
     // get facial landmarks and movement
     int recog_err = recognizer_update();
     if (recog_err != VANCHE_FRECOG_NO_FACE)
     {
-      // get face transforms (delet later)
-      if(1)
-      {
-        if (glfwGetKey(window, GLFW_KEY_A) == GLFW_PRESS)
-        {
-          tmp_face.aa_n++;
-          for (int i = 0; i < 68; i++)
-          {
-            tmp_face.aa[i] += facial_landmarks[i];
-          }
-        }
-        if (glfwGetKey(window, GLFW_KEY_I) == GLFW_PRESS)
-        {
-          tmp_face.ih_n++;
-          for (int i = 0; i < 68; i++)
-          {
-            tmp_face.ih[i] += facial_landmarks[i];
-          }
-        }
-        if (glfwGetKey(window, GLFW_KEY_U) == GLFW_PRESS)
-        {
-          tmp_face.ou_n++;
-          for (int i = 0; i < 68; i++)
-          {
-            tmp_face.ou[i] += facial_landmarks[i];
-          }
-        }
-        if (glfwGetKey(window, GLFW_KEY_E) == GLFW_PRESS)
-        {
-          tmp_face.ee_n++;
-          for (int i = 0; i < 68; i++)
-          {
-            tmp_face.ee[i] += facial_landmarks[i];
-          }
-        }
-        if (glfwGetKey(window, GLFW_KEY_O) == GLFW_PRESS)
-        {
-          tmp_face.oh_n++;
-          for (int i = 0; i < 68; i++)
-          {
-            tmp_face.oh[i] += facial_landmarks[i];
-          }
-        }
-      }
-      
       // map facial landmarks to expressions
       chferror(map_points, facial_landmarks);
 
       // pass expressions to model
       vmodelSetVRMExpressions(&vmodel, model_expressions.data);
+
+      // rotate model
+      // int headNode=vmodelGetVRMNode(&vmodel,"head");
+      // assert(headNode!=-1);
+      // memcpy(vmodel.model.nodes[headNode].matrix, &facial_movement, sizeof(glm::mat4));
     }
   }
   end_t = clock();
@@ -197,46 +152,7 @@ int main()
   freeVModel(&vmodel);
   recognizer_close();
 
-  for(int i=0;i<68;i++){
-    tmp_face.aa[i] /= tmp_face.aa_n;
-    tmp_face.ih[i] /= tmp_face.ih_n;
-    tmp_face.ou[i] /= tmp_face.ou_n;
-    tmp_face.ee[i] /= tmp_face.ee_n;
-    tmp_face.oh[i] /= tmp_face.oh_n;
-  }
-
   // ch_writeFile("../dlib68Trackers.bin", (void *)tmp_face.aa, 5*68 * sizeof(glm::vec2));
-
-  // std::cout<< "aa={";
-  // for (int i = 0; i < 68; i++)
-  // {
-  //   std::cout << glm::to_string(tmp_face.aa[i])<<",";
-  // }
-  // std::cout << "}" << std::endl;
-  // std::cout<< "ih={";
-  // for (int i = 0; i < 68; i++)
-  // {
-  //   std::cout << glm::to_string(tmp_face.ih[i])<<",";
-  // }
-  // std::cout << "}" << std::endl;
-  // std::cout<< "ou={";
-  // for (int i = 0; i < 68; i++)
-  // {
-  //   std::cout << glm::to_string(tmp_face.ou[i])<<",";
-  // }
-  // std::cout << "}" << std::endl;
-  // std::cout<< "ee={";
-  // for (int i = 0; i < 68; i++)
-  // {
-  //   std::cout << glm::to_string(tmp_face.ee[i])<<",";
-  // }
-  // std::cout << "}" << std::endl;
-  // std::cout<< "oh={";
-  // for (int i = 0; i < 68; i++)
-  // {
-  //   std::cout << glm::to_string(tmp_face.oh[i])<<",";
-  // }
-  // std::cout << "}" << std::endl;
 
   return 0;
 }
