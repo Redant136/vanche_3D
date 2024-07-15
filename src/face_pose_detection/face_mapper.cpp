@@ -1,4 +1,5 @@
 #include "face_mapper.hpp"
+#include <iostream>
 #include <glm/gtx/string_cast.hpp>
 
 static uint32_t TRACKER_MAP = 0x03;
@@ -7,6 +8,10 @@ static uint32_t TRACKER_MAP = 0x03;
 #define TRACK_EYES (TRACKER_MAP & 1 << 2)
 #define TRACK_PUPILS (TRACKER_MAP & 1 << 3)
 #define TRACK_EMOTION (TRACKER_MAP & 1 << 4)
+
+#ifndef VANCHE_FACEMAPPER_BINPATH
+#define VANCHE_FACEMAPPER_BINPATH "../data_files/dlib68Trackers.bin"
+#endif
 
 union
 {
@@ -87,7 +92,7 @@ int mapper_init()
     tracker_deltas.other.custom = tracker_deltas.other.neutral + 68 * 1;
 
     void *tracker_deltaData=0;
-    ch_bufferFile("../dlib68Trackers.bin", &tracker_deltaData, 0);
+    ch_bufferFile(VANCHE_FACEMAPPER_BINPATH, &tracker_deltaData, 0);
     memcpy(tracker_deltas.mouth_deltas.aa, tracker_deltaData, sizeof(glm::vec2) * 68 * 5);
   }
   return 0;
@@ -96,7 +101,7 @@ int mapper_init()
 static int partial_deriv_solve(glm::vec2 *points)
 {
 #ifdef VANCHE_FACE_ENGINE_dlib68
-  const float epsilon = 105;
+  const float epsilon = 3;
   glm::vec2 cost[68];
   glm::vec2 estimate[68] = {glm::vec2(0, 0)};
   // get estimate
@@ -112,15 +117,16 @@ static int partial_deriv_solve(glm::vec2 *points)
   for (int i = 0; i < 68; i++)
   {
     cost[i] = estimate[i] - points[i];
+    cost[i] *= 2;
   }
 
   // partial deriv
-  if(TRACK_NEUTRAL){
-    float change=0;
+  if (TRACK_NEUTRAL)
+  {
+    float change = 0;
     for(int i=0;i<68;i++)
       change += tracker_deltas.other.neutral[i].x * cost[i].x + tracker_deltas.other.neutral[i].y * cost[i].y;
-    model_expressions.neutral = MIN(1, MAX(0, model_expressions.neutral - model_sensitivity.neutral * epsilon * change));
-    SETMIN(model_expressions.neutral,1);
+    model_expressions.neutral = MIN(1, MAX(0, model_expressions.neutral - model_sensitivity.neutral * epsilon * change*68));
   }
   if (TRACK_MOUTH)
   {
@@ -133,23 +139,11 @@ static int partial_deriv_solve(glm::vec2 *points)
       changes[3] += tracker_deltas.mouth_deltas.ee[i].x * cost[i].x + tracker_deltas.mouth_deltas.ee[i].y * cost[i].y;
       changes[4] += tracker_deltas.mouth_deltas.oh[i].x * cost[i].x + tracker_deltas.mouth_deltas.oh[i].y * cost[i].y;
     }
-    model_expressions.aa = MIN(1, MAX(0, model_expressions.aa - model_sensitivity.aa * epsilon * changes[0]));
-    model_expressions.ih = MIN(1, MAX(0, model_expressions.ih - model_sensitivity.ih * epsilon * changes[1]));
-    model_expressions.ou = MIN(1, MAX(0, model_expressions.ou - model_sensitivity.ou * epsilon * changes[2]));
-    model_expressions.ee = MIN(1, MAX(0, model_expressions.ee - model_sensitivity.ee * epsilon * changes[3]));
-    model_expressions.oh = MIN(1, MAX(0, model_expressions.oh - model_sensitivity.oh * epsilon * changes[4]));
-
-    // float min = model_expressions.aa;
-    // SETMIN(min, model_expressions.ih);
-    // SETMIN(min, model_expressions.ou);
-    // SETMIN(min, model_expressions.ee);
-    // SETMIN(min, model_expressions.oh);
-    // model_expressions.aa -= min;
-    // model_expressions.ih -= min;
-    // model_expressions.ou -= min;
-    // model_expressions.ee -= min;
-    // model_expressions.oh -= min;
-    // printf("%f\n%f\n%f\n%f\n%f\n\n", model_expressions.aa, model_expressions.ih, model_expressions.ou, model_expressions.ee, model_expressions.oh);
+    model_expressions.aa = MIN(1, MAX(0, model_expressions.aa - model_sensitivity.aa * epsilon * changes[0]*20));
+    model_expressions.ih = MIN(1, MAX(0, model_expressions.ih - model_sensitivity.ih * epsilon * changes[1]*20));
+    model_expressions.ou = MIN(1, MAX(0, model_expressions.ou - model_sensitivity.ou * epsilon * changes[2]*20));
+    model_expressions.ee = MIN(1, MAX(0, model_expressions.ee - model_sensitivity.ee * epsilon * changes[3]*20));
+    model_expressions.oh = MIN(1, MAX(0, model_expressions.oh - model_sensitivity.oh * epsilon * changes[4]*20));
   }
 #endif
   return 0;

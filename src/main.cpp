@@ -8,6 +8,7 @@
 #include <iostream>
 #include <time.h>
 #include <glm/gtx/string_cast.hpp>
+#include <chevan_utils_macro.h>
 
 #define helmet "../models/DamagedHelmet.glb"
 #define male1 "../models/male1.glb"
@@ -17,12 +18,11 @@
 #define wave "../models/wave/scene.gltf"
 #define seedsan "../models/Seed-san.vrm"
 #define female2 "../models/VRM1_Constraint_Twist_Sample.vrm"
-#define monkey "../models/SuzanneMorphSparse.glb"
-#define antoinegameing "/home/chevan/Downloads/antoinegaming.glb"
-#define modelPath seedsan
 
-static float last_time = 0;
+static char modelPath[256];
 static int camera_opened = 1;
+
+#include <chevan_utils_array.h>
 
 VModel_t vmodel;
 float angle = 0;
@@ -38,16 +38,14 @@ void init()
   // id of the camera to be opened
   camera_opened = recognizer_init();
   if (camera_opened && camera_opened != VANCHE_FRECOG_NO_CAMERA)
-    fprintf(stderr,"Error while opening camera: %d",camera_opened);
-
+    fprintf(stderr,"Error while opening the camera. Error number %d",camera_opened);
   camera_opened = !camera_opened;
   if (camera_opened)
   {
     chferror(mapper_init);
-    int err=recognizer_calibrate();
-    if(err&&err!=VANCHE_FRECOG_NO_FACE){
+    int err = recognizer_calibrate();
+    if (err && err != VANCHE_FRECOG_NO_FACE)
       chprinterr("An error occured while calibrating the camera with code: %d", err);
-    }
   }
   else
     fprintf(stderr, "Camera failed to open. Running without face recognition\n");
@@ -55,9 +53,9 @@ void init()
 
 void update()
 {
-  clock_t start_t, end_t;
-  double total_t;
-  start_t = clock();
+  clock_t start_time, end_time;
+  double total_time;
+  start_time = clock();
   // background color
   glClearColor(0.3f, 0.3f, 0.3f, 1.f);
   updateVModel(&vmodel);
@@ -140,15 +138,24 @@ void update()
       // memcpy(vmodel.model.nodes[headNode].matrix, &facial_movement, sizeof(glm::mat4));
     }
   }
-  end_t = clock();
-  total_t = (double)(end_t - start_t) / CLOCKS_PER_SEC;
+  end_time = clock();
+  total_time = (double)(end_time - start_time) / CLOCKS_PER_SEC;
+  total_time += 0;
   // printf("FPS: %f\n",1/total_t);
 }
 
-int main()
+int main(int argn,char**args)
 {
+  if(argn>1){
+    strcpy(modelPath,args[1]);
+  }else{
+    strcpy(modelPath,seedsan);
+  }
   printf("Vanche Start\n");
+  printf("Launching with model %s\n",modelPath);
   launch();
+
+
   freeVModel(&vmodel);
   recognizer_close();
 

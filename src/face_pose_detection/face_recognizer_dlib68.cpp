@@ -15,7 +15,7 @@
 #include <math.h>
 #endif
 
-#define face_detector_path "../shape_predictor_68_face_landmarks.dat"
+#define face_detector_path "../data_files/shape_predictor_68_face_landmarks.dat"
 #define toglmvec2(V) glm::vec2(V.x(), V.y())
 #define cv2vec3(V) glm::vec3(V.at<double>(0), V.at<double>(1), V.at<double>(2))
 #define cv2mat3(M) glm::mat3(M.at<double>(0), M.at<double>(1), M.at<double>(2), \
@@ -105,6 +105,7 @@ glm::mat4 facial_movement;
 
 int recognizer_init(int cameraID)
 {
+  cv::utils::logging::setLogLevel(cv::utils::logging::LogLevel::LOG_LEVEL_SILENT);
   facial_landmarks = (glm::vec2 *)malloc(sizeof(glm::vec2) * 68);
 
 // init camera
@@ -128,12 +129,10 @@ int recognizer_init(int cameraID)
   printf("Camera is %.0fx%.0f.\n", capture.get(cv::CAP_PROP_FRAME_WIDTH), capture.get(cv::CAP_PROP_FRAME_HEIGHT));
   detector = dlib::get_frontal_face_detector();
   dlib::deserialize(face_detector_path) >> pose_model;
-  cv::utils::logging::setLogLevel(cv::utils::logging::LogLevel::LOG_LEVEL_SILENT);
-
   return 0;
 }
 
-// remove on release
+// TODO(ANT) remove on release
 #if 0
 dlib::image_window win;
 #endif
@@ -218,14 +217,13 @@ int recognizer_update()
   glm::vec3 tvec = cv2vec3(tvec_cv);
 
   glm::vec3 center = glm::vec3(toglmvec2(pose.part(30)) / (float)frame.cols, 0) - tvec / tvec.z + tvec_initial / tvec_initial.z;
-  
+
+  // inverse roll as camera perspective flips it (flips yaw and pitch)
   glm::mat3 rot_ini = glm::inverse(glm::orientate3(toEulerAngles(rmat_initial) * glm::vec3(-1, 1, -1)));
   glm::mat3 rot = glm::inverse(glm::orientate3(toEulerAngles(rmat) * glm::vec3(-1, 1, -1)));
 
   for (int i = 0; i < 68; i++)
   {
-    // inverse roll as camera perspective flips it (flips yaw and pitch)
-
     glm::vec3 ini = rot_ini * (glm::vec3(pose_initial[i] / (float)frame.cols, dlib68Depth_u.dlib68Depth[i]) - center) +
                     center - tvec_initial / tvec_initial.z;
     glm::vec3 cur = rot * (glm::vec3(toglmvec2(pose.part(i)) / (float)frame.cols, dlib68Depth_u.dlib68Depth[i]) - center) +
@@ -235,7 +233,7 @@ int recognizer_update()
   }
   facial_movement = rmat_initial;
   facial_movement = glm::translate(facial_movement, tvec_initial / tvec_initial.z);
-  facial_movement = facial_movement*glm::inverse(glm::mat4(rot));
+  facial_movement = facial_movement * glm::inverse(glm::mat4(rot));
   facial_movement = glm::translate(facial_movement, -tvec / tvec.z);
 
 #if 0

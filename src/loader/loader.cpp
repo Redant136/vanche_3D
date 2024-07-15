@@ -1629,6 +1629,9 @@ static gltf::glTFModel parseGLTF(std::string path, BIN_t bin)
 static gltf::glTFModel parseGLB(std::string path, BIN_t bin)
 {
   gltf::glTFModel model;
+  if(bin.size<=12){
+    chprinterr("Error loading file at %s:%d.\nFile seems to be empty\n", __FILE__, __LINE__);
+  }
   membuild(
       struct {
         char glTF[4];

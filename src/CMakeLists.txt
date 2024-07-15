@@ -8,7 +8,6 @@ SET(VANCHE_SOURCES
   renderer/window.c
   renderer/vmodelRenderer.cpp
   loader/loader.cpp
-  loader/model.cpp
   face_pose_detection/face_mapper.cpp)
 
 
