@@ -13,17 +13,6 @@ static void ch_printMat4(float mat[16])
     printf("%f, %f, %f, %f\n", mat[0 + i * 4], mat[1 + i * 4], mat[2 + i * 4], mat[3 + i * 4]);
   }
 }
-static void ch_printMem(void *p, ulong length)
-{
-  char *s = (char*)malloc(length + 1);
-  for (uint i = 0; i < length; i++)
-  {
-    s[i] = ((uchar *)p)[i];
-  }
-  s[length] = 0;
-  printf("%s", s);
-  free(s);
-}
 static void ch_printSep()
 {
   printf("---------------------------------\n");
@@ -154,7 +143,7 @@ static void chevanut_print_ivec4(struct ivec4 v) { printf("{%d, %d, %d, %d}", v.
 #define ch_println_recurse(...) EVAL(MAP(_chevanut_println_recurse_MAP, __VA_ARGS__, "\n"))
 #endif
 
-#define ch_print(x) _Generic((x),  \
+#define chprint(x) _Generic((x),  \
     char *: chevanut_print_str,    \
     uchar: chevanut_print_uchar,   \
     char: chevanut_print_char,     \
@@ -172,7 +161,7 @@ static void chevanut_print_ivec4(struct ivec4 v) { printf("{%d, %d, %d, %d}", v.
     CHEVANUT_VEC_PRINT\
     default: chevanut_print_ptr)(x)
 
-#define ch_println(x) \
+#define chprintln(x) \
   ch_print(x);        \
   printf("\n")
 #endif

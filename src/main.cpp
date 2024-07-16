@@ -1,10 +1,14 @@
 #include <vanche_utils.h>
 #include "renderer/window.h"
-#include "loader/model.hpp"
-#include "loader/loader.hpp"
+
+#include "loader/vanche_model.hpp"
+#include "loader/vanche_loader.hpp"
+
 #include "renderer/vmodelRenderer.hpp"
+
 #include "face_pose_detection/face_recognizer.hpp"
 #include "face_pose_detection/face_mapper.hpp"
+
 #include <iostream>
 #include <time.h>
 #include <glm/gtx/string_cast.hpp>

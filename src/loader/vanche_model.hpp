@@ -25,12 +25,16 @@ namespace gltf
     const string KHR_materials_unlit = "KHR_materials_unlit";
     const string KHR_texture_transform = "KHR_texture_transform";
     const string KHR_materials_emissive_strength = "KHR_materials_emissive_strength";
-    const string VRM = "VRM";
+    // const string VRM = "VRM";
     const string VRMC_springBone = "VRMC_springBone";
     const string VRMC_materials_mtoon = "VRMC_materials_mtoon";
     const string VRMC_node_constraint = "VRMC_node_constraint";
     const string VRMC_vrm = "VRMC_vrm";
   } SUPPORTED_EXTENSIONS;
+  static const struct
+  {
+    const string TargetNames = "targetNames";
+  } SUPPORTED_EXTRAS;
 
   struct Buffer
   {
@@ -397,6 +401,8 @@ namespace gltf
     struct KHR_materials_emissive_strength
     {
       float emissiveStrength = 1;
+      ch_hash extensions;
+      ch_hash extras;
     };
     // deprecated, VRM 0
     struct VRM

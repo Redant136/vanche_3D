@@ -1,20 +1,20 @@
-#ifndef CHEVAN_UTILS_PRINT_HPP
-#define CHEVAN_UTILS_PRINT_HPP
+#ifndef CHEVAN_UTILS_PRINT_H
+#define CHEVAN_UTILS_PRINT_H
 #include <chevan_utils_min.h>
 #include <stdio.h>
 #include <string>
 #include <iostream>
 template <typename P>
-static void print(P p);
+static void chprint(P p);
 template <typename P, typename... P2>
-static void print(P p, P2... p2);
+static void chprint(P p, P2... p2);
 template <typename P>
-static void println(P p);
+static void chprintln(P p);
 template <typename P, typename... P2>
-static void println(P p, P2... p2);
+static void chprintln(P p, P2... p2);
 
 template <typename Vector>
-static void printVec(Vector v)
+static void chprintVec(Vector v)
 {
   for (auto t : v)
   {
@@ -23,7 +23,7 @@ static void printVec(Vector v)
   std::cout << std::endl;
 }
 template <typename V>
-static void printVec2(V v)
+static void chprintVec2(V v)
 {
   println("{", v.x, ", ", v.y, "}");
 }
@@ -33,35 +33,35 @@ static void printVec3(V v)
   println("{", v.x, ", ", v.y, ", ", v.z, "}");
 }
 template <typename V>
-static void printVec4(V v)
+static void chprintVec4(V v)
 {
   println("{", v.x, ", ", v.y, ", ", v.z, ", ", v.w, "}");
 }
-static void printMat4(float mat[16])
+static void chprintMat4(float mat[16])
 {
   for (uint i = 0; i < 4; i++)
   {
-    println(mat[0 + i * 4], ", ", mat[1 + i * 4], ", ", mat[2 + i * 4], ", ", mat[3 + i * 4]);
+    chprintln(mat[0 + i * 4], ", ", mat[1 + i * 4], ", ", mat[2 + i * 4], ", ", mat[3 + i * 4]);
   }
 }
-static void printMat4(double mat[16])
+static void chprintMat4(double mat[16])
 {
   for (uint i = 0; i < 4; i++)
   {
-    println(mat[0 + i * 4], ", ", mat[1 + i * 4], ", ", mat[2 + i * 4], ", ", mat[3 + i * 4]);
+    chprintln(mat[0 + i * 4], ", ", mat[1 + i * 4], ", ", mat[2 + i * 4], ", ", mat[3 + i * 4]);
   }
 }
 template <typename M>
-static void printMat4(M mat)
+static void chprintMat4(M mat)
 {
-  printMat4((float *)&mat);
+  chprintMat4((float *)&mat);
 }
 template <typename M>
-static void printMat4D(M mat)
+static void chprintMat4D(M mat)
 {
-  printMat4((double *)&mat);
+  chprintMat4((double *)&mat);
 }
-static void printMem(void *p, ulong length = 256)
+static void chprintMem(void *p, ulong length = 256)
 {
   std::string s = "";
   for (uint i = 0; i < length; i++)
@@ -71,7 +71,7 @@ static void printMem(void *p, ulong length = 256)
   std::cout << s << std::endl;
 }
 template <typename T>
-static void printBits(T *t, size_t length = 1)
+static void chprintBits(T *t, size_t length = 1)
 {
   for (uint i = 0; i < length * 8; i++)
   {
@@ -80,7 +80,7 @@ static void printBits(T *t, size_t length = 1)
   std::cout << std::endl;
 }
 template <typename T>
-static void printBits(T t)
+static void chprintBits(T t)
 {
   for (uint i = 0; i < sizeof(T) * 8; i++)
   {
@@ -89,41 +89,41 @@ static void printBits(T t)
   std::cout << std::endl;
 }
 // ----------------------------------------------
-static void print()
+static void chprint()
 {
   std::cout << std::endl;
 }
-static void println()
+static void chprintln()
 {
   std::cout << std::endl;
 }
-static void printSep()
+static void chprintSep()
 {
   std::cout << "---------------------------------" << std::endl;
 }
-static void print(uchar *p)
+static void chprint(uchar *p)
 {
   std::cout << (void *)p;
 }
-static void print(uchar p)
+static void chprint(uchar p)
 {
-  print((int)p);
+  chprint((int)p);
 }
 #ifdef CHEVAN_UTILS_ARR_HPP
 template <typename L>
-static void print(Array<char, L> arr, L length = 256)
+static void chprint(Array<char, L> arr, L length = 256)
 {
   L l = arr.length < length ? arr.length : length;
   std::cout << std::string(arr.arr, arr.arr + l);
 }
 template <typename L>
-static void print(Array<uchar, L> arr, L length = 256)
+static void chprint(Array<uchar, L> arr, L length = 256)
 {
   L l = arr.length < length ? arr.length : length;
   std::cout << std::string(arr.arr, arr.arr + l);
 }
 template <typename T, typename L>
-static void print(Array<T, L> arr, L length = 256)
+static void chprint(Array<T, L> arr, L length = 256)
 {
   L l = arr.length < length ? arr.length : length;
   std::string s = "{";
@@ -137,7 +137,7 @@ static void print(Array<T, L> arr, L length = 256)
 }
 #endif
 template <typename T>
-static void print(std::vector<T> vec)
+static void chprint(std::vector<T> vec)
 {
   for (auto t : vec)
   {
@@ -145,24 +145,24 @@ static void print(std::vector<T> vec)
   }
 }
 #ifdef CHEVAN_UTILS_VEC2
-static void print(CHEVAN_UTILS_VEC2 v)
+static void chprint(CHEVAN_UTILS_VEC2 v)
 {
-  print("{", v.x, ", ", v.y, "}");
+  chprint("{", v.x, ", ", v.y, "}");
 }
 #endif
 #ifdef CHEVAN_UTILS_VEC3
-static void print(CHEVAN_UTILS_VEC3 v)
+static void chprint(CHEVAN_UTILS_VEC3 v)
 {
-  print("{", v.x, ", ", v.y, ", ", v.z, "}");
+  chprint("{", v.x, ", ", v.y, ", ", v.z, "}");
 }
 #endif
 #ifdef CHEVAN_UTILS_VEC4
-static void print(CHEVAN_UTILS_VEC4 v)
+static void chprint(CHEVAN_UTILS_VEC4 v)
 {
-  print("{", v.x, ", ", v.y, ", ", v.z, ", ", v.w, "}");
+  chprint("{", v.x, ", ", v.y, ", ", v.z, ", ", v.w, "}");
 }
 #endif
-static void print(Cardinal8dir dir)
+static void chprint(Cardinal8dir dir)
 {
   switch (dir)
   {
@@ -198,27 +198,27 @@ static void print(Cardinal8dir dir)
   }
 }
 template <typename Printable>
-static void print(Printable p)
+static void chprint(Printable p)
 {
   std::cout << p;
 }
 template <typename Printable>
-static void println(Printable p)
+static void chprintln(Printable p)
 {
-  print(p);
+  chprint(p);
   std::cout << std::endl;
 }
 template <typename Printable, typename... Printable2>
-static void print(Printable p, Printable2... p2)
+static void chprint(Printable p, Printable2... p2)
 {
-  print(p);
-  print(p2...);
+  chprint(p);
+  chprint(p2...);
 }
 template <typename Printable, typename... Printable2>
-static void println(Printable p, Printable2... p2)
+static void chprintln(Printable p, Printable2... p2)
 {
-  print(p);
-  print(p2...);
+  chprint(p);
+  chprint(p2...);
   std::cout << std::endl;
 }
 

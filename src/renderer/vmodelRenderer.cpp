@@ -170,7 +170,7 @@ static Shader_t createShader(std::string vertexPath, std::string geometryPath, s
   return shader;
 }
 
-static glm::mat4 getNodeTransform(const VModel_t *vmodel, uint node, const glm::mat4& parentTransform)
+static glm::mat4 getNodeTransform(const VModel_t *vmodel, uint node, const glm::mat4 &parentTransform)
 {
   glm::mat4 mat = glm::mat4(1), T = glm::mat4(1), R = glm::mat4(1), S = glm::mat4(1);
   S = glm::scale(glm::mat4(1.f), glm::vec3(vmodel->model.nodes[node].scale[0], vmodel->model.nodes[node].scale[1], vmodel->model.nodes[node].scale[2]));
@@ -303,7 +303,9 @@ void initVModel(VModel_t *vmodel)
       vmodel->accessorBuffers[i] = (uchar *)calloc(gltf::gltf_num_components(vmodel->model.accessors[i].type) *
                                                        gltf::gltf_sizeof(vmodel->model.accessors[i].componentType),
                                                    vmodel->model.accessors[i].count);
-    }else{
+    }
+    else
+    {
       vmodel->accessorBuffers[i] = (vmodel->model.buffers[bfView.buffer].buffer + bfView.byteOffset) + vmodel->model.accessors[i].byteOffset;
     }
   }
@@ -336,21 +338,21 @@ void initVModel(VModel_t *vmodel)
           if (vmodel->model.meshes[i].primitives[j].targets[k].POSITION != -1)
           {
             // membuild(glm::vec3, pos, gltf::getDataFromAccessor(vmodel->model, vmodel->model.accessors[vmodel->model.meshes[i].primitives[j].targets[k].POSITION], l));
-            membuild(glm::vec3,pos,vmodel->accessorBuffers[vmodel->model.meshes[i].primitives[j].targets[k].POSITION]+l*sizeof(glm::vec3));
+            membuild(glm::vec3, pos, vmodel->accessorBuffers[vmodel->model.meshes[i].primitives[j].targets[k].POSITION] + l * sizeof(glm::vec3));
             pos *= vmodel->model.meshes[i].weights[k];
             vmodel->morphs[i][j][l * 3 + 0] += pos;
           }
           if (vmodel->model.meshes[i].primitives[j].targets[k].NORMAL != -1)
           {
             // membuild(glm::vec3, normal, gltf::getDataFromAccessor(vmodel->model, vmodel->model.accessors[vmodel->model.meshes[i].primitives[j].targets[k].NORMAL], l));
-            membuild(glm::vec3, normal, vmodel->accessorBuffers[vmodel->model.meshes[i].primitives[j].targets[k].NORMAL]+l*sizeof(glm::vec3));
+            membuild(glm::vec3, normal, vmodel->accessorBuffers[vmodel->model.meshes[i].primitives[j].targets[k].NORMAL] + l * sizeof(glm::vec3));
             normal *= vmodel->model.meshes[i].weights[k];
             vmodel->morphs[i][j][l * 3 + 1] += normal;
           }
           if (vmodel->model.meshes[i].primitives[j].targets[k].TANGENT != -1)
           {
             // membuild(glm::vec3, tangent, gltf::getDataFromAccessor(vmodel->model, vmodel->model.accessors[vmodel->model.meshes[i].primitives[j].targets[k].TANGENT], l));
-            membuild(glm::vec3,tangent,vmodel->accessorBuffers[vmodel->model.meshes[i].primitives[j].targets[k].TANGENT]+l*sizeof(glm::vec3));
+            membuild(glm::vec3, tangent, vmodel->accessorBuffers[vmodel->model.meshes[i].primitives[j].targets[k].TANGENT] + l * sizeof(glm::vec3));
             tangent *= vmodel->model.meshes[i].weights[k];
             vmodel->morphs[i][j][l * 3 + 2] += tangent;
           }
@@ -644,12 +646,12 @@ static int renderNode(const VModel_t &vmodel, const int _node, const glm::mat4 p
       if (primitive.material > -1)
       {
         const gltf::Material &material = vmodel.model.materials[primitive.material];
-        if (gltf::findExtensionIndex("VRMC_materials_mtoon", material) != -1)
+        if (ch_hashget(void *, material.extensions, "VRMC_materials_mtoon"))
         {
-          vrmMtoon = (gltf::Extensions::VRMC_materials_mtoon *)material.extensions[gltf::findExtensionIndex("VRMC_materials_mtoon", material)].data;
+          vrmMtoon = ch_hashget(gltf::Extensions::VRMC_materials_mtoon *, material.extensions, "VRMC_materials_mtoon");
           currentShader = WORLD.shaders.mtoon;
         }
-        else if (gltf::findExtensionIndex("VRM", vmodel.model) != -1)
+        else if (ch_hashget(gltf::Extensions::VRMC_materials_mtoon *, material.extensions, "VRM"))
         {
           currentShader = WORLD.shaders.mtoon;
         }
@@ -665,7 +667,7 @@ static int renderNode(const VModel_t &vmodel, const int _node, const glm::mat4 p
       {
         const gltf::Material &material = vmodel.model.materials[primitive.material];
         uint texCoord = 0;
-        bool KHR_materials_unlit = !vrmMtoon && gltf::findExtensionIndex("KHR_materials_unlit", material) != -1;
+        bool KHR_materials_unlit = !vrmMtoon && ch_hashget(void *, material.extensions, "KHR_materials_unlit");
         shaderSetBool(currentShader, "KHR_materials_unlit", KHR_materials_unlit);
         if (material.pbrMetallicRoughness.baseColorTexture.index >= 0)
         {
@@ -718,9 +720,9 @@ static int renderNode(const VModel_t &vmodel, const int _node, const glm::mat4 p
         }
 
         // KHR_texture_transform
-        if (gltf::findExtensionIndex("KHR_texture_transform", material) != -1)
+        if (ch_hashget(void *, material.extensions, "KHR_texture_transform"))
         {
-          gltf::Extensions::KHR_texture_transform *ext = (gltf::Extensions::KHR_texture_transform *)material.extensions[gltf::findExtensionIndex("KHR_texture_transform", material)].data;
+          gltf::Extensions::KHR_texture_transform *ext = ch_hashget(gltf::Extensions::KHR_texture_transform *, material.extensions, "KHR_texture_transform");
           texCoord = ext->texCoord;
           membuild(glm::vec2, offset, ext->offset);
           membuild(glm::vec2, scale, ext->scale);
@@ -843,8 +845,9 @@ static int renderNode(const VModel_t &vmodel, const int _node, const glm::mat4 p
     }
   }
   glBindVertexArray(0);
-  for(int i=0;i<node.children.size();i++){
-    renderNode(vmodel,node.children[i],mat);
+  for (int i = 0; i < node.children.size(); i++)
+  {
+    renderNode(vmodel, node.children[i], mat);
   }
   return 0;
 }
@@ -857,12 +860,11 @@ void vmodelSetMorphWeight(VModel_t *vmodel, uint mesh, uint weight, float weight
 
 void vmodelVRMSetMorphWeight(VModel_t *vmodel, uint mesh, std::string target, float weight)
 {
-  if (gltf::findExtensionIndex("VRMC_vrm", vmodel->model) == -1)
+  if (ch_hashget(void *, vmodel->model.extensions, "VRMC_vrm"))
     return;
-  int index = gltf::findExtraIndex("targetNames", vmodel->model.meshes[mesh]);
-  if (index < 0)
+  gltf::Extras::TargetNames *targetNames = ch_hashget(gltf::Extras::TargetNames *, vmodel->model.meshes[mesh].extensions, "targetNames");
+  if (!targetNames)
     return;
-  gltf::Extras::TargetNames *targetNames = (gltf::Extras::TargetNames *)vmodel->model.extras[index].data;
   for (uint i = 0; i < targetNames->targetNames.size(); i++)
   {
     if (targetNames->targetNames[i] == target)
@@ -876,13 +878,12 @@ void vmodelVRMSetMorphWeight(VModel_t *vmodel, uint mesh, std::string target, fl
 void vmodelSetVRMExpressions(VModel_t *vmodel, float *values)
 {
   typedef gltf::Extensions::VRMC_vrm::ExpressionPresets ExpressionPresets;
-  int index = gltf::findExtensionIndex("VRMC_vrm", vmodel->model);
-  if (index < 0)
+  gltf::Extensions::VRMC_vrm *VRM = ch_hashget(gltf::Extensions::VRMC_vrm *, vmodel->model.extensions, "VRMC_vrm");
+  if (!VRM)
   {
     fprintf(stderr, "Model is not a VRM model\n");
     return;
   }
-  gltf::Extensions::VRMC_vrm *VRM = (gltf::Extensions::VRMC_vrm *)vmodel->model.extensions[index].data;
   ExpressionPresets::Expression exp;
   int blockBlends[3] = {0, 0, 0};
   ExpressionPresets::Expression *expressionsArray = (ExpressionPresets::Expression *)&VRM->expressions.preset;
@@ -896,58 +897,56 @@ void vmodelSetVRMExpressions(VModel_t *vmodel, float *values)
     blockBlends[2] = MAX(blockBlends[2], exp.overrideMouth);
   }
 #define valueof(exp) values[offsetof(ExpressionPresets::Preset, exp) / sizeof(ExpressionPresets::Expression)]
-#define SetMorphTargetWeight(exp, WEIGHT)                                                                                                                              \
-  for (int i = 0; i < VRM->expressions.preset.exp.morphTargetBinds.size(); i++)                                                                                        \
-  {                                                                                                                                                                    \
-    const ExpressionPresets::Expression::MorphTargetBind &morphTarget = VRM->expressions.preset.exp.morphTargetBinds[i];                                               \
-    vmodel->updatedMorphWeight[vmodel->model.nodes[morphTarget.node].mesh] = 1;                                                                                        \
-    vmodel->model.meshes[vmodel->model.nodes[morphTarget.node].mesh].weights[morphTarget.index] = morphTarget.weight * (WEIGHT);                                       \
-  }                                                                                                                                                                    \
-  for (int i = 0; i < VRM->expressions.preset.exp.materialColorBinds.size(); i++)                                                                                      \
-  {                                                                                                                                                                    \
-    const ExpressionPresets::Expression::MaterialColorBind &colorBind = VRM->expressions.preset.exp.materialColorBinds[i];                                             \
-    glm::vec4 initial = glm::vec4(0);                                                                                                                                  \
-    gltf::Extensions::VRMC_materials_mtoon *vrm_mtoon = (gltf::Extensions::VRMC_materials_mtoon *)vmodel->model.materials[colorBind.material]                          \
-                                                            .extensions[gltf::findExtensionIndex("VRMC_materials_mtoon", vmodel->model.materials[colorBind.material])] \
-                                                            .data;                                                                                                     \
-    if (colorBind.type == ExpressionPresets::Expression::MaterialColorBind::color)                                                                                     \
-    {                                                                                                                                                                  \
-      float *tmp = vmodel->model.materials[colorBind.material].pbrMetallicRoughness.baseColorFactor.data();                                                            \
-      initial = glm::vec4(tmp[0], tmp[1], tmp[2], tmp[3]);                                                                                                             \
-    }                                                                                                                                                                  \
-    else if (colorBind.type == ExpressionPresets::Expression::MaterialColorBind::emissionColor)                                                                        \
-    {                                                                                                                                                                  \
-      fprintf(stderr, "prob with emissive textures, pls fix\n");                                                                                                       \
-    }                                                                                                                                                                  \
-    else if (colorBind.type == ExpressionPresets::Expression::MaterialColorBind::shadeColor)                                                                           \
-    {                                                                                                                                                                  \
-      initial = glm::vec4(vrm_mtoon->shadeColorFactor[0], vrm_mtoon->shadeColorFactor[1], vrm_mtoon->shadeColorFactor[2], 0);                                          \
-    }                                                                                                                                                                  \
-    else if (colorBind.type == ExpressionPresets::Expression::MaterialColorBind::matcapColor)                                                                          \
-    {                                                                                                                                                                  \
-      initial = glm::vec4(vrm_mtoon->matcapFactor[0], vrm_mtoon->matcapFactor[1], vrm_mtoon->matcapFactor[2], 0);                                                      \
-    }                                                                                                                                                                  \
-    else if (colorBind.type == ExpressionPresets::Expression::MaterialColorBind::rimColor)                                                                             \
-    {                                                                                                                                                                  \
-      initial = glm::vec4(vrm_mtoon->parametricRimColorFactor[0], vrm_mtoon->parametricRimColorFactor[1], vrm_mtoon->parametricRimColorFactor[2], 0);                  \
-    }                                                                                                                                                                  \
-    else if (colorBind.type == ExpressionPresets::Expression::MaterialColorBind::outlineColor)                                                                         \
-    {                                                                                                                                                                  \
-      initial = glm::vec4(vrm_mtoon->outlineColorFactor[0], vrm_mtoon->outlineColorFactor[1], vrm_mtoon->outlineColorFactor[2], 0);                                    \
-    }                                                                                                                                                                  \
-    glm::vec4 targetValue = glm::vec4(colorBind.targetValue[0], colorBind.targetValue[1], colorBind.targetValue[2], colorBind.targetValue[3]) - initial;               \
-    targetValue *= (WEIGHT);                                                                                                                                           \
-    vmodel->materialColorTransforms[colorBind.material * 6 + colorBind.type] = targetValue;                                                                            \
-  }                                                                                                                                                                    \
-  for (int i = 0; i < VRM->expressions.preset.exp.textureTransformBinds.size(); i++)                                                                                   \
-  {                                                                                                                                                                    \
-    ExpressionPresets::Expression::TextureTransformBind transform = VRM->expressions.preset.exp.textureTransformBinds[i];                                              \
-    membuild(glm::vec2, offset, transform.offset);                                                                                                                     \
-    offset *= (WEIGHT);                                                                                                                                                \
-    membuild(glm::vec2, scale, transform.scale);                                                                                                                       \
-    scale *= (WEIGHT);                                                                                                                                                 \
-    vmodel->materialTextureTransform[transform.material * 2] = offset;                                                                                                 \
-    vmodel->materialTextureTransform[transform.material * 2 + 1] = scale;                                                                                              \
+#define SetMorphTargetWeight(exp, WEIGHT)                                                                                                                                                     \
+  for (int i = 0; i < VRM->expressions.preset.exp.morphTargetBinds.size(); i++)                                                                                                               \
+  {                                                                                                                                                                                           \
+    const ExpressionPresets::Expression::MorphTargetBind &morphTarget = VRM->expressions.preset.exp.morphTargetBinds[i];                                                                      \
+    vmodel->updatedMorphWeight[vmodel->model.nodes[morphTarget.node].mesh] = 1;                                                                                                               \
+    vmodel->model.meshes[vmodel->model.nodes[morphTarget.node].mesh].weights[morphTarget.index] = morphTarget.weight * (WEIGHT);                                                              \
+  }                                                                                                                                                                                           \
+  for (int i = 0; i < VRM->expressions.preset.exp.materialColorBinds.size(); i++)                                                                                                             \
+  {                                                                                                                                                                                           \
+    const ExpressionPresets::Expression::MaterialColorBind &colorBind = VRM->expressions.preset.exp.materialColorBinds[i];                                                                    \
+    glm::vec4 initial = glm::vec4(0);                                                                                                                                                         \
+    gltf::Extensions::VRMC_materials_mtoon *vrm_mtoon = ch_hashget(gltf::Extensions::VRMC_materials_mtoon *, vmodel->model.materials[colorBind.material].extensions, "VRMC_materials_mtoon"); \
+    if (colorBind.type == ExpressionPresets::Expression::MaterialColorBind::color)                                                                                                            \
+    {                                                                                                                                                                                         \
+      float *tmp = vmodel->model.materials[colorBind.material].pbrMetallicRoughness.baseColorFactor.data();                                                                                   \
+      initial = glm::vec4(tmp[0], tmp[1], tmp[2], tmp[3]);                                                                                                                                    \
+    }                                                                                                                                                                                         \
+    else if (colorBind.type == ExpressionPresets::Expression::MaterialColorBind::emissionColor)                                                                                               \
+    {                                                                                                                                                                                         \
+      fprintf(stderr, "prob with emissive textures, pls fix\n");                                                                                                                              \
+    }                                                                                                                                                                                         \
+    else if (colorBind.type == ExpressionPresets::Expression::MaterialColorBind::shadeColor)                                                                                                  \
+    {                                                                                                                                                                                         \
+      initial = glm::vec4(vrm_mtoon->shadeColorFactor[0], vrm_mtoon->shadeColorFactor[1], vrm_mtoon->shadeColorFactor[2], 0);                                                                 \
+    }                                                                                                                                                                                         \
+    else if (colorBind.type == ExpressionPresets::Expression::MaterialColorBind::matcapColor)                                                                                                 \
+    {                                                                                                                                                                                         \
+      initial = glm::vec4(vrm_mtoon->matcapFactor[0], vrm_mtoon->matcapFactor[1], vrm_mtoon->matcapFactor[2], 0);                                                                             \
+    }                                                                                                                                                                                         \
+    else if (colorBind.type == ExpressionPresets::Expression::MaterialColorBind::rimColor)                                                                                                    \
+    {                                                                                                                                                                                         \
+      initial = glm::vec4(vrm_mtoon->parametricRimColorFactor[0], vrm_mtoon->parametricRimColorFactor[1], vrm_mtoon->parametricRimColorFactor[2], 0);                                         \
+    }                                                                                                                                                                                         \
+    else if (colorBind.type == ExpressionPresets::Expression::MaterialColorBind::outlineColor)                                                                                                \
+    {                                                                                                                                                                                         \
+      initial = glm::vec4(vrm_mtoon->outlineColorFactor[0], vrm_mtoon->outlineColorFactor[1], vrm_mtoon->outlineColorFactor[2], 0);                                                           \
+    }                                                                                                                                                                                         \
+    glm::vec4 targetValue = glm::vec4(colorBind.targetValue[0], colorBind.targetValue[1], colorBind.targetValue[2], colorBind.targetValue[3]) - initial;                                      \
+    targetValue *= (WEIGHT);                                                                                                                                                                  \
+    vmodel->materialColorTransforms[colorBind.material * 6 + colorBind.type] = targetValue;                                                                                                   \
+  }                                                                                                                                                                                           \
+  for (int i = 0; i < VRM->expressions.preset.exp.textureTransformBinds.size(); i++)                                                                                                          \
+  {                                                                                                                                                                                           \
+    ExpressionPresets::Expression::TextureTransformBind transform = VRM->expressions.preset.exp.textureTransformBinds[i];                                                                     \
+    membuild(glm::vec2, offset, transform.offset);                                                                                                                                            \
+    offset *= (WEIGHT);                                                                                                                                                                       \
+    membuild(glm::vec2, scale, transform.scale);                                                                                                                                              \
+    scale *= (WEIGHT);                                                                                                                                                                        \
+    vmodel->materialTextureTransform[transform.material * 2] = offset;                                                                                                                        \
+    vmodel->materialTextureTransform[transform.material * 2 + 1] = scale;                                                                                                                     \
   }
 
   // Blink
@@ -1028,74 +1027,75 @@ void vmodelSetVRMExpressions(VModel_t *vmodel, float *values)
 #undef SetMorphTargetWeight
 }
 
-int vmodelGetVRMNode(VModel_t *vmodel, std::string name){
-  int vrmIndex=gltf::findExtensionIndex("VRMC_vrm",vmodel->model);
-  if (vrmIndex < 0)
+int vmodelGetVRMNode(VModel_t *vmodel, std::string name)
+{
+  gltf::Extensions::VRMC_vrm *VRM = ch_hashget(gltf::Extensions::VRMC_vrm *, vmodel->model.extensions, "VRMC_vrm");
+  if (!VRM)
   {
     fprintf(stderr, "Model is not a VRM model\n");
     return -1;
   }
-  gltf::Extensions::VRMC_vrm *VRM = (gltf::Extensions::VRMC_vrm *)vmodel->model.extensions[vrmIndex].data;
+
 #define _vmodelCheckNodeName(NAME) \
-  else if (name == #NAME)               \
-    return VRM->humanoid.humanBones.NAME.node;
-  if (name == "hips") return VRM->humanoid.humanBones.hips.node;
+  else if (name == #NAME) return VRM->humanoid.humanBones.NAME.node;
+  if (name == "hips")
+    return VRM->humanoid.humanBones.hips.node;
   _vmodelCheckNodeName(spine)
-  _vmodelCheckNodeName(chest)
-  _vmodelCheckNodeName(upperChest)
-  _vmodelCheckNodeName(neck)
-  _vmodelCheckNodeName(head)
-  _vmodelCheckNodeName(leftEye)
-  _vmodelCheckNodeName(rightEye)
-  _vmodelCheckNodeName(jaw)
-  _vmodelCheckNodeName(leftUpperLeg)
-  _vmodelCheckNodeName(leftLowerLeg)
-  _vmodelCheckNodeName(leftFoot)
-  _vmodelCheckNodeName(leftToes)
-  _vmodelCheckNodeName(rightUpperLeg)
-  _vmodelCheckNodeName(rightLowerLeg)
-  _vmodelCheckNodeName(rightFoot)
-  _vmodelCheckNodeName(rightToes)
-  _vmodelCheckNodeName(leftShoulder)
-  _vmodelCheckNodeName(leftUpperArm)
-  _vmodelCheckNodeName(leftLowerArm)
-  _vmodelCheckNodeName(leftHand)
-  _vmodelCheckNodeName(rightShoulder)
-  _vmodelCheckNodeName(rightUpperArm)
-  _vmodelCheckNodeName(rightLowerArm)
-  _vmodelCheckNodeName(rightHand)
-  _vmodelCheckNodeName(leftThumbMetacarpal)
-  _vmodelCheckNodeName(leftThumbProximal)
-  _vmodelCheckNodeName(leftThumbDistal)
-  _vmodelCheckNodeName(leftIndexProximal)
-  _vmodelCheckNodeName(leftIndexIntermediate)
-  _vmodelCheckNodeName(leftIndexDistal)
-  _vmodelCheckNodeName(leftMiddleProximal)
-  _vmodelCheckNodeName(leftMiddleIntermediate)
-  _vmodelCheckNodeName(leftMiddleDistal)
-  _vmodelCheckNodeName(leftRingProximal)
-  _vmodelCheckNodeName(leftRingIntermediate)
-  _vmodelCheckNodeName(leftRingDistal)
-  _vmodelCheckNodeName(leftLittleProximal)
-  _vmodelCheckNodeName(leftLittleIntermediate)
-  _vmodelCheckNodeName(leftLittleDistal)
-  _vmodelCheckNodeName(rightThumbMetacarpal)
-  _vmodelCheckNodeName(rightThumbProximal)
-  _vmodelCheckNodeName(rightThumbDistal)
-  _vmodelCheckNodeName(rightIndexProximal)
-  _vmodelCheckNodeName(rightIndexIntermediate)
-  _vmodelCheckNodeName(rightIndexDistal)
-  _vmodelCheckNodeName(rightMiddleProximal)
-  _vmodelCheckNodeName(rightMiddleIntermediate)
-  _vmodelCheckNodeName(rightMiddleDistal)
-  _vmodelCheckNodeName(rightRingProximal)
-  _vmodelCheckNodeName(rightRingIntermediate)
-  _vmodelCheckNodeName(rightRingDistal)
-  _vmodelCheckNodeName(rightLittleProximal)
-  _vmodelCheckNodeName(rightLittleIntermediate)
-  _vmodelCheckNodeName(rightLittleDistal)
-  else{
-    fprintf(stderr,"No such node");
+      _vmodelCheckNodeName(chest)
+          _vmodelCheckNodeName(upperChest)
+              _vmodelCheckNodeName(neck)
+                  _vmodelCheckNodeName(head)
+                      _vmodelCheckNodeName(leftEye)
+                          _vmodelCheckNodeName(rightEye)
+                              _vmodelCheckNodeName(jaw)
+                                  _vmodelCheckNodeName(leftUpperLeg)
+                                      _vmodelCheckNodeName(leftLowerLeg)
+                                          _vmodelCheckNodeName(leftFoot)
+                                              _vmodelCheckNodeName(leftToes)
+                                                  _vmodelCheckNodeName(rightUpperLeg)
+                                                      _vmodelCheckNodeName(rightLowerLeg)
+                                                          _vmodelCheckNodeName(rightFoot)
+                                                              _vmodelCheckNodeName(rightToes)
+                                                                  _vmodelCheckNodeName(leftShoulder)
+                                                                      _vmodelCheckNodeName(leftUpperArm)
+                                                                          _vmodelCheckNodeName(leftLowerArm)
+                                                                              _vmodelCheckNodeName(leftHand)
+                                                                                  _vmodelCheckNodeName(rightShoulder)
+                                                                                      _vmodelCheckNodeName(rightUpperArm)
+                                                                                          _vmodelCheckNodeName(rightLowerArm)
+                                                                                              _vmodelCheckNodeName(rightHand)
+                                                                                                  _vmodelCheckNodeName(leftThumbMetacarpal)
+                                                                                                      _vmodelCheckNodeName(leftThumbProximal)
+                                                                                                          _vmodelCheckNodeName(leftThumbDistal)
+                                                                                                              _vmodelCheckNodeName(leftIndexProximal)
+                                                                                                                  _vmodelCheckNodeName(leftIndexIntermediate)
+                                                                                                                      _vmodelCheckNodeName(leftIndexDistal)
+                                                                                                                          _vmodelCheckNodeName(leftMiddleProximal)
+                                                                                                                              _vmodelCheckNodeName(leftMiddleIntermediate)
+                                                                                                                                  _vmodelCheckNodeName(leftMiddleDistal)
+                                                                                                                                      _vmodelCheckNodeName(leftRingProximal)
+                                                                                                                                          _vmodelCheckNodeName(leftRingIntermediate)
+                                                                                                                                              _vmodelCheckNodeName(leftRingDistal)
+                                                                                                                                                  _vmodelCheckNodeName(leftLittleProximal)
+                                                                                                                                                      _vmodelCheckNodeName(leftLittleIntermediate)
+                                                                                                                                                          _vmodelCheckNodeName(leftLittleDistal)
+                                                                                                                                                              _vmodelCheckNodeName(rightThumbMetacarpal)
+                                                                                                                                                                  _vmodelCheckNodeName(rightThumbProximal)
+                                                                                                                                                                      _vmodelCheckNodeName(rightThumbDistal)
+                                                                                                                                                                          _vmodelCheckNodeName(rightIndexProximal)
+                                                                                                                                                                              _vmodelCheckNodeName(rightIndexIntermediate)
+                                                                                                                                                                                  _vmodelCheckNodeName(rightIndexDistal)
+                                                                                                                                                                                      _vmodelCheckNodeName(rightMiddleProximal)
+                                                                                                                                                                                          _vmodelCheckNodeName(rightMiddleIntermediate)
+                                                                                                                                                                                              _vmodelCheckNodeName(rightMiddleDistal)
+                                                                                                                                                                                                  _vmodelCheckNodeName(rightRingProximal)
+                                                                                                                                                                                                      _vmodelCheckNodeName(rightRingIntermediate)
+                                                                                                                                                                                                          _vmodelCheckNodeName(rightRingDistal)
+                                                                                                                                                                                                              _vmodelCheckNodeName(rightLittleProximal)
+                                                                                                                                                                                                                  _vmodelCheckNodeName(rightLittleIntermediate)
+                                                                                                                                                                                                                      _vmodelCheckNodeName(rightLittleDistal) else
+  {
+    fprintf(stderr, "No such node");
     return -1;
   }
 }
@@ -1126,16 +1126,19 @@ int renderVModel(VModel_t vmodel)
   // modelDraw
   for (uint i : vmodel.model.scenes[vmodel.model.scene > -1 ? vmodel.model.scene : 0].nodes)
   {
-    chfpass(renderNode,vmodel, i, glm::mat4(1.f));
+    chfpass(renderNode, vmodel, i, glm::mat4(1.f));
   }
   return 0;
 }
 
+#define VANCHE_ACCESSOR 1
+#define VANCHE_MORPH 1
 int updateVModel(VModel_t *vmodel)
 {
-  updateStoredAccessorBuffers(vmodel);
+  if (VANCHE_ACCESSOR)
+    updateStoredAccessorBuffers(vmodel);
   // update morphs
-  for (uint i = 0; i < vmodel->model.meshes.size(); i++)
+  for (uint i = 0; VANCHE_MORPH && i < vmodel->model.meshes.size(); i++)
   {
     if (vmodel->updatedMorphWeight[i])
     {
@@ -1152,21 +1155,21 @@ int updateVModel(VModel_t *vmodel)
             if (vmodel->model.meshes[i].primitives[j].targets[k].POSITION != -1)
             {
               // membuild(glm::vec3, pos, gltf::getDataFromAccessor(vmodel->model, vmodel->model.accessors[vmodel->model.meshes[i].primitives[j].targets[k].POSITION], l));
-              membuild(glm::vec3, pos, vmodel->accessorBuffers[vmodel->model.meshes[i].primitives[j].targets[k].POSITION]+l*sizeof(glm::vec3));
+              membuild(glm::vec3, pos, vmodel->accessorBuffers[vmodel->model.meshes[i].primitives[j].targets[k].POSITION] + l * sizeof(glm::vec3));
               pos *= vmodel->model.meshes[i].weights[k];
               vmodel->morphs[i][j][l * 3 + 0] += pos;
             }
             if (vmodel->model.meshes[i].primitives[j].targets[k].NORMAL != -1)
             {
               // membuild(glm::vec3, normal, gltf::getDataFromAccessor(vmodel->model, vmodel->model.accessors[vmodel->model.meshes[i].primitives[j].targets[k].NORMAL], l));
-              membuild(glm::vec3, normal, vmodel->accessorBuffers[vmodel->model.meshes[i].primitives[j].targets[k].NORMAL]+l);
+              membuild(glm::vec3, normal, vmodel->accessorBuffers[vmodel->model.meshes[i].primitives[j].targets[k].NORMAL] + l);
               normal *= vmodel->model.meshes[i].weights[k];
               vmodel->morphs[i][j][l * 3 + 1] += normal;
             }
             if (vmodel->model.meshes[i].primitives[j].targets[k].TANGENT != -1)
             {
               // membuild(glm::vec3, tangent, gltf::getDataFromAccessor(vmodel->model, vmodel->model.accessors[vmodel->model.meshes[i].primitives[j].targets[k].TANGENT], l));
-              membuild(glm::vec3,tangent,vmodel->accessorBuffers[vmodel->model.meshes[i].primitives[j].targets[k].TANGENT]+l);
+              membuild(glm::vec3, tangent, vmodel->accessorBuffers[vmodel->model.meshes[i].primitives[j].targets[k].TANGENT] + l);
               tangent *= vmodel->model.meshes[i].weights[k];
               vmodel->morphs[i][j][l * 3 + 2] += tangent;
             }

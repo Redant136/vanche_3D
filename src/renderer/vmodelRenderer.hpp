@@ -1,7 +1,7 @@
 #ifndef VANCHE_VMODELRENDERER
 #define VANCHE_VMODELRENDERER
 #include <vanche_utils.h>
-#include "../loader/model.hpp"
+#include "../loader/vanche_model.hpp"
 #include <glm/glm.hpp>
 
 #define MAX_JOINT_MATRIX 256
