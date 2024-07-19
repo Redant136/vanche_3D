@@ -27,6 +27,7 @@ out VS_OUT{
 uniform int VRM_outlineWidthMode;
 uniform float VRM_outlineWidthFactor;
 uniform sampler2D VRM_outlineWidthMultiplyTexture;
+uniform bool MTOON_drawOutline;
 
 
 void setOut(int index){
@@ -41,33 +42,37 @@ void setOut(int index){
 
 void main(){
   // loop through points in reverse to inverse the direction the triangle is drawn in so that this is the backface of the vertice
-  for(int i=2;i>=0;i--){
-    vec3 normal=gs_in[i].Normal;
+  if(MTOON_drawOutline && VRM_outlineWidthMode!=0) {
+    for(int i=2;i>=0;i--){
+      vec3 normal=gs_in[i].Normal;
 
-    vec2 outline=vec2(0,0);
-    if(VRM_outlineWidthMode==1){
-      // world coordinates
-      outline=normalize(normal).xy*VRM_outlineWidthFactor;
-    }else if(VRM_outlineWidthMode==2){
-      // screen coordinates
-      // TODO(ANT) test
-      outline=normalize(normal).xy*VRM_outlineWidthFactor*gl_in[i].gl_Position.z;
+      vec2 outline=vec2(0,0);
+      if(VRM_outlineWidthMode==1){
+        // world coordinates
+        outline=normalize(normal).xy*VRM_outlineWidthFactor;
+      }else if(VRM_outlineWidthMode==2){
+        // screen coordinates
+        // TODO(ANT) test
+        outline=normalize(normal).xy*VRM_outlineWidthFactor*gl_in[i].gl_Position.z;
+      }
+
+      gl_Position = vec4(gl_in[i].gl_Position.xy+outline,gl_in[i].gl_Position.zw);
+      setOut(i);
+      gs_out.isOutline=1;
+      EmitVertex();
     }
-
-    gl_Position = vec4(gl_in[i].gl_Position.xy+outline,gl_in[i].gl_Position.zw);
-    setOut(i);
-    gs_out.isOutline=1;
-    EmitVertex();
+    EndPrimitive();
   }
-  EndPrimitive();
 
   // draw actual vertice
-  for(int i=0;i<3;i++){
-    gl_Position=gl_in[i].gl_Position;
-    setOut(i);
-    gs_out.isOutline=0;
-    EmitVertex();
+  if(!MTOON_drawOutline){
+    for(int i=0;i<3;i++){
+      gl_Position=gl_in[i].gl_Position;
+      setOut(i);
+      gs_out.isOutline=0;
+      EmitVertex();
+    }
+    EndPrimitive();
   }
-  EndPrimitive();
 
 }

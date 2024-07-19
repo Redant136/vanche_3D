@@ -27,6 +27,7 @@ layout (std140) uniform Lights{
 
 uniform vec4 baseColorFactor;
 uniform bool hasBaseColorTexture;
+uniform int alphaMode;
 uniform float alphaCutoff;
 
 uniform sampler2D texture_base;
@@ -83,7 +84,7 @@ void main()
     color *= baseColorFactor;
   }
 
-  if(color.w<alphaCutoff){
+  if(alphaMode == 1 && color.w < alphaCutoff){
     discard;
     return;
   }

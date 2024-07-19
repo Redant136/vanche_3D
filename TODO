@@ -1,7 +1,6 @@
 Working on:
 
 improve face recognizer as it bugs out when moving head 
-rework gltf loader
 fix emissive texture
 1 vbo per mesh for transforms
 dlib face detection in seperate thread

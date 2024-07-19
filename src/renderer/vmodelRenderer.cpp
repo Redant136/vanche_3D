@@ -610,7 +610,7 @@ static void bindTexture(const VModel_t &vmodel, const Shader_t &currentShader, c
   glBindSampler(GL_TEXTURE_2D, sampler_obj);
 }
 
-static int renderNode(const VModel_t &vmodel, const int _node, const glm::mat4 parentMat)
+static int renderNode(const VModel_t &vmodel, const int _node, const glm::mat4 parentMat, const gltf::Material::AlphaMode currentAlphaMode)
 {
   glm::mat4 mat = getNodeTransform(&vmodel, _node, parentMat);
   const gltf::Node &node = vmodel.model.nodes[_node];
@@ -666,6 +666,8 @@ static int renderNode(const VModel_t &vmodel, const int _node, const glm::mat4 p
       if (primitive.material > -1)
       {
         const gltf::Material &material = vmodel.model.materials[primitive.material];
+        if (material.alphaMode != currentAlphaMode)
+          continue;
         uint texCoord = 0;
         bool KHR_materials_unlit = !vrmMtoon && ch_hashget(void *, material.extensions, "KHR_materials_unlit");
         shaderSetBool(currentShader, "KHR_materials_unlit", KHR_materials_unlit);
@@ -753,8 +755,13 @@ static int renderNode(const VModel_t &vmodel, const int _node, const glm::mat4 p
         {
           glEnable(GL_BLEND);
         }
+        else
+        {
+          chprinterr("Unknown material alpha mode");
+        }
         doubleSided = material.doubleSided;
         shaderSetInt(currentShader, "texCoordIndex", texCoord);
+        shaderSetInt(currentShader, "alphaMode", material.alphaMode);
         shaderSetFloat(currentShader, "alphaCutoff", material.alphaCutoff);
         if (vrmMtoon)
         {
@@ -835,11 +842,17 @@ static int renderNode(const VModel_t &vmodel, const int _node, const glm::mat4 p
         }
       }
       shaderSetBool(currentShader, "hasBaseColorTexture", hasBaseColorTexture);
+
+      glUseProgram(currentShader.ID);
+      shaderSetBool(currentShader, "MTOON_drawOutline", true);
+      glEnable(GL_CULL_FACE);
+      glDrawElements(primitive.mode, indexAccessor.count, indexAccessor.componentType,
+                     reinterpret_cast<void *>(indexAccessor.byteOffset));
+      shaderSetBool(currentShader, "MTOON_drawOutline", false);
       if (doubleSided)
         glDisable(GL_CULL_FACE);
       else
         glEnable(GL_CULL_FACE);
-      glUseProgram(currentShader.ID);
       glDrawElements(primitive.mode, indexAccessor.count, indexAccessor.componentType,
                      reinterpret_cast<void *>(indexAccessor.byteOffset));
     }
@@ -847,7 +860,7 @@ static int renderNode(const VModel_t &vmodel, const int _node, const glm::mat4 p
   glBindVertexArray(0);
   for (int i = 0; i < node.children.size(); i++)
   {
-    renderNode(vmodel, node.children[i], mat);
+    chfpass(renderNode, vmodel, node.children[i], mat, currentAlphaMode);
   }
   return 0;
 }
@@ -1037,63 +1050,64 @@ int vmodelGetVRMNode(VModel_t *vmodel, std::string name)
   }
 
 #define _vmodelCheckNodeName(NAME) \
-  else if (name == #NAME) return VRM->humanoid.humanBones.NAME.node;
+  else if (name == #NAME) return VRM->humanoid.humanBones.NAME.node
   if (name == "hips")
     return VRM->humanoid.humanBones.hips.node;
-  _vmodelCheckNodeName(spine)
-      _vmodelCheckNodeName(chest)
-          _vmodelCheckNodeName(upperChest)
-              _vmodelCheckNodeName(neck)
-                  _vmodelCheckNodeName(head)
-                      _vmodelCheckNodeName(leftEye)
-                          _vmodelCheckNodeName(rightEye)
-                              _vmodelCheckNodeName(jaw)
-                                  _vmodelCheckNodeName(leftUpperLeg)
-                                      _vmodelCheckNodeName(leftLowerLeg)
-                                          _vmodelCheckNodeName(leftFoot)
-                                              _vmodelCheckNodeName(leftToes)
-                                                  _vmodelCheckNodeName(rightUpperLeg)
-                                                      _vmodelCheckNodeName(rightLowerLeg)
-                                                          _vmodelCheckNodeName(rightFoot)
-                                                              _vmodelCheckNodeName(rightToes)
-                                                                  _vmodelCheckNodeName(leftShoulder)
-                                                                      _vmodelCheckNodeName(leftUpperArm)
-                                                                          _vmodelCheckNodeName(leftLowerArm)
-                                                                              _vmodelCheckNodeName(leftHand)
-                                                                                  _vmodelCheckNodeName(rightShoulder)
-                                                                                      _vmodelCheckNodeName(rightUpperArm)
-                                                                                          _vmodelCheckNodeName(rightLowerArm)
-                                                                                              _vmodelCheckNodeName(rightHand)
-                                                                                                  _vmodelCheckNodeName(leftThumbMetacarpal)
-                                                                                                      _vmodelCheckNodeName(leftThumbProximal)
-                                                                                                          _vmodelCheckNodeName(leftThumbDistal)
-                                                                                                              _vmodelCheckNodeName(leftIndexProximal)
-                                                                                                                  _vmodelCheckNodeName(leftIndexIntermediate)
-                                                                                                                      _vmodelCheckNodeName(leftIndexDistal)
-                                                                                                                          _vmodelCheckNodeName(leftMiddleProximal)
-                                                                                                                              _vmodelCheckNodeName(leftMiddleIntermediate)
-                                                                                                                                  _vmodelCheckNodeName(leftMiddleDistal)
-                                                                                                                                      _vmodelCheckNodeName(leftRingProximal)
-                                                                                                                                          _vmodelCheckNodeName(leftRingIntermediate)
-                                                                                                                                              _vmodelCheckNodeName(leftRingDistal)
-                                                                                                                                                  _vmodelCheckNodeName(leftLittleProximal)
-                                                                                                                                                      _vmodelCheckNodeName(leftLittleIntermediate)
-                                                                                                                                                          _vmodelCheckNodeName(leftLittleDistal)
-                                                                                                                                                              _vmodelCheckNodeName(rightThumbMetacarpal)
-                                                                                                                                                                  _vmodelCheckNodeName(rightThumbProximal)
-                                                                                                                                                                      _vmodelCheckNodeName(rightThumbDistal)
-                                                                                                                                                                          _vmodelCheckNodeName(rightIndexProximal)
-                                                                                                                                                                              _vmodelCheckNodeName(rightIndexIntermediate)
-                                                                                                                                                                                  _vmodelCheckNodeName(rightIndexDistal)
-                                                                                                                                                                                      _vmodelCheckNodeName(rightMiddleProximal)
-                                                                                                                                                                                          _vmodelCheckNodeName(rightMiddleIntermediate)
-                                                                                                                                                                                              _vmodelCheckNodeName(rightMiddleDistal)
-                                                                                                                                                                                                  _vmodelCheckNodeName(rightRingProximal)
-                                                                                                                                                                                                      _vmodelCheckNodeName(rightRingIntermediate)
-                                                                                                                                                                                                          _vmodelCheckNodeName(rightRingDistal)
-                                                                                                                                                                                                              _vmodelCheckNodeName(rightLittleProximal)
-                                                                                                                                                                                                                  _vmodelCheckNodeName(rightLittleIntermediate)
-                                                                                                                                                                                                                      _vmodelCheckNodeName(rightLittleDistal) else
+  _vmodelCheckNodeName(spine);
+  _vmodelCheckNodeName(chest);
+  _vmodelCheckNodeName(upperChest);
+  _vmodelCheckNodeName(neck);
+  _vmodelCheckNodeName(head);
+  _vmodelCheckNodeName(leftEye);
+  _vmodelCheckNodeName(rightEye);
+  _vmodelCheckNodeName(jaw);
+  _vmodelCheckNodeName(leftUpperLeg);
+  _vmodelCheckNodeName(leftLowerLeg);
+  _vmodelCheckNodeName(leftFoot);
+  _vmodelCheckNodeName(leftToes);
+  _vmodelCheckNodeName(rightUpperLeg);
+  _vmodelCheckNodeName(rightLowerLeg);
+  _vmodelCheckNodeName(rightFoot);
+  _vmodelCheckNodeName(rightToes);
+  _vmodelCheckNodeName(leftShoulder);
+  _vmodelCheckNodeName(leftUpperArm);
+  _vmodelCheckNodeName(leftLowerArm);
+  _vmodelCheckNodeName(leftHand);
+  _vmodelCheckNodeName(rightShoulder);
+  _vmodelCheckNodeName(rightUpperArm);
+  _vmodelCheckNodeName(rightLowerArm);
+  _vmodelCheckNodeName(rightHand);
+  _vmodelCheckNodeName(leftThumbMetacarpal);
+  _vmodelCheckNodeName(leftThumbProximal);
+  _vmodelCheckNodeName(leftThumbDistal);
+  _vmodelCheckNodeName(leftIndexProximal);
+  _vmodelCheckNodeName(leftIndexIntermediate);
+  _vmodelCheckNodeName(leftIndexDistal);
+  _vmodelCheckNodeName(leftMiddleProximal);
+  _vmodelCheckNodeName(leftMiddleIntermediate);
+  _vmodelCheckNodeName(leftMiddleDistal);
+  _vmodelCheckNodeName(leftRingProximal);
+  _vmodelCheckNodeName(leftRingIntermediate);
+  _vmodelCheckNodeName(leftRingDistal);
+  _vmodelCheckNodeName(leftLittleProximal);
+  _vmodelCheckNodeName(leftLittleIntermediate);
+  _vmodelCheckNodeName(leftLittleDistal);
+  _vmodelCheckNodeName(rightThumbMetacarpal);
+  _vmodelCheckNodeName(rightThumbProximal);
+  _vmodelCheckNodeName(rightThumbDistal);
+  _vmodelCheckNodeName(rightIndexProximal);
+  _vmodelCheckNodeName(rightIndexIntermediate);
+  _vmodelCheckNodeName(rightIndexDistal);
+  _vmodelCheckNodeName(rightMiddleProximal);
+  _vmodelCheckNodeName(rightMiddleIntermediate);
+  _vmodelCheckNodeName(rightMiddleDistal);
+  _vmodelCheckNodeName(rightRingProximal);
+  _vmodelCheckNodeName(rightRingIntermediate);
+  _vmodelCheckNodeName(rightRingDistal);
+  _vmodelCheckNodeName(rightLittleProximal);
+  _vmodelCheckNodeName(rightLittleIntermediate);
+  _vmodelCheckNodeName(rightLittleDistal);
+  else
   {
     fprintf(stderr, "No such node");
     return -1;
@@ -1124,21 +1138,22 @@ int renderVModel(VModel_t vmodel)
   }
 
   // modelDraw
-  for (uint i : vmodel.model.scenes[vmodel.model.scene > -1 ? vmodel.model.scene : 0].nodes)
+  for (uint a = gltf::Material::OPAQUE; a <= gltf::Material::BLEND; a++)
   {
-    chfpass(renderNode, vmodel, i, glm::mat4(1.f));
+    for (uint i : vmodel.model.scenes[vmodel.model.scene > -1 ? vmodel.model.scene : 0].nodes)
+    {
+      chfpass(renderNode, vmodel, i, glm::mat4(1.f), (gltf::Material::AlphaMode)a);
+    }
   }
+
   return 0;
 }
 
-#define VANCHE_ACCESSOR 1
-#define VANCHE_MORPH 1
 int updateVModel(VModel_t *vmodel)
 {
-  if (VANCHE_ACCESSOR)
-    updateStoredAccessorBuffers(vmodel);
+  updateStoredAccessorBuffers(vmodel);
   // update morphs
-  for (uint i = 0; VANCHE_MORPH && i < vmodel->model.meshes.size(); i++)
+  for (uint i = 0; i < vmodel->model.meshes.size(); i++)
   {
     if (vmodel->updatedMorphWeight[i])
     {

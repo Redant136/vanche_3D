@@ -54,6 +54,12 @@ static inline ch_array ch_arrexpand(size_t _size, ch_array arr, size_t nsize)
   return arr;
 }
 #define ch_arrexpand(type, arr, nSize) ch_arrexpand(sizeof(type), arr, nSize)
+static inline ch_array ch_arrfree(ch_array arr){
+  free(arr._start);
+  arr._end = 0;
+  arr._max = 0;
+  return arr;
+}
 
 struct ch_hashPair
 {

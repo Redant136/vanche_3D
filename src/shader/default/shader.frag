@@ -26,6 +26,7 @@ layout (std140) uniform Lights{
 // color
 uniform vec4 baseColorFactor;
 uniform bool hasBaseColorTexture;
+uniform int alphaMode;
 uniform float alphaCutoff;
 
 // textures
@@ -51,7 +52,7 @@ void main()
   }
   // if(!KHR_materials_unlit)
   //   color += texture(texture_emisive, UV);
-  if(color.w<alphaCutoff){
+  if(alphaMode == 1 && color.w<alphaCutoff){
     discard;
     return;
   }
