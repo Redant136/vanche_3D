@@ -44,6 +44,8 @@ typedef unsigned int uint;
 typedef unsigned long ulong;
 typedef unsigned long long ullong;
 typedef long long llong;
+typedef char string128[128];
+
 
 #define BitmapGenType(type, name, size) type name[size / (sizeof(type) * 8) + 1];
 #define BitmapGen(name, size) BitmapGenType(unsigned int, name, size)

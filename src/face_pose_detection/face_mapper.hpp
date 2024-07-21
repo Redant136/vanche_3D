@@ -9,10 +9,10 @@ enum VANCHE_faceEngine
   VANCHE_Engine_dlib68 = 68
 };
 
-#if defined(VANCHE_FACE_ENGINE_dlib68)
+#if VANCHE_FACE_ENGINE_dlib68
 const static enum VANCHE_faceEngine FACEENGINE = VANCHE_Engine_dlib68;
 #else
-#define VANCHE_FACE_ENGINE_dlib68
+#define VANCHE_FACE_ENGINE_dlib68 1
 const static enum VANCHE_faceEngine FACEENGINE = VANCHE_Engine_dlib68;
 #endif
 

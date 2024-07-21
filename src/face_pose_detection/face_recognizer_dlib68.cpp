@@ -1,4 +1,7 @@
 #include "face_recognizer.hpp"
+#pragma GCC diagnostic push
+#pragma GCC diagnostic ignored "-Wall"
+#pragma GCC diagnostic ignored "-Wtemplate-id-cdtor"
 #include <dlib/opencv.h>
 #include <dlib/image_processing/frontal_face_detector.h>
 #include <dlib/image_processing.h>
@@ -7,8 +10,11 @@
 #include <opencv2/core/utils/logger.hpp>
 #include <opencv2/calib3d.hpp>
 #include <glm/gtx/euler_angles.hpp>
-// delete once fully implemented
-#if 0
+#pragma GCC diagnostic pop
+#define SHOW_DLIB_WINDOW 1
+#define USE_AIFI_POINTS 1
+
+#if SHOW_DLIB_WINDOW
 #include <glm/gtx/string_cast.hpp>
 #include <dlib/image_processing/render_face_detections.h>
 #include <dlib/gui_widgets.h>
@@ -31,22 +37,34 @@ static dlib::frontal_face_detector detector;
 // dlib face landmark detector
 static dlib::shape_predictor pose_model;
 
+#if USE_AIFI_POINTS
 // from https://github.com/lincolnhard/head-pose-estimation/blob/master/video_test_shape.cpp
 static std::vector<cv::Point3f> objectPoints = {
-    cv::Point3d(6.825897, 6.760612, 4.402142),
-    cv::Point3d(1.330353, 7.122144, 6.903745),
-    cv::Point3d(-1.330353, 7.122144, 6.903745),
-    cv::Point3d(-6.825897, 6.760612, 4.402142),
-    cv::Point3d(5.311432, 5.485328, 3.987654),
-    cv::Point3d(1.789930, 5.393625, 4.413414),
-    cv::Point3d(-1.789930, 5.393625, 4.413414),
-    cv::Point3d(-5.311432, 5.485328, 3.987654),
-    cv::Point3d(2.005628, 1.409845, 6.165652),
-    cv::Point3d(-2.005628, 1.409845, 6.165652),
-    cv::Point3d(2.774015, -2.080775, 5.048531),
-    cv::Point3d(-2.774015, -2.080775, 5.048531),
-    cv::Point3d(0.000000, -3.116408, 6.097667),
-    cv::Point3d(0.000000, -7.415691, 4.070434)};
+    cv::Point3d(6.825897, 6.760612, 4.402142),   // left brow left corner
+    cv::Point3d(1.330353, 7.122144, 6.903745),   // left brow right corner
+    cv::Point3d(-1.330353, 7.122144, 6.903745),  // right brow left corner
+    cv::Point3d(-6.825897, 6.760612, 4.402142),  // right brow right corner
+    cv::Point3d(5.311432, 5.485328, 3.987654),   // left eye left corner
+    cv::Point3d(1.789930, 5.393625, 4.413414),   // left eye right corner
+    cv::Point3d(-1.789930, 5.393625, 4.413414),  // right eye left corner
+    cv::Point3d(-5.311432, 5.485328, 3.987654),  // right eye right corner
+    cv::Point3d(2.005628, 1.409845, 6.165652),   // nose left corner
+    cv::Point3d(-2.005628, 1.409845, 6.165652),  // nose right corner
+    cv::Point3d(2.774015, -2.080775, 5.048531),  // mouth left corner
+    cv::Point3d(-2.774015, -2.080775, 5.048531), // mouth right corner
+    cv::Point3d(0.000000, -3.116408, 6.097667),  // mouth central bottom corner
+    cv::Point3d(0.000000, -7.415691, 4.070434)   // chin corner
+};
+#else
+static std::vector<cv::Point3f> objectPoints = {
+    cv::Point3d(0.0, 0.0, 0.0),          // Nose tip
+    cv::Point3d(0.0, -330.0, -65.0),     // Chin
+    cv::Point3d(-225.0, 170.0, -135.0),  // Left eye left corner
+    cv::Point3d(225.0, 170.0, -135.0),   // Right eye right corner
+    cv::Point3d(-150.0, -150.0, -125.0), // Left Mouth corner
+    cv::Point3d(150.0, -150.0, -125.0)   // Right mouth corner
+};
+#endif
 static struct Dlib68Depth
 {
   union
@@ -95,6 +113,7 @@ cv::Mat tvec_cv = cv::Mat::zeros(3, 1, cv::DataType<double>::type);
 glm::mat3 rmat_initial;
 // tranlation vector of the initial pose
 glm::vec3 tvec_initial;
+float model_scale = 1;
 // initial position of the face
 glm::vec2 pose_initial[68] = {glm::vec2(0)};
 
@@ -102,6 +121,10 @@ glm::vec2 pose_initial[68] = {glm::vec2(0)};
 glm::vec2 *facial_landmarks = 0;
 // output transformation
 glm::mat4 facial_movement;
+
+#if SHOW_DLIB_WINDOW
+dlib::image_window win;
+#endif
 
 int recognizer_init(int cameraID)
 {
@@ -121,8 +144,8 @@ int recognizer_init(int cameraID)
   // check if open
   if (!capture.isOpened())
   {
-    capture.open(cameraID,cv::CAP_ANY);
-    if(!capture.isOpened())
+    capture.open(cameraID, cv::CAP_ANY);
+    if (!capture.isOpened())
       return VANCHE_FRECOG_NO_CAMERA;
   }
 
@@ -132,10 +155,6 @@ int recognizer_init(int cameraID)
   return 0;
 }
 
-// TODO(ANT) remove on release
-#if 0
-dlib::image_window win;
-#endif
 static int get_pose(bool calibrate)
 {
   // read camera
@@ -155,6 +174,7 @@ static int get_pose(bool calibrate)
 
   // get face movement
   std::vector<cv::Point2f> imagePoints = std::vector<cv::Point2f>();
+#if USE_AIFI_POINTS
   imagePoints.push_back(cv::Point2d(pose.part(17).x(), pose.part(17).y()));
   imagePoints.push_back(cv::Point2d(pose.part(21).x(), pose.part(21).y()));
   imagePoints.push_back(cv::Point2d(pose.part(22).x(), pose.part(22).y()));
@@ -169,14 +189,22 @@ static int get_pose(bool calibrate)
   imagePoints.push_back(cv::Point2d(pose.part(54).x(), pose.part(54).y()));
   imagePoints.push_back(cv::Point2d(pose.part(57).x(), pose.part(57).y()));
   imagePoints.push_back(cv::Point2d(pose.part(8).x(), pose.part(8).y()));
+#else
+  imagePoints.push_back(cv::Point2d(pose.part(30).x(), pose.part(30).y())); // Nose tip
+  imagePoints.push_back(cv::Point2d(pose.part(8).x(), pose.part(8).y()));   // Chin
+  imagePoints.push_back(cv::Point2d(pose.part(36).x(), pose.part(36).y())); // Left eye left corner
+  imagePoints.push_back(cv::Point2d(pose.part(45).x(), pose.part(45).y())); // Right eye right corner
+  imagePoints.push_back(cv::Point2d(pose.part(48).x(), pose.part(48).y())); // Left Mouth corner
+  imagePoints.push_back(cv::Point2d(pose.part(54).x(), pose.part(54).y())); // Right mouth corner
 
+#endif
   double focal_length = frame.cols; // Approximate focal length.
   cv::Point2d center = cv::Point2d(frame.cols / 2, frame.rows / 2);
   cv::Mat cameraMatrix = (cv::Mat_<double>(3, 3) << focal_length, 0, center.x, 0, focal_length, center.y, 0, 0, 1);
 
   cv::Mat distCoeffs = cv::Mat::zeros(4, 1, cv::DataType<double>::type); // Assuming no lens distortion
   cv::solvePnP(objectPoints, imagePoints, cameraMatrix, distCoeffs, rvec_cv, tvec_cv, calibrate, cv::SOLVEPNP_ITERATIVE);
-#if 0
+#if SHOW_DLIB_WINDOW
   // show on window
   win.clear_overlay();
   win.set_image(cimg);
@@ -205,6 +233,12 @@ int recognizer_calibrate()
   {
     pose_initial[i] = toglmvec2(pose.part(i));
   }
+#if USE_AIFI_POINTS
+  model_scale = (objectPoints[4].x - objectPoints[7].x) / (pose.part(37).x() - pose.part(46).x());
+#else
+  model_scale = (objectPoints[3].x - objectPoints[2].x) / (pose.part(37).x() - pose.part(46).x());
+#endif
+  model_scale *= model_scale < 0 ? -1 : 1;
   return 0;
 }
 int recognizer_update()
@@ -216,54 +250,40 @@ int recognizer_update()
   glm::mat3 rmat = cv2mat3(rmat_cv);
   glm::vec3 tvec = cv2vec3(tvec_cv);
 
-  glm::vec3 center = glm::vec3(toglmvec2(pose.part(30)) / (float)frame.cols, 0) - tvec / tvec.z + tvec_initial / tvec_initial.z;
+  glm::vec3 center = glm::vec3(toglmvec2(pose.part(30)), 0);
 
   // inverse roll as camera perspective flips it (flips yaw and pitch)
-  glm::mat3 rot_ini = glm::inverse(glm::orientate3(toEulerAngles(rmat_initial) * glm::vec3(-1, 1, -1)));
+  glm::mat3 rot_ini = glm::orientate3(toEulerAngles(rmat_initial) * glm::vec3(-1, 1, -1));
   glm::mat3 rot = glm::inverse(glm::orientate3(toEulerAngles(rmat) * glm::vec3(-1, 1, -1)));
 
+#if SHOW_DLIB_WINDOW
+  // display on window
+  std::vector<dlib::full_object_detection> shapes;
+  shapes.push_back(pose);
+  win.add_overlay(dlib::render_face_detections(shapes));
+#endif
   for (int i = 0; i < 68; i++)
   {
-    glm::vec3 ini = rot_ini * (glm::vec3(pose_initial[i] / (float)frame.cols, dlib68Depth_u.dlib68Depth[i]) - center) +
-                    center - tvec_initial / tvec_initial.z;
-    glm::vec3 cur = rot * (glm::vec3(toglmvec2(pose.part(i)) / (float)frame.cols, dlib68Depth_u.dlib68Depth[i]) - center) +
-                    center - tvec / tvec.z;
+    glm::vec3 cur = (glm::vec3(toglmvec2(pose.part(i)), 1) - center);
+    cur *= exp((tvec_initial - tvec).z / 100);
+    cur = rot * rot_ini * cur;
+    cur += center;
+    cur -= (tvec_initial - tvec) / model_scale;
+    cur -= glm::vec3(pose_initial[i], 0);
+    cur /= glm::vec3(frame.cols, frame.rows, 1);
+    facial_landmarks[i] = glm::vec2(cur.x, cur.y);
+#if SHOW_DLIB_WINDOW
+    glm::vec2 shownPoint = cur;
+    shownPoint *= glm::vec2(frame.cols, frame.rows);
+    shownPoint += pose_initial[i];
 
-    facial_landmarks[i] = cur - ini;
+    win.add_overlay(dlib::rectangle(shownPoint.x - 2, shownPoint.y - 2, shownPoint.x + 2, shownPoint.y + 2));
+#endif
   }
   facial_movement = rmat_initial;
   facial_movement = glm::translate(facial_movement, tvec_initial / tvec_initial.z);
   facial_movement = facial_movement * glm::inverse(glm::mat4(rot));
   facial_movement = glm::translate(facial_movement, -tvec / tvec.z);
-
-#if 0
-  // display on window
-  std::vector<dlib::full_object_detection> shapes;
-  shapes.push_back(pose);
-  win.add_overlay(dlib::render_face_detections(shapes));
-  for (int i = 0; i < 68; i++)
-  {
-    glm::vec3 current = glm::vec3(toglmvec2(pose.part(i)) / (float)frame.cols, dlib68Depth_u.dlib68Depth[i]);
-    // std::cout<<i<<": "<<glm::to_string(current)<<std::endl;
-    // current = glm::vec3(pose_initial[i] / (float)frame.cols, 0);
-    // current = rmat_initial * (current - center) + center;
-    // current = current - tvec_initial / tvec_initial.z;
-    glm::vec3 rot_ini = toEulerAngles(rmat_initial);
-    rot_ini *= glm::vec3(-1, 1, -1);
-    glm::vec3 rot = toEulerAngles(rmat);
-    rot *= glm::vec3(-1, 1, -1);
-    current -= center;
-    current *= tvec.z / tvec_initial.z;
-    // (yaw,roll,pitch)
-    current = glm::orientate3(rot_ini) * current;
-    current = glm::inverse(glm::orientate3(rot)) * current;
-    current = current + tvec_initial / tvec_initial.z;
-    current = current - tvec / tvec.z;
-    current += center;
-    current = current * (float)frame.cols;
-    win.add_overlay(dlib::rectangle(current.x - 2, current.y - 2, current.x + 2, current.y + 2));
-  }
-#endif
 
   return 0;
 }
