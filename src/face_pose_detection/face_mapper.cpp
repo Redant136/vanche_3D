@@ -162,12 +162,12 @@ static int partial_deriv_solve(glm::vec2 *points)
       intern_model_expressions.ee -= model_sensitivity.ee * epsilon * changes[3];
       intern_model_expressions.oh -= model_sensitivity.oh * epsilon * changes[4];
 
-      chprintln("aa ", intern_model_expressions.aa);
-      chprintln("ih ", intern_model_expressions.ih);
-      chprintln("ou ", intern_model_expressions.ou);
-      chprintln("ee ", intern_model_expressions.ee);
-      chprintln("oh ", intern_model_expressions.oh);
-      chprintln();
+      // chprintln("aa ", intern_model_expressions.aa);
+      // chprintln("ih ", intern_model_expressions.ih);
+      // chprintln("ou ", intern_model_expressions.ou);
+      // chprintln("ee ", intern_model_expressions.ee);
+      // chprintln("oh ", intern_model_expressions.oh);
+      // chprintln();
       intern_model_expressions.aa = MIN(1, MAX(0, intern_model_expressions.aa));
       intern_model_expressions.ih = MIN(1, MAX(0, intern_model_expressions.ih));
       intern_model_expressions.ou = MIN(1, MAX(0, intern_model_expressions.ou));

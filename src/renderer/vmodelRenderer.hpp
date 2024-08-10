@@ -23,10 +23,6 @@ struct Camera_t
   bool updated = true;
   glm::mat4 viewMatrix, projectionMatrix;
 };
-struct Shader_t
-{
-  uint ID;
-};
 extern struct WORLD_t
 {
   glm::vec3 UP;
@@ -37,9 +33,9 @@ extern struct WORLD_t
   Camera_t camera;
   struct
   {
-    Shader_t defaultShader;
-    Shader_t skeletonShader;
-    Shader_t mtoon;
+    uint defaultShader;
+    uint skeletonShader;
+    uint mtoon;
   } shaders;
 } WORLD;
 struct VModel_t
@@ -70,6 +66,6 @@ void freeVModel(VModel_t *vmodel);
 void vmodelSetMorphWeight(VModel_t *vmodel, uint mesh, uint weight, float weightVal);
 void vmodelVRMSetMorphWeight(VModel_t *vmodel, uint mesh, std::string target, float weight);
 void vmodelSetVRMExpressions(VModel_t *vmodel, float *values);
-int vmodelGetVRMNode(VModel_t*vmodel,std::string name);
+int vmodelGetVRMNode(VModel_t*vmodel, std::string name);
 
 #endif

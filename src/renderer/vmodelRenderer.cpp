@@ -21,92 +21,92 @@
 
 WORLD_t WORLD;
 
-static void shaderSetBool(const Shader_t &shader, const std::string &name, bool value)
+static void shaderSetBool(const uint &shader, const std::string &name, bool value)
 {
-  glUniform1i(glGetUniformLocation(shader.ID, name.c_str()), (int)value);
+  glUniform1i(glGetUniformLocation(shader, name.c_str()), (int)value);
 }
-static void shaderSetInt(const Shader_t &shader, const std::string &name, int value)
+static void shaderSetInt(const uint &shader, const std::string &name, int value)
 {
-  glUniform1i(glGetUniformLocation(shader.ID, name.c_str()), value);
+  glUniform1i(glGetUniformLocation(shader, name.c_str()), value);
 }
-static void shaderSetFloat(const Shader_t &shader, const std::string &name, float value)
+static void shaderSetFloat(const uint &shader, const std::string &name, float value)
 {
-  glUniform1f(glGetUniformLocation(shader.ID, name.c_str()), value);
+  glUniform1f(glGetUniformLocation(shader, name.c_str()), value);
 }
-static void shaderSetVec2(const Shader_t &shader, const std::string &name, const glm::vec2 &value)
+static void shaderSetVec2(const uint &shader, const std::string &name, const glm::vec2 &value)
 {
-  glUniform2fv(glGetUniformLocation(shader.ID, name.c_str()), 1, &value[0]);
+  glUniform2fv(glGetUniformLocation(shader, name.c_str()), 1, &value[0]);
 }
-static void shaderSetVec2(const Shader_t &shader, const std::string &name, float x, float y)
+static void shaderSetVec2(const uint &shader, const std::string &name, float x, float y)
 {
-  glUniform2f(glGetUniformLocation(shader.ID, name.c_str()), x, y);
+  glUniform2f(glGetUniformLocation(shader, name.c_str()), x, y);
 }
-static void shaderSetVec3(const Shader_t &shader, const std::string &name, const glm::vec3 &value)
+static void shaderSetVec3(const uint &shader, const std::string &name, const glm::vec3 &value)
 {
-  glUniform3fv(glGetUniformLocation(shader.ID, name.c_str()), 1, &value[0]);
+  glUniform3fv(glGetUniformLocation(shader, name.c_str()), 1, &value[0]);
 }
-static void shaderSetVec3(const Shader_t &shader, const std::string &name, float x, float y, float z)
+static void shaderSetVec3(const uint &shader, const std::string &name, float x, float y, float z)
 {
-  glUniform3f(glGetUniformLocation(shader.ID, name.c_str()), x, y, z);
+  glUniform3f(glGetUniformLocation(shader, name.c_str()), x, y, z);
 }
-static void shaderSetVec4(const Shader_t &shader, const std::string &name, const glm::vec4 &value)
+static void shaderSetVec4(const uint &shader, const std::string &name, const glm::vec4 &value)
 {
-  glUniform4fv(glGetUniformLocation(shader.ID, name.c_str()), 1, &value[0]);
+  glUniform4fv(glGetUniformLocation(shader, name.c_str()), 1, &value[0]);
 }
-static void shaderSetVec4(const Shader_t &shader, const std::string &name, float x, float y, float z, float w)
+static void shaderSetVec4(const uint &shader, const std::string &name, float x, float y, float z, float w)
 {
-  glUniform4f(glGetUniformLocation(shader.ID, name.c_str()), x, y, z, w);
+  glUniform4f(glGetUniformLocation(shader, name.c_str()), x, y, z, w);
 }
-static void shaderSetMat2(const Shader_t &shader, const std::string &name, const glm::mat2 &mat)
+static void shaderSetMat2(const uint &shader, const std::string &name, const glm::mat2 &mat)
 {
-  glUniformMatrix2fv(glGetUniformLocation(shader.ID, name.c_str()), 1, GL_FALSE, &mat[0][0]);
+  glUniformMatrix2fv(glGetUniformLocation(shader, name.c_str()), 1, GL_FALSE, &mat[0][0]);
 }
-static void shaderSetMat3(const Shader_t &shader, const std::string &name, const glm::mat3 &mat)
+static void shaderSetMat3(const uint &shader, const std::string &name, const glm::mat3 &mat)
 {
-  glUniformMatrix3fv(glGetUniformLocation(shader.ID, name.c_str()), 1, GL_FALSE, &mat[0][0]);
+  glUniformMatrix3fv(glGetUniformLocation(shader, name.c_str()), 1, GL_FALSE, &mat[0][0]);
 }
-static void shaderSetMat4(const Shader_t &shader, const std::string &name, const glm::mat4 &mat)
+static void shaderSetMat4(const uint &shader, const std::string &name, const glm::mat4 &mat)
 {
-  glUniformMatrix4fv(glGetUniformLocation(shader.ID, name.c_str()), 1, GL_FALSE, &mat[0][0]);
+  glUniformMatrix4fv(glGetUniformLocation(shader, name.c_str()), 1, GL_FALSE, &mat[0][0]);
 }
-static void shaderSetBoolArr(const Shader_t &shader, const std::string &name, uint size, bool *value)
+static void shaderSetBoolArr(const uint &shader, const std::string &name, uint size, bool *value)
 {
-  glUniform1iv(glGetUniformLocation(shader.ID, name.c_str()), size, (int *)value);
+  glUniform1iv(glGetUniformLocation(shader, name.c_str()), size, (int *)value);
 }
-static void shaderSetIntArr(const Shader_t &shader, const std::string &name, uint size, int *value)
+static void shaderSetIntArr(const uint &shader, const std::string &name, uint size, int *value)
 {
-  glUniform1iv(glGetUniformLocation(shader.ID, name.c_str()), size, value);
+  glUniform1iv(glGetUniformLocation(shader, name.c_str()), size, value);
 }
-static void shaderSetFloatArr(const Shader_t &shader, const std::string &name, uint size, float *value)
+static void shaderSetFloatArr(const uint &shader, const std::string &name, uint size, float *value)
 {
-  glUniform1fv(glGetUniformLocation(shader.ID, name.c_str()), size, value);
+  glUniform1fv(glGetUniformLocation(shader, name.c_str()), size, value);
 }
-static void shaderSetVec2Arr(const Shader_t &shader, const std::string &name, uint size, const float *value)
+static void shaderSetVec2Arr(const uint &shader, const std::string &name, uint size, const float *value)
 {
-  glUniform2fv(glGetUniformLocation(shader.ID, name.c_str()), size, value);
+  glUniform2fv(glGetUniformLocation(shader, name.c_str()), size, value);
 }
-static void shaderSetVec3Arr(const Shader_t &shader, const std::string &name, uint size, const float *value)
+static void shaderSetVec3Arr(const uint &shader, const std::string &name, uint size, const float *value)
 {
-  glUniform3fv(glGetUniformLocation(shader.ID, name.c_str()), size, value);
+  glUniform3fv(glGetUniformLocation(shader, name.c_str()), size, value);
 }
-static void shaderSetVec4Arr(const Shader_t &shader, const std::string &name, uint size, const float *value)
+static void shaderSetVec4Arr(const uint &shader, const std::string &name, uint size, const float *value)
 {
-  glUniform4fv(glGetUniformLocation(shader.ID, name.c_str()), size, value);
+  glUniform4fv(glGetUniformLocation(shader, name.c_str()), size, value);
 }
-static void shaderSetMat2Arr(const Shader_t &shader, const std::string &name, uint size, const float *mat)
+static void shaderSetMat2Arr(const uint &shader, const std::string &name, uint size, const float *mat)
 {
-  glUniformMatrix2fv(glGetUniformLocation(shader.ID, name.c_str()), size, GL_FALSE, mat);
+  glUniformMatrix2fv(glGetUniformLocation(shader, name.c_str()), size, GL_FALSE, mat);
 }
-static void shaderSetMat3Arr(const Shader_t &shader, const std::string &name, uint size, const float *mat)
+static void shaderSetMat3Arr(const uint &shader, const std::string &name, uint size, const float *mat)
 {
-  glUniformMatrix3fv(glGetUniformLocation(shader.ID, name.c_str()), size, GL_FALSE, mat);
+  glUniformMatrix3fv(glGetUniformLocation(shader, name.c_str()), size, GL_FALSE, mat);
 }
-static void shaderSetMat4Arr(const Shader_t &shader, const std::string &name, uint size, const float *mat)
+static void shaderSetMat4Arr(const uint &shader, const std::string &name, uint size, const float *mat)
 {
-  glUniformMatrix4fv(glGetUniformLocation(shader.ID, name.c_str()), size, GL_FALSE, mat);
+  glUniformMatrix4fv(glGetUniformLocation(shader, name.c_str()), size, GL_FALSE, mat);
 }
 
-static Shader_t createShader(std::string vertexPath, std::string geometryPath, std::string fragmentPath)
+static uint createShader(std::string vertexPath, std::string geometryPath, std::string fragmentPath)
 {
   size_t vLength = 0, gLength = 0, fLength = 0;
   char *vertexCode = 0, *geometryCode = 0, *fragmentCode = 0;
@@ -166,12 +166,10 @@ static Shader_t createShader(std::string vertexPath, std::string geometryPath, s
   glDeleteShader(geometry);
   glDeleteShader(fragment);
 
-  Shader_t shader;
-  shader.ID = ID;
   free(vertexCode);
   free(geometryCode);
   free(fragmentCode);
-  return shader;
+  return ID;
 }
 
 static glm::mat4 getNodeTransform(const VModel_t *vmodel, uint node, const glm::mat4 &parentTransform)
@@ -601,12 +599,12 @@ void initVModel(VModel_t *vmodel)
   glGenSamplers(1, &vmodel->sampler_obj);
 
   // UBO
-  glUniformBlockBinding(WORLD.shaders.defaultShader.ID, glGetUniformBlockIndex(WORLD.shaders.defaultShader.ID, "Transforms"), UBO_STREAM);
-  glUniformBlockBinding(WORLD.shaders.mtoon.ID, glGetUniformBlockIndex(WORLD.shaders.mtoon.ID, "Transforms"), UBO_STREAM);
-  glUniformBlockBinding(WORLD.shaders.defaultShader.ID, glGetUniformBlockIndex(WORLD.shaders.defaultShader.ID, "Nodes"), UBO_NODE_DYNAMIC);
-  glUniformBlockBinding(WORLD.shaders.mtoon.ID, glGetUniformBlockIndex(WORLD.shaders.mtoon.ID, "Nodes"), UBO_NODE_DYNAMIC);
-  glUniformBlockBinding(WORLD.shaders.defaultShader.ID, glGetUniformBlockIndex(WORLD.shaders.defaultShader.ID, "InverseBindMatrices"), UBO_INVBINDMAT_STATIC);
-  glUniformBlockBinding(WORLD.shaders.mtoon.ID, glGetUniformBlockIndex(WORLD.shaders.mtoon.ID, "InverseBindMatrices"), UBO_INVBINDMAT_STATIC);
+  glUniformBlockBinding(WORLD.shaders.defaultShader, glGetUniformBlockIndex(WORLD.shaders.defaultShader, "Transforms"), UBO_STREAM);
+  glUniformBlockBinding(WORLD.shaders.mtoon, glGetUniformBlockIndex(WORLD.shaders.mtoon, "Transforms"), UBO_STREAM);
+  glUniformBlockBinding(WORLD.shaders.defaultShader, glGetUniformBlockIndex(WORLD.shaders.defaultShader, "Nodes"), UBO_NODE_DYNAMIC);
+  glUniformBlockBinding(WORLD.shaders.mtoon, glGetUniformBlockIndex(WORLD.shaders.mtoon, "Nodes"), UBO_NODE_DYNAMIC);
+  glUniformBlockBinding(WORLD.shaders.defaultShader, glGetUniformBlockIndex(WORLD.shaders.defaultShader, "InverseBindMatrices"), UBO_INVBINDMAT_STATIC);
+  glUniformBlockBinding(WORLD.shaders.mtoon, glGetUniformBlockIndex(WORLD.shaders.mtoon, "InverseBindMatrices"), UBO_INVBINDMAT_STATIC);
 
   glGenBuffers(1, &vmodel->UBO);
   glBindBuffer(GL_UNIFORM_BUFFER, vmodel->UBO);
@@ -634,8 +632,8 @@ void WORLDInit()
   WORLD.shaders.defaultShader = createShader(defaultShaderSource);
   WORLD.shaders.skeletonShader = createShader(skeletonShaderSource);
   WORLD.shaders.mtoon = createShader(mtoonShaderSource);
-  glUniformBlockBinding(WORLD.shaders.defaultShader.ID, glGetUniformBlockIndex(WORLD.shaders.defaultShader.ID, "Lights"), UBO_LIGHTS_STATIC);
-  glUniformBlockBinding(WORLD.shaders.mtoon.ID, glGetUniformBlockIndex(WORLD.shaders.mtoon.ID, "Lights"), UBO_LIGHTS_STATIC);
+  glUniformBlockBinding(WORLD.shaders.defaultShader, glGetUniformBlockIndex(WORLD.shaders.defaultShader, "Lights"), UBO_LIGHTS_STATIC);
+  glUniformBlockBinding(WORLD.shaders.mtoon, glGetUniformBlockIndex(WORLD.shaders.mtoon, "Lights"), UBO_LIGHTS_STATIC);
 
   glGenBuffers(1, &WORLD.lightsUBO);
   glBindBuffer(GL_UNIFORM_BUFFER, WORLD.lightsUBO);
@@ -644,7 +642,7 @@ void WORLDInit()
   glBindBufferRange(GL_UNIFORM_BUFFER, UBO_LIGHTS_STATIC, WORLD.lightsUBO, 0, sizeof(glm::vec4) * 2 * MAX_LIGHT_SOURCES);
 }
 
-static void bindTexture(const VModel_t &vmodel, const Shader_t &currentShader, const gltf::Texture &texture, uint &texCoord, uint sampler_obj, uint GL_TextureIndex)
+static void bindTexture(const VModel_t &vmodel, const uint &currentShader, const gltf::Texture &texture, uint &texCoord, uint sampler_obj, uint GL_TextureIndex)
 {
   if (texture.sampler != -1)
   {
@@ -664,7 +662,7 @@ static int renderNode(const VModel_t &vmodel, const int _node, const glm::mat4 p
 {
   glm::mat4 mat = getNodeTransform(&vmodel, _node, parentMat);
   const gltf::Node &node = vmodel.model.nodes[_node];
-  Shader_t currentShader = WORLD.shaders.defaultShader;
+  uint currentShader = WORLD.shaders.defaultShader;
   glBindBuffer(GL_UNIFORM_BUFFER, vmodel.nodesUBO);
   glBufferSubData(GL_UNIFORM_BUFFER, sizeof(glm::mat4) * _node, sizeof(glm::mat4), &mat);
   glBindBuffer(GL_UNIFORM_BUFFER, 0);
@@ -706,7 +704,7 @@ static int renderNode(const VModel_t &vmodel, const int _node, const glm::mat4 p
           currentShader = WORLD.shaders.mtoon;
         }
       }
-      glUseProgram(currentShader.ID);
+      glUseProgram(currentShader);
 
       glBindVertexArray(vmodel.VAO[node.mesh][i]);
       glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, vmodel.VBO[indexAccessor.bufferView]);
@@ -898,7 +896,7 @@ static int renderNode(const VModel_t &vmodel, const int _node, const glm::mat4 p
       }
       shaderSetBool(currentShader, "hasBaseColorTexture", hasBaseColorTexture);
 
-      glUseProgram(currentShader.ID);
+      glUseProgram(currentShader);
       shaderSetBool(currentShader, "MTOON_drawOutline", true);
       glEnable(GL_CULL_FACE);
       glDrawElements(primitive.mode, indexAccessor.count, indexAccessor.componentType,
@@ -928,7 +926,7 @@ void vmodelSetMorphWeight(VModel_t *vmodel, uint mesh, uint weight, float weight
 
 void vmodelVRMSetMorphWeight(VModel_t *vmodel, uint mesh, std::string target, float weight)
 {
-  if (ch_hashget(void *, vmodel->model.extensions, "VRMC_vrm"))
+  if (ch_hashget(void *, vmodel->model.extensions, gltf::SUPPORTED_EXTENSIONS.VRMC_vrm))
     return;
   gltf::Extras::TargetNames *targetNames = ch_hashget(gltf::Extras::TargetNames *, vmodel->model.meshes[mesh].extensions, "targetNames");
   if (!targetNames)
@@ -945,7 +943,7 @@ void vmodelVRMSetMorphWeight(VModel_t *vmodel, uint mesh, std::string target, fl
 void vmodelSetVRMExpressions(VModel_t *vmodel, float *values)
 {
   typedef gltf::Extensions::VRMC_vrm::ExpressionPresets ExpressionPresets;
-  gltf::Extensions::VRMC_vrm *VRM = ch_hashget(gltf::Extensions::VRMC_vrm *, vmodel->model.extensions, "VRMC_vrm");
+  gltf::Extensions::VRMC_vrm *VRM = ch_hashget(gltf::Extensions::VRMC_vrm *, vmodel->model.extensions, gltf::SUPPORTED_EXTENSIONS.VRMC_vrm);
   if (!VRM)
   {
     fprintf(stderr, "Model is not a VRM model\n");
@@ -1095,7 +1093,7 @@ void vmodelSetVRMExpressions(VModel_t *vmodel, float *values)
 }
 int vmodelGetVRMNode(VModel_t *vmodel, std::string name)
 {
-  gltf::Extensions::VRMC_vrm *VRM = ch_hashget(gltf::Extensions::VRMC_vrm *, vmodel->model.extensions, "VRMC_vrm");
+  gltf::Extensions::VRMC_vrm *VRM = ch_hashget(gltf::Extensions::VRMC_vrm *, vmodel->model.extensions, gltf::SUPPORTED_EXTENSIONS.VRMC_vrm);
   if (!VRM)
   {
     fprintf(stderr, "Model is not a VRM model\n");
@@ -1169,7 +1167,7 @@ int vmodelGetVRMNode(VModel_t *vmodel, std::string name)
 
 int renderVModel(VModel_t vmodel)
 {
-  glUseProgram(WORLD.shaders.defaultShader.ID);
+  glUseProgram(WORLD.shaders.defaultShader);
 
   // model space to world space
   if (WORLD.camera.updated)

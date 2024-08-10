@@ -22,18 +22,18 @@ namespace gltf
 
   static const struct
   {
-    const string KHR_materials_unlit = "KHR_materials_unlit";
-    const string KHR_texture_transform = "KHR_texture_transform";
-    const string KHR_materials_emissive_strength = "KHR_materials_emissive_strength";
-    // const string VRM = "VRM";
-    const string VRMC_springBone = "VRMC_springBone";
-    const string VRMC_materials_mtoon = "VRMC_materials_mtoon";
-    const string VRMC_node_constraint = "VRMC_node_constraint";
-    const string VRMC_vrm = "VRMC_vrm";
+    const char KHR_materials_unlit[128] = "KHR_materials_unlit";
+    const char KHR_texture_transform[128] = "KHR_texture_transform";
+    const char KHR_materials_emissive_strength[128] = "KHR_materials_emissive_strength";
+    const char VRM[128] = "VRM";
+    const char VRMC_springBone[128] = "VRMC_springBone";
+    const char VRMC_materials_mtoon[128] = "VRMC_materials_mtoon";
+    const char VRMC_node_constraint[128] = "VRMC_node_constraint";
+    const char VRMC_vrm[128] = "VRMC_vrm";
   } SUPPORTED_EXTENSIONS;
   static const struct
   {
-    const string TargetNames = "targetNames";
+    const char TargetNames[128] = "targetNames";
   } SUPPORTED_EXTRAS;
 
   struct gltfGenericComponent{
