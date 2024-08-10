@@ -45,16 +45,22 @@ int main(int argn, char **args)
     return 1;
   }
 
-  uint numPoints = 1;
 #if VANCHE_FACE_ENGINE_dlib68
-  numPoints = 68;
+  const uint numPoints = 68;
+#else
+  const uint numPoints = 1;
 #endif
 
-  glm::vec2 *filebuffer = (glm::vec2 *)calloc(numPoints * END, sizeof(glm::vec2));
-  free(filebuffer);
-  ch_bufferFile("../data_files/dlib68Trackers_custom.bin",(void**)&filebuffer,0);
-  filebuffer = (glm::vec2 *)realloc(filebuffer, numPoints * END * sizeof(glm::vec2));
-  memcpy(filebuffer+5*68,filebuffer,sizeof(glm::vec2)*5*68);
+  void *buffer = 0;
+  size_t bufSize = 0;
+  struct
+  {
+    glm::vec2 sums[numPoints * END] = {{0, 0}};
+    int nPoints[END] = {0};
+  } filebuffer;
+  glm::vec2 cleanBuffer[numPoints * END] = {{0, 0}};
+  ch_bufferFile("../data_files/dlib68Trackers_customSums.bin", (void **)&buffer, &bufSize);
+  memcpy(&filebuffer, buffer, bufSize);
   Commands e = END;
   chprintln("Started successfully");
   do
@@ -89,31 +95,23 @@ int main(int argn, char **args)
     else if (e < END)
     {
       clock_t start_time = clock();
-      std::vector<glm::vec2> facial_points = std::vector<glm::vec2>();
-      uint numFrames = 0;
       while ((clock() - start_time) / CLOCKS_PER_SEC < 5)
       {
         recognizer_update();
-        ++numFrames;
+        filebuffer.nPoints[e]++;
         for (int i = 0; i < numPoints; i++)
         {
-          facial_points.push_back(facial_landmarks[i]);
+          filebuffer.sums[e * numPoints + i] += facial_landmarks[i];
         }
         usleep(100);
       }
       for (int i = 0; i < numPoints; i++)
       {
-        glm::vec2 sum = glm::vec2(0, 0);
-        for (int j = 0; j < numFrames; j++)
-        {
-          sum += facial_points[i * numPoints + j];
-        }
-        sum /= numFrames;
-        filebuffer[e*68+i] = sum;
+        cleanBuffer[e * 68 + i] = filebuffer.sums[e * 68 + i] / (float)filebuffer.nPoints[e];
       }
     }
   } while (e != END);
-
-  ch_writeFile("../data_files/dlib68Trackers_custom.bin", filebuffer, sizeof(glm::vec2) * numPoints * END);
+  ch_writeFile("../data_files/dlib68Trackers_customSums.bin", &filebuffer, sizeof(filebuffer));
+  ch_writeFile("../data_files/dlib68Trackers_custom.bin", cleanBuffer, sizeof(cleanBuffer));
   return 0;
 }

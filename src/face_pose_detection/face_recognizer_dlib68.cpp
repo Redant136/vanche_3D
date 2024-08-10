@@ -11,7 +11,7 @@
 #include <opencv2/calib3d.hpp>
 #include <glm/gtx/euler_angles.hpp>
 #pragma GCC diagnostic pop
-#define SHOW_DLIB_WINDOW 1
+#define SHOW_DLIB_WINDOW 0
 #define USE_AIFI_POINTS 1
 
 #if SHOW_DLIB_WINDOW

@@ -9,8 +9,8 @@ static uint32_t TRACKER_MAP = 0b00011;
 #define TRACK_PUPILS (TRACKER_MAP & 1 << 3)
 #define TRACK_EMOTION (TRACKER_MAP & 1 << 4)
 
-// #define VANCHE_FACEMAPPER_BINPATH "../data_files/dlib68Trackers.bin"
-#define VANCHE_FACEMAPPER_BINPATH "../data_files/dlib68Trackers_custom.bin"
+#define VANCHE_FACEMAPPER_BINPATH "../data_files/dlib68Trackers.bin"
+// #define VANCHE_FACEMAPPER_BINPATH "../data_files/dlib68Trackers_custom.bin"
 
 union
 {
@@ -53,8 +53,10 @@ union
   };
   glm::vec2 *deltas[1];
 } tracker_deltas;
+union Model_Expressions_Weights_t intern_model_expressions;
 union Model_Expressions_Weights_t model_expressions;
 struct Model_Sensitivity_t model_sensitivity;
+struct Model_Sensitivity_t model_scaling;
 
 int mapper_init()
 {
@@ -111,74 +113,95 @@ static int partial_deriv_solve(glm::vec2 *points)
 {
   // model_sensitivity.blinkLeft=20;
 #if VANCHE_FACE_ENGINE_dlib68
-  const float epsilon = 1;
-  glm::vec2 cost[68];
-  glm::vec2 estimate[68] = {glm::vec2(0, 0)};
-  // get estimate
-  for (int i = 0; i < 68; i++)
+  const float epsilon = 3;
+  for (int epoch = 0; epoch < 136; epoch++)
   {
-    for (int j = 0; j < sizeof(Model_Expressions_Weights_t) / sizeof(float); j++)
-    {
-      if (tracker_deltas.deltas[j])
-        estimate[i] += model_expressions.data[j] * tracker_deltas.deltas[j][i] * 1.f;
-    }
-  }
-  // get delta
-  for (int i = 0; i < 68; i++)
-  {
-    cost[i] = estimate[i] - points[i];
-  }
-
-  // partial deriv
-  if (TRACK_NEUTRAL && tracker_deltas.other.neutral)
-  {
-    float change = 0;
-    for (int i = 0; i < 68; i++)
-      change += tracker_deltas.other.neutral[i].x * cost[i].x + tracker_deltas.other.neutral[i].y * cost[i].y;
-    model_expressions.neutral = MIN(1, MAX(0, model_expressions.neutral - model_sensitivity.neutral * epsilon * change * 68));
-  }
-  if (TRACK_MOUTH && tracker_deltas.mouth_deltas.aa)
-  {
-    float changes[5] = {0};
+    glm::vec2 cost[68];
+    glm::vec2 estimate[68] = {glm::vec2(0, 0)};
+    // get estimate
     for (int i = 0; i < 68; i++)
     {
-      if (i == 17)
-        i = 48;
-      changes[0] += tracker_deltas.mouth_deltas.aa[i].x * cost[i].x + tracker_deltas.mouth_deltas.aa[i].y * cost[i].y;
-      changes[1] += tracker_deltas.mouth_deltas.ih[i].x * cost[i].x + tracker_deltas.mouth_deltas.ih[i].y * cost[i].y;
-      changes[2] += tracker_deltas.mouth_deltas.ou[i].x * cost[i].x + tracker_deltas.mouth_deltas.ou[i].y * cost[i].y;
-      changes[3] += tracker_deltas.mouth_deltas.ee[i].x * cost[i].x + tracker_deltas.mouth_deltas.ee[i].y * cost[i].y;
-      changes[4] += tracker_deltas.mouth_deltas.oh[i].x * cost[i].x + tracker_deltas.mouth_deltas.oh[i].y * cost[i].y;
+      for (int j = 0; j < sizeof(Model_Expressions_Weights_t) / sizeof(float); j++)
+      {
+        if (tracker_deltas.deltas[j])
+          estimate[i] += intern_model_expressions.data[j] * tracker_deltas.deltas[j][i] * 1.f;
+      }
     }
-    model_expressions.aa = MIN(1, MAX(0, model_expressions.aa - model_sensitivity.aa * epsilon * changes[0] * 36));
-    model_expressions.ih = MIN(1, MAX(0, model_expressions.ih - model_sensitivity.ih * epsilon * changes[1] * 36));
-    model_expressions.ou = MIN(1, MAX(0, model_expressions.ou - model_sensitivity.ou * epsilon * changes[2] * 36));
-    model_expressions.ee = MIN(1, MAX(0, model_expressions.ee - model_sensitivity.ee * epsilon * changes[3] * 36));
-    model_expressions.oh = MIN(1, MAX(0, model_expressions.oh - model_sensitivity.oh * epsilon * changes[4] * 36));
-
-    // chprintln("aa ", model_expressions.aa);
-    // chprintln("ih ", model_expressions.ih);
-    // chprintln("ou ", model_expressions.ou);
-    // chprintln("ee ", model_expressions.ee);
-    // chprintln("oh ", model_expressions.oh);
-    // chprintln();
-  }
-  if(TRACK_EYES && tracker_deltas.eyes_deltas.blink)
-  {
-    float changes[3] = {0};
-    for (int i = 17; i < 48; i++)
+    // get delta
+    for (int i = 0; i < 68; i++)
     {
-      if (i == 27)
-        i = 36;
-      changes[0] += tracker_deltas.eyes_deltas.blink[i].x * cost[i].x + tracker_deltas.eyes_deltas.blink[i].y * cost[i].y;
-      changes[1] += tracker_deltas.eyes_deltas.blinkLeft[i].x * cost[i].x + tracker_deltas.eyes_deltas.blinkLeft[i].y * cost[i].y;
-      changes[2] += tracker_deltas.eyes_deltas.blinkRight[i].x * cost[i].x + tracker_deltas.eyes_deltas.blinkRight[i].y * cost[i].y;
+      cost[i] = estimate[i] - points[i];
     }
-    model_expressions.blink = MIN(1, MAX(0, model_expressions.blink - model_sensitivity.blink * epsilon * changes[0] * 22));
-    model_expressions.blinkLeft = MIN(1, MAX(0, model_expressions.blinkLeft - model_sensitivity.blinkLeft * epsilon * changes[1] * 22));
-    model_expressions.blinkRight = MIN(1, MAX(0, model_expressions.blinkRight - model_sensitivity.blinkRight * epsilon * changes[2] * 22));
+
+    // partial deriv
+    if (TRACK_NEUTRAL && tracker_deltas.other.neutral)
+    {
+      float change = 0;
+      for (int i = 0; i < 68; i++)
+        change += tracker_deltas.other.neutral[i].x * cost[i].x + tracker_deltas.other.neutral[i].y * cost[i].y;
+      intern_model_expressions.neutral -= model_sensitivity.neutral * epsilon * change;
+      intern_model_expressions.neutral = MIN(1, MAX(0, intern_model_expressions.neutral));
+    }
+    if (TRACK_MOUTH && tracker_deltas.mouth_deltas.aa)
+    {
+      float changes[5] = {0};
+      for (int i = 0; i < 68; i++)
+      {
+        if (i == 17)
+          i = 48;
+        changes[0] += tracker_deltas.mouth_deltas.aa[i].x * cost[i].x + tracker_deltas.mouth_deltas.aa[i].y * cost[i].y;
+        changes[1] += tracker_deltas.mouth_deltas.ih[i].x * cost[i].x + tracker_deltas.mouth_deltas.ih[i].y * cost[i].y;
+        changes[2] += tracker_deltas.mouth_deltas.ou[i].x * cost[i].x + tracker_deltas.mouth_deltas.ou[i].y * cost[i].y;
+        changes[3] += tracker_deltas.mouth_deltas.ee[i].x * cost[i].x + tracker_deltas.mouth_deltas.ee[i].y * cost[i].y;
+        changes[4] += tracker_deltas.mouth_deltas.oh[i].x * cost[i].x + tracker_deltas.mouth_deltas.oh[i].y * cost[i].y;
+      }
+
+      intern_model_expressions.aa -= model_sensitivity.aa * epsilon * changes[0];
+      intern_model_expressions.ih -= model_sensitivity.ih * epsilon * changes[1];
+      intern_model_expressions.ou -= model_sensitivity.ou * epsilon * changes[2];
+      intern_model_expressions.ee -= model_sensitivity.ee * epsilon * changes[3];
+      intern_model_expressions.oh -= model_sensitivity.oh * epsilon * changes[4];
+
+      chprintln("aa ", intern_model_expressions.aa);
+      chprintln("ih ", intern_model_expressions.ih);
+      chprintln("ou ", intern_model_expressions.ou);
+      chprintln("ee ", intern_model_expressions.ee);
+      chprintln("oh ", intern_model_expressions.oh);
+      chprintln();
+      intern_model_expressions.aa = MIN(1, MAX(0, intern_model_expressions.aa));
+      intern_model_expressions.ih = MIN(1, MAX(0, intern_model_expressions.ih));
+      intern_model_expressions.ou = MIN(1, MAX(0, intern_model_expressions.ou));
+      intern_model_expressions.ee = MIN(1, MAX(0, intern_model_expressions.ee));
+      intern_model_expressions.oh = MIN(1, MAX(0, intern_model_expressions.oh));
+    }
+    if (TRACK_EYES && tracker_deltas.eyes_deltas.blink)
+    {
+      float changes[3] = {0};
+      for (int i = 17; i < 48; i++)
+      {
+        if (i == 27)
+          i = 36;
+        changes[0] += tracker_deltas.eyes_deltas.blink[i].x * cost[i].x + tracker_deltas.eyes_deltas.blink[i].y * cost[i].y;
+        changes[1] += tracker_deltas.eyes_deltas.blinkLeft[i].x * cost[i].x + tracker_deltas.eyes_deltas.blinkLeft[i].y * cost[i].y;
+        changes[2] += tracker_deltas.eyes_deltas.blinkRight[i].x * cost[i].x + tracker_deltas.eyes_deltas.blinkRight[i].y * cost[i].y;
+      }
+      intern_model_expressions.blink -= model_sensitivity.blink * epsilon * changes[0];
+      intern_model_expressions.blinkLeft -= model_sensitivity.blinkLeft * epsilon * changes[1];
+      intern_model_expressions.blinkRight -= model_sensitivity.blinkRight * epsilon * changes[2];
+
+      intern_model_expressions.blink = MIN(1, MAX(0, intern_model_expressions.blink));
+      intern_model_expressions.blinkLeft = MIN(1, MAX(0, intern_model_expressions.blinkLeft));
+      intern_model_expressions.blinkRight = MIN(1, MAX(0, intern_model_expressions.blinkRight));
+    }
   }
 #endif
+  memcpy(&model_expressions, &intern_model_expressions, sizeof(Model_Expressions_Weights_t));
+  for (int i = 0; i < sizeof(Model_Expressions_Weights_t) / sizeof(float); i++)
+  {
+    model_expressions.data[i] *= ((float *)&model_scaling)[i];
+    model_expressions.data[i] = MIN(1, model_expressions.data[i]);
+  }
+
   return 0;
 }
 

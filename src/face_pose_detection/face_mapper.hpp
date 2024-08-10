@@ -62,7 +62,7 @@ extern struct Model_Sensitivity_t{
     float happy=1, angry=1, sad=1, relaxed=1, surprised=1, aa=1, ih=1, ou=1, ee=1, oh=1, 
       blink=1, blinkLeft=1, blinkRight=1, lookUp=1, lookDown=1, lookLeft=1, lookRight=1, neutral=1, custom=1;
 } model_sensitivity;
-
+extern struct Model_Sensitivity_t model_scaling;
 #define VANCHE_FMAPPER_UNSUPPORTED_TRACKING 1
 
 int mapper_init();
