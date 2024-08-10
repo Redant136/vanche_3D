@@ -64,6 +64,7 @@ static inline ch_array ch_arrfree(ch_array arr){
 struct ch_hashPair
 {
   uchar key[32];
+  // 1 for taken data
   uchar flag;
   void *data;
 };

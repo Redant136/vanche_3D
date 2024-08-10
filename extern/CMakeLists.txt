@@ -13,6 +13,6 @@ add_subdirectory(json)
 add_subdirectory(glm)
 
 add_subdirectory(dlib)
-
+target_compile_options(dlib PRIVATE -w)
 
 

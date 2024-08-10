@@ -1,27 +1,30 @@
 Working on:
 
-improve face recognizer as it bugs out when moving head 
-fix emissive texture
-1 vbo per mesh for transforms
+physics
+VRMC_node_constraint
+VRMC_springBone
 dlib face detection in seperate thread
 
 
 Backlog:
 
-physics
-setting gui app (seperate window, maybe built in python, needs to import c header and code for face_recognizer)
+expression recog:
+
+opencv template matching 
+clamp weights in partial deriv solver (https://openaccess.thecvf.com/content/WACV2021/papers/Ikami_Constrained_Weight_Optimization_for_Learning_Without_Activation_Normalization_WACV_2021_paper.pdf)
+audio expressions calculation
+make dlib68 tracker for all transforms
+?change face_recognizer_dlib to be more generic (ie, regardless of camera, give similar output)
+face collapse bug (seems to be related to expressions)
+select correct face
+other engines to look at face changes
+other solving method for movement to transform
+
+renderer:
+
+fix emissive texture
 uv animation
 animation
-VRMC_node_constraint
-VRMC_springBone
-make dlib68 tracker for all transforms
-change face_recognizer_dlib to be more generic (ie, regardless of camera, give similar output)
-move model using mouse instead of keyboard
-
-face collapse bug (seems to be related to expressions)
-vsync toggle
-select correct face
-free entire model extensions, not just model. Missing subelements free
 VRMC_vrm look_at
 gltf camera
 GI shading
@@ -30,6 +33,10 @@ multiple texcoord
 min max accessor
 vrm emissive color change
 VRMC_vrm third person
-other engines to look at face changes
-other solving method for movement to transform
 test screenCoordinates outline in vrm
+
+GUI:
+
+setting gui app (seperate window, maybe built in python, needs to import c header and code for face_recognizer)
+move model using mouse instead of keyboard
+vsync toggle
