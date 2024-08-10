@@ -1,12 +1,16 @@
 #include <glad/glad.h>
 #include <GLFW/glfw3.h>
 #include "vmodelRenderer.hpp"
+#include "../physics/vmodelPhysics.hpp"
 #include <glm/gtc/matrix_transform.hpp>
 #include <glm/gtc/quaternion.hpp>
 #include <glm/gtc/type_ptr.hpp>
 #include "window.h"
 #define STB_IMAGE_IMPLEMENTATION
+#pragma GCC diagnostic push
+#pragma GCC diagnostic ignored "-Wstringop-overflow"
 #include <stb_image.h>
+#pragma GCC diagnostic pop
 #define vec4ToQua(v) glm::qua<float>(v.x, v.y, v.z, v.w)
 
 #define defaultShaderSource "../src/shader/default/shader.vert", "../src/shader/default/shader.geom", "../src/shader/default/shader.frag"
@@ -17,87 +21,87 @@
 
 WORLD_t WORLD;
 
-void shaderSetBool(const Shader_t &shader, const std::string &name, bool value)
+static void shaderSetBool(const Shader_t &shader, const std::string &name, bool value)
 {
   glUniform1i(glGetUniformLocation(shader.ID, name.c_str()), (int)value);
 }
-void shaderSetInt(const Shader_t &shader, const std::string &name, int value)
+static void shaderSetInt(const Shader_t &shader, const std::string &name, int value)
 {
   glUniform1i(glGetUniformLocation(shader.ID, name.c_str()), value);
 }
-void shaderSetFloat(const Shader_t &shader, const std::string &name, float value)
+static void shaderSetFloat(const Shader_t &shader, const std::string &name, float value)
 {
   glUniform1f(glGetUniformLocation(shader.ID, name.c_str()), value);
 }
-void shaderSetVec2(const Shader_t &shader, const std::string &name, const glm::vec2 &value)
+static void shaderSetVec2(const Shader_t &shader, const std::string &name, const glm::vec2 &value)
 {
   glUniform2fv(glGetUniformLocation(shader.ID, name.c_str()), 1, &value[0]);
 }
-void shaderSetVec2(const Shader_t &shader, const std::string &name, float x, float y)
+static void shaderSetVec2(const Shader_t &shader, const std::string &name, float x, float y)
 {
   glUniform2f(glGetUniformLocation(shader.ID, name.c_str()), x, y);
 }
-void shaderSetVec3(const Shader_t &shader, const std::string &name, const glm::vec3 &value)
+static void shaderSetVec3(const Shader_t &shader, const std::string &name, const glm::vec3 &value)
 {
   glUniform3fv(glGetUniformLocation(shader.ID, name.c_str()), 1, &value[0]);
 }
-void shaderSetVec3(const Shader_t &shader, const std::string &name, float x, float y, float z)
+static void shaderSetVec3(const Shader_t &shader, const std::string &name, float x, float y, float z)
 {
   glUniform3f(glGetUniformLocation(shader.ID, name.c_str()), x, y, z);
 }
-void shaderSetVec4(const Shader_t &shader, const std::string &name, const glm::vec4 &value)
+static void shaderSetVec4(const Shader_t &shader, const std::string &name, const glm::vec4 &value)
 {
   glUniform4fv(glGetUniformLocation(shader.ID, name.c_str()), 1, &value[0]);
 }
-void shaderSetVec4(const Shader_t &shader, const std::string &name, float x, float y, float z, float w)
+static void shaderSetVec4(const Shader_t &shader, const std::string &name, float x, float y, float z, float w)
 {
   glUniform4f(glGetUniformLocation(shader.ID, name.c_str()), x, y, z, w);
 }
-void shaderSetMat2(const Shader_t &shader, const std::string &name, const glm::mat2 &mat)
+static void shaderSetMat2(const Shader_t &shader, const std::string &name, const glm::mat2 &mat)
 {
   glUniformMatrix2fv(glGetUniformLocation(shader.ID, name.c_str()), 1, GL_FALSE, &mat[0][0]);
 }
-void shaderSetMat3(const Shader_t &shader, const std::string &name, const glm::mat3 &mat)
+static void shaderSetMat3(const Shader_t &shader, const std::string &name, const glm::mat3 &mat)
 {
   glUniformMatrix3fv(glGetUniformLocation(shader.ID, name.c_str()), 1, GL_FALSE, &mat[0][0]);
 }
-void shaderSetMat4(const Shader_t &shader, const std::string &name, const glm::mat4 &mat)
+static void shaderSetMat4(const Shader_t &shader, const std::string &name, const glm::mat4 &mat)
 {
   glUniformMatrix4fv(glGetUniformLocation(shader.ID, name.c_str()), 1, GL_FALSE, &mat[0][0]);
 }
-void shaderSetBoolArr(const Shader_t &shader, const std::string &name, uint size, bool *value)
+static void shaderSetBoolArr(const Shader_t &shader, const std::string &name, uint size, bool *value)
 {
   glUniform1iv(glGetUniformLocation(shader.ID, name.c_str()), size, (int *)value);
 }
-void shaderSetIntArr(const Shader_t &shader, const std::string &name, uint size, int *value)
+static void shaderSetIntArr(const Shader_t &shader, const std::string &name, uint size, int *value)
 {
   glUniform1iv(glGetUniformLocation(shader.ID, name.c_str()), size, value);
 }
-void shaderSetFloatArr(const Shader_t &shader, const std::string &name, uint size, float *value)
+static void shaderSetFloatArr(const Shader_t &shader, const std::string &name, uint size, float *value)
 {
   glUniform1fv(glGetUniformLocation(shader.ID, name.c_str()), size, value);
 }
-void shaderSetVec2Arr(const Shader_t &shader, const std::string &name, uint size, const float *value)
+static void shaderSetVec2Arr(const Shader_t &shader, const std::string &name, uint size, const float *value)
 {
   glUniform2fv(glGetUniformLocation(shader.ID, name.c_str()), size, value);
 }
-void shaderSetVec3Arr(const Shader_t &shader, const std::string &name, uint size, const float *value)
+static void shaderSetVec3Arr(const Shader_t &shader, const std::string &name, uint size, const float *value)
 {
   glUniform3fv(glGetUniformLocation(shader.ID, name.c_str()), size, value);
 }
-void shaderSetVec4Arr(const Shader_t &shader, const std::string &name, uint size, const float *value)
+static void shaderSetVec4Arr(const Shader_t &shader, const std::string &name, uint size, const float *value)
 {
   glUniform4fv(glGetUniformLocation(shader.ID, name.c_str()), size, value);
 }
-void shaderSetMat2Arr(const Shader_t &shader, const std::string &name, uint size, const float *mat)
+static void shaderSetMat2Arr(const Shader_t &shader, const std::string &name, uint size, const float *mat)
 {
   glUniformMatrix2fv(glGetUniformLocation(shader.ID, name.c_str()), size, GL_FALSE, mat);
 }
-void shaderSetMat3Arr(const Shader_t &shader, const std::string &name, uint size, const float *mat)
+static void shaderSetMat3Arr(const Shader_t &shader, const std::string &name, uint size, const float *mat)
 {
   glUniformMatrix3fv(glGetUniformLocation(shader.ID, name.c_str()), size, GL_FALSE, mat);
 }
-void shaderSetMat4Arr(const Shader_t &shader, const std::string &name, uint size, const float *mat)
+static void shaderSetMat4Arr(const Shader_t &shader, const std::string &name, uint size, const float *mat)
 {
   glUniformMatrix4fv(glGetUniformLocation(shader.ID, name.c_str()), size, GL_FALSE, mat);
 }
@@ -246,6 +250,53 @@ static void updateStoredAccessorBuffers(VModel_t *vmodel)
       assert(a1 == a2);
     }
 #endif
+  }
+}
+
+static void updateMorphData(VModel_t *vmodel)
+{
+  for (uint i = 0; i < vmodel->model.meshes.size(); i++)
+  {
+    if (vmodel->updatedMorphWeight[i])
+    {
+      glBindBuffer(GL_ARRAY_BUFFER, vmodel->morphsVBO[i]);
+      uint offset = 0;
+      for (uint j = 0; j < vmodel->model.meshes[i].primitives.size(); j++)
+      {
+        const gltf::Mesh::Primitive &primitive = vmodel->model.meshes[i].primitives[j];
+        memset(vmodel->morphs[i][j], 0, sizeof(glm::vec3) * vmodel->model.accessors[primitive.attributes.POSITION].count * 3);
+        for (uint k = 0; k < vmodel->model.meshes[i].primitives[j].targets.size(); k++)
+        {
+          for (uint l = 0; l < vmodel->model.accessors[primitive.attributes.POSITION].count; l++)
+          {
+            if (vmodel->model.meshes[i].primitives[j].targets[k].POSITION != -1)
+            {
+              // membuild(glm::vec3, pos, gltf::getDataFromAccessor(vmodel->model, vmodel->model.accessors[vmodel->model.meshes[i].primitives[j].targets[k].POSITION], l));
+              membuild(glm::vec3, pos, vmodel->accessorBuffers[vmodel->model.meshes[i].primitives[j].targets[k].POSITION] + l * sizeof(glm::vec3));
+              pos *= vmodel->model.meshes[i].weights[k];
+              vmodel->morphs[i][j][l * 3 + 0] += pos;
+            }
+            if (vmodel->model.meshes[i].primitives[j].targets[k].NORMAL != -1)
+            {
+              // membuild(glm::vec3, normal, gltf::getDataFromAccessor(vmodel->model, vmodel->model.accessors[vmodel->model.meshes[i].primitives[j].targets[k].NORMAL], l));
+              membuild(glm::vec3, normal, vmodel->accessorBuffers[vmodel->model.meshes[i].primitives[j].targets[k].NORMAL] + l);
+              normal *= vmodel->model.meshes[i].weights[k];
+              vmodel->morphs[i][j][l * 3 + 1] += normal;
+            }
+            if (vmodel->model.meshes[i].primitives[j].targets[k].TANGENT != -1)
+            {
+              // membuild(glm::vec3, tangent, gltf::getDataFromAccessor(vmodel->model, vmodel->model.accessors[vmodel->model.meshes[i].primitives[j].targets[k].TANGENT], l));
+              membuild(glm::vec3, tangent, vmodel->accessorBuffers[vmodel->model.meshes[i].primitives[j].targets[k].TANGENT] + l);
+              tangent *= vmodel->model.meshes[i].weights[k];
+              vmodel->morphs[i][j][l * 3 + 2] += tangent;
+            }
+          }
+        }
+        glBufferSubData(GL_ARRAY_BUFFER, offset, sizeof(glm::vec3) * vmodel->model.accessors[primitive.attributes.POSITION].count * 3, vmodel->morphs[i][j]);
+        offset += sizeof(glm::vec3) * vmodel->model.accessors[primitive.attributes.POSITION].count * 3;
+      }
+      vmodel->updatedMorphWeight[i] = 0;
+    }
   }
 }
 
@@ -570,7 +621,8 @@ void initVModel(VModel_t *vmodel)
   glBindBuffer(GL_UNIFORM_BUFFER, 0);
   glBindBufferRange(GL_UNIFORM_BUFFER, UBO_NODE_DYNAMIC, vmodel->nodesUBO, 0, sizeof(glm::mat4) * vmodel->model.nodes.size());
 }
-int WORLDExecute(const gltf::glTFModel model)
+
+void WORLDInit()
 {
   WORLD.FRONT = glm::vec3(0, 0, -1);
   WORLD.UP = glm::vec3(0, 1, 0);
@@ -590,7 +642,6 @@ int WORLDExecute(const gltf::glTFModel model)
   glBufferData(GL_UNIFORM_BUFFER, sizeof(glm::vec4) * 2 * MAX_LIGHT_SOURCES, WORLD.lights, GL_STATIC_DRAW);
   glBindBuffer(GL_UNIFORM_BUFFER, 0);
   glBindBufferRange(GL_UNIFORM_BUFFER, UBO_LIGHTS_STATIC, WORLD.lightsUBO, 0, sizeof(glm::vec4) * 2 * MAX_LIGHT_SOURCES);
-  return 0;
 }
 
 static void bindTexture(const VModel_t &vmodel, const Shader_t &currentShader, const gltf::Texture &texture, uint &texCoord, uint sampler_obj, uint GL_TextureIndex)
@@ -609,7 +660,6 @@ static void bindTexture(const VModel_t &vmodel, const Shader_t &currentShader, c
   glBindTexture(GL_TEXTURE_2D, vmodel.gltfImageTextureIndex[texture.source]);
   glBindSampler(GL_TEXTURE_2D, sampler_obj);
 }
-
 static int renderNode(const VModel_t &vmodel, const int _node, const glm::mat4 parentMat, const gltf::Material::AlphaMode currentAlphaMode)
 {
   glm::mat4 mat = getNodeTransform(&vmodel, _node, parentMat);
@@ -841,6 +891,11 @@ static int renderNode(const VModel_t &vmodel, const int _node, const glm::mat4 p
           shaderSetFloat(currentShader, "VRMData.outlineLightingMixFactor", vrmMtoon->outlineLightingMixFactor);
         }
       }
+      else
+      {
+        if (currentAlphaMode != gltf::Material::OPAQUE)
+          continue;
+      }
       shaderSetBool(currentShader, "hasBaseColorTexture", hasBaseColorTexture);
 
       glUseProgram(currentShader.ID);
@@ -887,7 +942,6 @@ void vmodelVRMSetMorphWeight(VModel_t *vmodel, uint mesh, std::string target, fl
     }
   }
 }
-
 void vmodelSetVRMExpressions(VModel_t *vmodel, float *values)
 {
   typedef gltf::Extensions::VRMC_vrm::ExpressionPresets ExpressionPresets;
@@ -1039,7 +1093,6 @@ void vmodelSetVRMExpressions(VModel_t *vmodel, float *values)
 #undef valueof
 #undef SetMorphTargetWeight
 }
-
 int vmodelGetVRMNode(VModel_t *vmodel, std::string name)
 {
   gltf::Extensions::VRMC_vrm *VRM = ch_hashget(gltf::Extensions::VRMC_vrm *, vmodel->model.extensions, "VRMC_vrm");
@@ -1152,52 +1205,10 @@ int renderVModel(VModel_t vmodel)
 int updateVModel(VModel_t *vmodel)
 {
   updateStoredAccessorBuffers(vmodel);
-  // update morphs
-  for (uint i = 0; i < vmodel->model.meshes.size(); i++)
-  {
-    if (vmodel->updatedMorphWeight[i])
-    {
-      glBindBuffer(GL_ARRAY_BUFFER, vmodel->morphsVBO[i]);
-      uint offset = 0;
-      for (uint j = 0; j < vmodel->model.meshes[i].primitives.size(); j++)
-      {
-        const gltf::Mesh::Primitive &primitive = vmodel->model.meshes[i].primitives[j];
-        memset(vmodel->morphs[i][j], 0, sizeof(glm::vec3) * vmodel->model.accessors[primitive.attributes.POSITION].count * 3);
-        for (uint k = 0; k < vmodel->model.meshes[i].primitives[j].targets.size(); k++)
-        {
-          for (uint l = 0; l < vmodel->model.accessors[primitive.attributes.POSITION].count; l++)
-          {
-            if (vmodel->model.meshes[i].primitives[j].targets[k].POSITION != -1)
-            {
-              // membuild(glm::vec3, pos, gltf::getDataFromAccessor(vmodel->model, vmodel->model.accessors[vmodel->model.meshes[i].primitives[j].targets[k].POSITION], l));
-              membuild(glm::vec3, pos, vmodel->accessorBuffers[vmodel->model.meshes[i].primitives[j].targets[k].POSITION] + l * sizeof(glm::vec3));
-              pos *= vmodel->model.meshes[i].weights[k];
-              vmodel->morphs[i][j][l * 3 + 0] += pos;
-            }
-            if (vmodel->model.meshes[i].primitives[j].targets[k].NORMAL != -1)
-            {
-              // membuild(glm::vec3, normal, gltf::getDataFromAccessor(vmodel->model, vmodel->model.accessors[vmodel->model.meshes[i].primitives[j].targets[k].NORMAL], l));
-              membuild(glm::vec3, normal, vmodel->accessorBuffers[vmodel->model.meshes[i].primitives[j].targets[k].NORMAL] + l);
-              normal *= vmodel->model.meshes[i].weights[k];
-              vmodel->morphs[i][j][l * 3 + 1] += normal;
-            }
-            if (vmodel->model.meshes[i].primitives[j].targets[k].TANGENT != -1)
-            {
-              // membuild(glm::vec3, tangent, gltf::getDataFromAccessor(vmodel->model, vmodel->model.accessors[vmodel->model.meshes[i].primitives[j].targets[k].TANGENT], l));
-              membuild(glm::vec3, tangent, vmodel->accessorBuffers[vmodel->model.meshes[i].primitives[j].targets[k].TANGENT] + l);
-              tangent *= vmodel->model.meshes[i].weights[k];
-              vmodel->morphs[i][j][l * 3 + 2] += tangent;
-            }
-          }
-        }
-        glBufferSubData(GL_ARRAY_BUFFER, offset, sizeof(glm::vec3) * vmodel->model.accessors[primitive.attributes.POSITION].count * 3, vmodel->morphs[i][j]);
-        offset += sizeof(glm::vec3) * vmodel->model.accessors[primitive.attributes.POSITION].count * 3;
-      }
-      vmodel->updatedMorphWeight[i] = 0;
-    }
-  }
 
-  // TODO(ANT) update phys
+  updateMorphData(vmodel);
+
+  chfpass(updateVModelPhysics, vmodel);
 
   // node transforms
 

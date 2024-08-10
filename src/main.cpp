@@ -22,6 +22,8 @@
 #define wave "../models/wave/scene.gltf"
 #define seedsan "../models/Seed-san.vrm"
 #define female2 "../models/VRM1_Constraint_Twist_Sample.vrm"
+// https://hub.vroid.com/en/characters/5355100161680925073/models/2684838785958206602
+#define furisode "/home/chevan/Downloads/furisode.vrm"
 
 static char modelPath[256];
 static int camera_opened = 1;
@@ -35,11 +37,10 @@ void init()
 {
   vmodel.path = modelPath;
   vmodel.model = loadModel(modelPath);
-  WORLDExecute(vmodel.model);
+  WORLDInit();
   initVModel(&vmodel);
   WORLD.camera.pos.y = 1.4;
   WORLD.camera.pos.z = 0.4;
-  // id of the camera to be opened
   camera_opened = recognizer_init();
   if (camera_opened && camera_opened != VANCHE_FRECOG_NO_CAMERA)
     fprintf(stderr,"Error while opening the camera. Error number %d",camera_opened);
@@ -59,6 +60,7 @@ void update()
 {
   clock_t start_time, end_time;
   double total_time;
+  ((void)total_time);
   start_time = clock();
   // background color
   glClearColor(0.3f, 0.3f, 0.3f, 1.f);
@@ -144,8 +146,7 @@ void update()
   }
   end_time = clock();
   total_time = (double)(end_time - start_time) / CLOCKS_PER_SEC;
-  total_time += 0;
-  // printf("FPS: %f\n",1/total_t);
+  // printf("FPS: %f\n",1/total_time);
 }
 
 int main(int argn,char**args)
@@ -153,7 +154,7 @@ int main(int argn,char**args)
   if(argn>1){
     strcpy(modelPath,args[1]);
   }else{
-    strcpy(modelPath,seedsan);
+    strcpy(modelPath,furisode);
   }
   printf("Vanche Start\n");
   printf("Launching with model %s\n",modelPath);

@@ -36,16 +36,38 @@ namespace gltf
     const string TargetNames = "targetNames";
   } SUPPORTED_EXTRAS;
 
-  struct Buffer
+  struct gltfGenericComponent{
+    ch_hash extensions = {0, 0, 0};
+    ch_hash extras = {0, 0, 0};
+    void freeComponent(){
+      for (uint i = 0; i < ch_hashlength(void *, extensions); i++)
+      {
+        if (extensions.arr[i].flag & 0x1)
+        {
+          ((gltfGenericComponent *)extensions.arr[i].data)->freeComponent();
+          free(extensions.arr[i].data);
+        }
+      }
+      free(extensions.arr);
+      for (uint i = 0; i < ch_hashlength(void *, extras); i++)
+      {
+        if (extras.arr[i].flag & 0x1)
+        {
+          ((gltfGenericComponent *)extras.arr[i].data)->freeComponent();
+          free(extras.arr[i].data);
+        }
+      }
+      free(extras.arr);
+    }
+  };
+  struct Buffer : gltfGenericComponent
   {
     uchar *buffer = 0;
     string uri = "";
     int byteLength = -1;
     string name = "";
-    ch_hash extensions;
-    ch_hash extras;
   };
-  struct BufferView
+  struct BufferView : gltfGenericComponent
   {
     int buffer = 0;
     int byteOffset = 0;
@@ -53,10 +75,8 @@ namespace gltf
     int byteStride = 0;
     int target = 34962;
     string name = "";
-    ch_hash extensions;
-    ch_hash extras;
   };
-  struct Accessor
+  struct Accessor : gltfGenericComponent
   {
     int bufferView = -1;
     int byteOffset = 0;
@@ -85,10 +105,10 @@ namespace gltf
     std::vector<float> max;
     std::vector<float> min;
     bool normalized = false;
-    struct Sparse
+    struct Sparse : gltfGenericComponent
     {
       uint count = 0;
-      struct Indices
+      struct Indices : gltfGenericComponent
       {
         int bufferView = -1;
         int byteOffset = 0;
@@ -98,33 +118,23 @@ namespace gltf
           UNSIGNED_SHORT = GLTF_COMPONENT_USHORT,
           UNSIGNED_INT = GLTF_COMPONENT_UINT
         } componentType;
-        ch_hash extensions;
-        ch_hash extras;
       } indices;
-      struct Values
+      struct Values : gltfGenericComponent
       {
         int bufferView = -1;
         int byteOffset = 0;
-        ch_hash extensions;
-        ch_hash extras;
       } values;
-      ch_hash extensions;
-      ch_hash extras;
     } sparse;
     string name = "";
-    ch_hash extensions;
-    ch_hash extras;
   };
-  struct Image
+  struct Image : gltfGenericComponent
   {
     string name = "";
     string uri = "";
     int bufferView = -1;
     string mimeType = "";
-    ch_hash extensions;
-    ch_hash extras;
   };
-  struct Sampler
+  struct Sampler : gltfGenericComponent
   {
     enum glFilter
     {
@@ -148,35 +158,27 @@ namespace gltf
     glWrap wrapS = CLAMP_TO_EDGE;
     glWrap wrapT = CLAMP_TO_EDGE;
     string name = "";
-    ch_hash extensions;
-    ch_hash extras;
   };
-  struct Texture
+  struct Texture : gltfGenericComponent
   {
     int sampler = -1;
     int source = -1;
     string name = "";
-    ch_hash extensions;
-    ch_hash extras;
   };
-  struct Material
+  struct Material : gltfGenericComponent
   {
-    struct TextureInfo
+    struct TextureInfo : gltfGenericComponent
     {
       int index = -1;
       int texCoord = 0;
-      ch_hash extensions;
-      ch_hash extras;
     };
-    struct PbrMetallicRoughness
+    struct PbrMetallicRoughness : gltfGenericComponent
     {
       TextureInfo baseColorTexture;
       std::vector<float> baseColorFactor = {1.f, 1.f, 1.f, 1.f};
       TextureInfo metallicRoughnessTexture;
       float metallicFactor = 1.f;
       float roughnessFactor = 1.f;
-      ch_hash extensions;
-      ch_hash extras;
     };
     struct MaterialNormalTextureInfo : public TextureInfo
     {
@@ -200,28 +202,22 @@ namespace gltf
     } alphaMode = OPAQUE;
     float alphaCutoff = 0.f;
     bool doubleSided = false;
-    ch_hash extensions;
-    ch_hash extras;
   };
-  struct Camera
+  struct Camera : gltfGenericComponent
   {
-    struct Orthographic
+    struct Orthographic : gltfGenericComponent
     {
       float xmag = 0.f;
       float ymag = 0.f;
       float zfar = 0.f;
       float znear = 0.f;
-      ch_hash extensions;
-      ch_hash extras;
     };
-    struct Perspective
+    struct Perspective : gltfGenericComponent
     {
       float aspectRatio = 1.f;
       float yfov = 1.f;
       float zfar = 0.f;
       float znear = 0.f;
-      ch_hash extensions;
-      ch_hash extras;
     };
     string name = "";
     Orthographic orthographic;
@@ -231,24 +227,20 @@ namespace gltf
       Perspective,
       Orthographic
     } type;
-    ch_hash extensions;
-    ch_hash extras;
   };
-  struct Skin
+  struct Skin : gltfGenericComponent
   {
     string name = "";
     int inverseBindMatrices = -1;
     std::vector<int> joints;
     int skeleton = -1;
-    ch_hash extensions;
-    ch_hash extras;
   };
-  struct Animation
+  struct Animation : gltfGenericComponent
   {
-    struct AnimationChannel
+    struct AnimationChannel : gltfGenericComponent
     {
       int sampler = -1;
-      struct AnimationTarget
+      struct AnimationTarget : gltfGenericComponent
       {
         int node = -1;
         enum
@@ -258,13 +250,9 @@ namespace gltf
           scale,
           weights
         } path;
-        ch_hash extensions;
-        ch_hash extras;
       } target;
-      ch_hash extensions;
-      ch_hash extras;
     };
-    struct AnimationSampler
+    struct AnimationSampler : gltfGenericComponent
     {
       int input = -1;
       enum
@@ -274,18 +262,14 @@ namespace gltf
         CUBICSPLINE
       } interpolation;
       int output = -1;
-      ch_hash extensions;
-      ch_hash extras;
     };
     string name = "";
     std::vector<AnimationChannel> channels;
     std::vector<AnimationSampler> samplers;
-    ch_hash extensions;
-    ch_hash extras;
   };
-  struct Mesh
+  struct Mesh : gltfGenericComponent
   {
-    struct Primitive
+    struct Primitive : gltfGenericComponent
     {
       struct MorphTarget
       {
@@ -309,16 +293,12 @@ namespace gltf
       } attributes;
       int material = -1;
       std::vector<MorphTarget> targets;
-      ch_hash extensions;
-      ch_hash extras;
     };
     std::string name = "";
     std::vector<Primitive> primitives;
     std::vector<float> weights;
-    ch_hash extensions;
-    ch_hash extras;
   };
-  struct Node
+  struct Node : gltfGenericComponent
   {
     string name = "";
     std::vector<uint> children = std::vector<uint>();
@@ -333,29 +313,22 @@ namespace gltf
     int skin = -1;
     std::vector<float> weights = std::vector<float>();
     int camera = -1;
-    ch_hash extensions;
-    ch_hash extras;
   };
 
-  struct Scene
+  struct Scene : gltfGenericComponent
   {
     string name = "";
     std::vector<int> nodes;
-    ch_hash extensions;
-    ch_hash extras;
   };
 
-  struct glTFModel
+  struct glTFModel : gltfGenericComponent
   {
-    struct
+    struct : gltfGenericComponent
     {
       string version;
       string generator;
       string copyright;
       string minVersion;
-      //---------------------------------
-      ch_hash extensions;
-      ch_hash extras;
     } asset;
     std::vector<Buffer> buffers;
     std::vector<BufferView> bufferViews;
@@ -378,31 +351,23 @@ namespace gltf
     std::vector<string> extensionsUsed;
     std::vector<string> extensionsRequired;
 
-    ch_hash extensions;
-    ch_hash extras;
   };
 
   namespace Extensions
   {
-    struct KHR_materials_unlit
+    struct KHR_materials_unlit : gltfGenericComponent
     {
-      ch_hash extensions;
-      ch_hash extras;
     };
-    struct KHR_texture_transform
+    struct KHR_texture_transform : gltfGenericComponent
     {
       float offset[2] = {0, 0};
       float rotation = 0.0;
       float scale[2] = {1, 1};
       int texCoord = 0;
-      ch_hash extensions;
-      ch_hash extras;
     };
-    struct KHR_materials_emissive_strength
+    struct KHR_materials_emissive_strength : gltfGenericComponent
     {
       float emissiveStrength = 1;
-      ch_hash extensions;
-      ch_hash extras;
     };
     // deprecated, VRM 0
     struct VRM
@@ -654,7 +619,7 @@ namespace gltf
       };
       std::vector<MaterialProperties> materialProperties;
     };
-    struct VRMC_springBone
+    struct VRMC_springBone : gltfGenericComponent
     {
       struct Collider
       {
@@ -700,10 +665,8 @@ namespace gltf
       std::vector<Collider> colliders;
       std::vector<ColliderGroup> colliderGroups;
       std::vector<Spring> springs;
-      ch_hash extensions;
-      ch_hash extras;
     };
-    struct VRMC_materials_mtoon
+    struct VRMC_materials_mtoon : gltfGenericComponent
     {
       string specVersion;
       bool transparentWithZWrite = false;
@@ -738,10 +701,8 @@ namespace gltf
       float uvAnimationScrollXSpeedFactor = 0;
       float uvAnimationScrollYSpeedFactor = 0;
       float uvAnimationRotationSpeedFactor = 0;
-      ch_hash extensions;
-      ch_hash extras;
     };
-    struct VRMC_node_constraint
+    struct VRMC_node_constraint : gltfGenericComponent
     {
       string specVersion;
       struct
@@ -777,10 +738,8 @@ namespace gltf
           float weight = 1;
         } rotation;
       } constraint;
-      ch_hash extensions;
-      ch_hash extras;
     };
-    struct VRMC_vrm
+    struct VRMC_vrm : gltfGenericComponent
     {
       string specVersion;
       struct Meta
@@ -987,8 +946,6 @@ namespace gltf
         } preset;
         Expression custom;
       } expressions;
-      ch_hash extensions;
-      ch_hash extras;
     };
   }
   namespace Extras
@@ -1070,9 +1027,57 @@ namespace gltf
         model->buffers[i].buffer = 0;
       }
     }
-    for (uint i = 0; i < ch_hashlength(void *, model->extensions); i++)
+    for (int i = 0; i < model->buffers.size(); i++)
     {
-      
+      model->buffers[i].freeComponent();
+    }
+    for (int i = 0; i < model->bufferViews.size(); i++)
+    {
+      model->bufferViews[i].freeComponent();
+    }
+    for (int i = 0; i < model->accessors.size(); i++)
+    {
+      model->accessors[i].freeComponent();
+    }
+    for (int i = 0; i < model->textures.size(); i++)
+    {
+      model->textures[i].freeComponent();
+    }
+    for (int i = 0; i < model->samplers.size(); i++)
+    {
+      model->samplers[i].freeComponent();
+    }
+    for (int i = 0; i < model->images.size(); i++)
+    {
+      model->images[i].freeComponent();
+    }
+    for (int i = 0; i < model->materials.size(); i++)
+    {
+      model->materials[i].freeComponent();
+    }
+    for (int i = 0; i < model->meshes.size(); i++)
+    {
+      model->meshes[i].freeComponent();
+    }
+    for (int i = 0; i < model->nodes.size(); i++)
+    {
+      model->nodes[i].freeComponent();
+    }
+    for (int i = 0; i < model->skins.size(); i++)
+    {
+      model->skins[i].freeComponent();
+    }
+    for (int i = 0; i < model->scenes.size(); i++)
+    {
+      model->scenes[i].freeComponent();
+    }
+    for (int i = 0; i < model->animations.size(); i++)
+    {
+      model->animations[i].freeComponent();
+    }
+    for (int i = 0; i < model->cameras.size(); i++)
+    {
+      model->cameras[i].freeComponent();
     }
   }  
 }
