@@ -42,19 +42,26 @@ struct VModel_t
 {
   std::string path;
   gltf::glTFModel model;
-  glm::vec3 pos;
-  uint **VAO;
-  uint *VBO;
-  uint *gltfImageTextureIndex;
-  uint sampler_obj;
-  bool *updatedMorphWeight;
-  glm::vec3 ***morphs;
-  uint *morphsVBO;
-  glm::vec4 *materialColorTransforms;
-  glm::vec2 *materialTextureTransform;
-  uint UBO;
-  uint nodesUBO;
-  uchar**accessorBuffers;
+  struct
+  {
+    glm::vec3 pos;
+    glm::mat4 *nodeMats;
+  } physics;
+  struct
+  {
+    uint **VAO;
+    uint *VBO;
+    uint *gltfImageTextureIndex;
+    uint sampler_obj;
+    bool *updatedMorphWeight;
+    glm::vec3 ***morphs;
+    uint *morphsVBO;
+    glm::vec4 *materialColorTransforms;
+    glm::vec2 *materialTextureTransform;
+    uint UBO;
+    uint nodesUBO;
+    uchar **accessorBuffers;
+  } renderer;
 };
 
 void WORLDInit();
