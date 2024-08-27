@@ -13,11 +13,17 @@
 #pragma GCC diagnostic pop
 #define vec4ToQua(v) glm::qua<float>(v.x, v.y, v.z, v.w)
 
-#define defaultShaderSource "../src/shader/default/shader.vert", "../src/shader/default/shader.geom", "../src/shader/default/shader.frag"
-#define mtoonShaderSource "../src/shader/default/shader.vert", "../src/shader/MToon/MToon.geom", "../src/shader/MToon/MToon.frag"
-#define skeletonShaderSource "../src/shader/skeletonRenderer/skeleton.vert", \
-                             "../src/shader/skeletonRenderer/skeleton.geom", \
-                             "../src/shader/skeletonRenderer/skeleton.frag"
+#ifdef _WIN32
+#define srcLocPrefix "../"
+#else
+#define srcLocPrefix ""
+#endif
+
+#define defaultShaderSource srcLocPrefix "../src/shader/default/shader.vert", srcLocPrefix "../src/shader/default/shader.geom", srcLocPrefix "../src/shader/default/shader.frag"
+#define mtoonShaderSource srcLocPrefix "../src/shader/default/shader.vert", srcLocPrefix "../src/shader/MToon/MToon.geom", srcLocPrefix "../src/shader/MToon/MToon.frag"
+#define skeletonShaderSource srcLocPrefix "../src/shader/skeletonRenderer/skeleton.vert", \
+                             srcLocPrefix "../src/shader/skeletonRenderer/skeleton.geom", \
+                             srcLocPrefix "../src/shader/skeletonRenderer/skeleton.frag"
 
 WORLD_t WORLD;
 
@@ -348,7 +354,6 @@ void initVModel(VModel_t *vmodel)
   vmodel->accessorBuffers = (uchar **)malloc(vmodel->model.accessors.size() * sizeof(uchar *));
   for (uint i = 0; i < vmodel->model.accessors.size(); i++)
   {
-    gltf::BufferView &bfView = vmodel->model.bufferViews[vmodel->model.accessors[i].bufferView];
     if (vmodel->model.accessors[i].sparse.count > 0)
     {
       vmodel->accessorBuffers[i] = (uchar *)calloc(gltf::gltf_num_components(vmodel->model.accessors[i].type) *
@@ -357,6 +362,7 @@ void initVModel(VModel_t *vmodel)
     }
     else
     {
+      gltf::BufferView &bfView = vmodel->model.bufferViews[vmodel->model.accessors[i].bufferView];
       vmodel->accessorBuffers[i] = (vmodel->model.buffers[bfView.buffer].buffer + bfView.byteOffset) + vmodel->model.accessors[i].byteOffset;
     }
   }
