@@ -277,21 +277,18 @@ static void updateMorphData(VModel_t *vmodel)
           {
             if (vmodel->model.meshes[i].primitives[j].targets[k].POSITION != -1)
             {
-              // membuild(glm::vec3, pos, gltf::getDataFromAccessor(vmodel->model, vmodel->model.accessors[vmodel->model.meshes[i].primitives[j].targets[k].POSITION], l));
               membuild(glm::vec3, pos, vmodel->accessorBuffers[vmodel->model.meshes[i].primitives[j].targets[k].POSITION] + l * sizeof(glm::vec3));
               pos *= vmodel->model.meshes[i].weights[k];
               vmodel->morphs[i][j][l * 3 + 0] += pos;
             }
             if (vmodel->model.meshes[i].primitives[j].targets[k].NORMAL != -1)
             {
-              // membuild(glm::vec3, normal, gltf::getDataFromAccessor(vmodel->model, vmodel->model.accessors[vmodel->model.meshes[i].primitives[j].targets[k].NORMAL], l));
               membuild(glm::vec3, normal, vmodel->accessorBuffers[vmodel->model.meshes[i].primitives[j].targets[k].NORMAL] + l);
               normal *= vmodel->model.meshes[i].weights[k];
               vmodel->morphs[i][j][l * 3 + 1] += normal;
             }
             if (vmodel->model.meshes[i].primitives[j].targets[k].TANGENT != -1)
             {
-              // membuild(glm::vec3, tangent, gltf::getDataFromAccessor(vmodel->model, vmodel->model.accessors[vmodel->model.meshes[i].primitives[j].targets[k].TANGENT], l));
               membuild(glm::vec3, tangent, vmodel->accessorBuffers[vmodel->model.meshes[i].primitives[j].targets[k].TANGENT] + l);
               tangent *= vmodel->model.meshes[i].weights[k];
               vmodel->morphs[i][j][l * 3 + 2] += tangent;
@@ -394,21 +391,18 @@ void initVModel(VModel_t *vmodel)
         {
           if (vmodel->model.meshes[i].primitives[j].targets[k].POSITION != -1)
           {
-            // membuild(glm::vec3, pos, gltf::getDataFromAccessor(vmodel->model, vmodel->model.accessors[vmodel->model.meshes[i].primitives[j].targets[k].POSITION], l));
             membuild(glm::vec3, pos, vmodel->accessorBuffers[vmodel->model.meshes[i].primitives[j].targets[k].POSITION] + l * sizeof(glm::vec3));
             pos *= vmodel->model.meshes[i].weights[k];
             vmodel->morphs[i][j][l * 3 + 0] += pos;
           }
           if (vmodel->model.meshes[i].primitives[j].targets[k].NORMAL != -1)
           {
-            // membuild(glm::vec3, normal, gltf::getDataFromAccessor(vmodel->model, vmodel->model.accessors[vmodel->model.meshes[i].primitives[j].targets[k].NORMAL], l));
             membuild(glm::vec3, normal, vmodel->accessorBuffers[vmodel->model.meshes[i].primitives[j].targets[k].NORMAL] + l * sizeof(glm::vec3));
             normal *= vmodel->model.meshes[i].weights[k];
             vmodel->morphs[i][j][l * 3 + 1] += normal;
           }
           if (vmodel->model.meshes[i].primitives[j].targets[k].TANGENT != -1)
           {
-            // membuild(glm::vec3, tangent, gltf::getDataFromAccessor(vmodel->model, vmodel->model.accessors[vmodel->model.meshes[i].primitives[j].targets[k].TANGENT], l));
             membuild(glm::vec3, tangent, vmodel->accessorBuffers[vmodel->model.meshes[i].primitives[j].targets[k].TANGENT] + l * sizeof(glm::vec3));
             tangent *= vmodel->model.meshes[i].weights[k];
             vmodel->morphs[i][j][l * 3 + 2] += tangent;

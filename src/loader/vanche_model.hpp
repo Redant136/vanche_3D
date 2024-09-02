@@ -36,7 +36,8 @@ namespace gltf
     const string TargetNames = "targetNames";
   } SUPPORTED_EXTRAS;
 
-  struct gltfGenericComponent{
+  struct gltfGenericComponent
+  {
     ch_hash extensions = {0, 0, 0};
     ch_hash extras = {0, 0, 0};
     void freeComponent(){
@@ -243,7 +244,7 @@ namespace gltf
       struct AnimationTarget : gltfGenericComponent
       {
         int node = -1;
-        enum
+        enum AnimationTargetPath
         {
           translation,
           rotation,
@@ -753,7 +754,7 @@ namespace gltf
         string thirdPartyLicenses;
         int thumbnailImage = -1;
         string licenseUrl;
-        enum
+        enum AvatarPermission
         {
           onlyAuthor,
           onlySeparatelyLicensedPerson,
@@ -761,7 +762,7 @@ namespace gltf
         } avatarPermission = onlyAuthor;
         bool allowExcessivelyViolentUsage = false;
         bool allowExcessivelySexualUsage = false;
-        enum
+        enum CommercialUsage
         {
           personalNonProfit,
           personalProfit,
@@ -769,13 +770,13 @@ namespace gltf
         } commercialUsage = personalNonProfit;
         bool allowPoliticalOrReligiousUsage = false;
         bool allowAntisocialOrHateUsage = false;
-        enum
+        enum CreditNotation
         {
           required,
           unnecessary
         } creditNotation = required;
         bool allowRedistribution = false;
-        enum
+        enum Modification
         {
           prohibited,
           allowModification,
@@ -892,7 +893,7 @@ namespace gltf
           struct MaterialColorBind
           {
             int material = -1;
-            enum
+            enum MaterialColorBindType
             {
               color,
               emissionColor,
