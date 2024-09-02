@@ -13,19 +13,14 @@
 #include <time.h>
 #include <glm/gtx/string_cast.hpp>
 
-#ifdef _WIN32
-#define locPrefix "../"
-#else
-#define locPrefix ""
-#endif
-#define helmet locPrefix "../models/DamagedHelmet.glb"
-#define male1 locPrefix "../models/male1.glb"
-#define alicia locPrefix "../models/AliciaSolid_vrm-0.51.vrm"
-#define figure locPrefix "../models/RiggedFigure.gltf"
-#define skinTest locPrefix "../models/SimpleSkin.gltf"
-#define wave locPrefix "../models/wave/scene.gltf"
-#define seedsan locPrefix "../models/Seed-san.vrm"
-#define female2 locPrefix "../models/VRM1_Constraint_Twist_Sample.vrm"
+#define helmet "../models/DamagedHelmet.glb"
+#define male1 "../models/male1.glb"
+#define alicia "../models/AliciaSolid_vrm-0.51.vrm"
+#define figure "../models/RiggedFigure.gltf"
+#define skinTest "../models/SimpleSkin.gltf"
+#define wave "../models/wave/scene.gltf"
+#define seedsan "../models/Seed-san.vrm"
+#define female2 "../models/VRM1_Constraint_Twist_Sample.vrm"
 // https://hub.vroid.com/en/characters/5355100161680925073/models/2684838785958206602
 #define furisode "/home/chevan/Downloads/furisode.vrm"
 
