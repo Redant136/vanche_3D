@@ -11,7 +11,6 @@
 
 #include <iostream>
 #include <time.h>
-#include <glm/gtx/string_cast.hpp>
 
 #define helmet "../models/DamagedHelmet.glb"
 #define male1 "../models/male1.glb"
@@ -153,7 +152,7 @@ int main(int argn,char**args)
   if(argn>1){
     strcpy(modelPath,args[1]);
   }else{
-    strcpy(modelPath,furisode);
+    strcpy(modelPath,seedsan);
   }
   printf("Vanche Start\n");
   printf("Launching with model %s\n",modelPath);

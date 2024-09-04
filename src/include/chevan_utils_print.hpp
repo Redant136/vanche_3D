@@ -25,17 +25,17 @@ static void chprintVec(Vector v)
 template <typename V>
 static void chprintVec2(V v)
 {
-  println("{", v.x, ", ", v.y, "}");
+  chprintln("{", v.x, ", ", v.y, "}");
 }
 template <typename V>
-static void printVec3(V v)
+static void chprintVec3(V v)
 {
-  println("{", v.x, ", ", v.y, ", ", v.z, "}");
+  chprintln("{", v.x, ", ", v.y, ", ", v.z, "}");
 }
 template <typename V>
 static void chprintVec4(V v)
 {
-  println("{", v.x, ", ", v.y, ", ", v.z, ", ", v.w, "}");
+  chprintln("{", v.x, ", ", v.y, ", ", v.z, ", ", v.w, "}");
 }
 static void chprintMat4(float mat[16])
 {

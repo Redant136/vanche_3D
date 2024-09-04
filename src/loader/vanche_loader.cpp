@@ -41,14 +41,14 @@ static ch_hash deserialize_extensions(json extensions)
     for (auto &ext : extensions["extensions"].items())
     {
       const char *key = ext.key().c_str();
-      if (!strcmp(key, gltf::SUPPORTED_EXTENSIONS.KHR_materials_unlit.c_str()))
+      if (!strcmp(key, gltf::SUPPORTED_EXTENSIONS.KHR_materials_unlit))
       {
         gltf::Extensions::KHR_materials_unlit *unlit = new (malloc(sizeof(gltf::Extensions::KHR_materials_unlit))) gltf::Extensions::KHR_materials_unlit();
         unlit->extensions = deserialize_extensions(ext);
         unlit->extras = deserialize_extras(ext);
         ch_hashinsert(void *, hash, key, unlit);
       }
-      else if (!strcmp(key, gltf::SUPPORTED_EXTENSIONS.KHR_texture_transform.c_str()))
+      else if (!strcmp(key, gltf::SUPPORTED_EXTENSIONS.KHR_texture_transform))
       {
         gltf::Extensions::KHR_texture_transform *transform = new (malloc(sizeof(gltf::Extensions::KHR_texture_transform))) gltf::Extensions::KHR_texture_transform();
         if (ext.value().contains("offset"))
@@ -68,14 +68,14 @@ static ch_hash deserialize_extensions(json extensions)
         jsongetEx(ext.value(), (*transform));
         ch_hashinsert(void *, hash, key, transform);
       }
-      else if (!strcmp(key, gltf::SUPPORTED_EXTENSIONS.KHR_materials_emissive_strength.c_str()))
+      else if (!strcmp(key, gltf::SUPPORTED_EXTENSIONS.KHR_materials_emissive_strength))
       {
         gltf::Extensions::KHR_materials_emissive_strength *em = new (malloc(sizeof(gltf::Extensions::KHR_materials_emissive_strength))) gltf::Extensions::KHR_materials_emissive_strength();
         jsonget(ext.value(), (*em), emissiveStrength, float);
         jsongetEx(ext.value(), (*em));
         ch_hashinsert(void *, hash, key, em);
       }
-      else if (!strcmp(key, gltf::SUPPORTED_EXTENSIONS.VRMC_springBone.c_str()))
+      else if (!strcmp(key, gltf::SUPPORTED_EXTENSIONS.VRMC_springBone))
       {
         gltf::Extensions::VRMC_springBone *springBone = new (malloc(sizeof(gltf::Extensions::VRMC_springBone))) gltf::Extensions::VRMC_springBone();
         jsonget(ext.value(), (*springBone), specVersion, std::string);
@@ -183,7 +183,7 @@ static ch_hash deserialize_extensions(json extensions)
 
         ch_hashinsert(void *, hash, key, springBone);
       }
-      else if (!strcmp(key, gltf::SUPPORTED_EXTENSIONS.VRMC_materials_mtoon.c_str()))
+      else if (!strcmp(key, gltf::SUPPORTED_EXTENSIONS.VRMC_materials_mtoon))
       {
         gltf::Extensions::VRMC_materials_mtoon *mtoon = new (malloc(sizeof(gltf::Extensions::VRMC_materials_mtoon))) gltf::Extensions::VRMC_materials_mtoon();
         auto &item = ext.value();
@@ -289,7 +289,7 @@ static ch_hash deserialize_extensions(json extensions)
         jsonget(item, (*mtoon), uvAnimationRotationSpeedFactor, float);
         ch_hashinsert(void *, hash, key, mtoon);
       }
-      else if (!strcmp(key, gltf::SUPPORTED_EXTENSIONS.VRMC_node_constraint.c_str()))
+      else if (!strcmp(key, gltf::SUPPORTED_EXTENSIONS.VRMC_node_constraint))
       {
         gltf::Extensions::VRMC_node_constraint *node = new (malloc(sizeof(gltf::Extensions::VRMC_node_constraint))) gltf::Extensions::VRMC_node_constraint();
         auto &item = ext.value();
@@ -344,7 +344,7 @@ static ch_hash deserialize_extensions(json extensions)
         }
         ch_hashinsert(void *, hash, key, node);
       }
-      else if (!strcmp(key, gltf::SUPPORTED_EXTENSIONS.VRMC_vrm.c_str()))
+      else if (!strcmp(key, gltf::SUPPORTED_EXTENSIONS.VRMC_vrm))
       {
         gltf::Extensions::VRMC_vrm *vrm = new (malloc(sizeof(gltf::Extensions::VRMC_vrm))) gltf::Extensions::VRMC_vrm();
         auto &item = ext.value();
@@ -756,7 +756,7 @@ static ch_hash deserialize_extras(json extras)
     for (auto &ext : extras["extras"].items())
     {
       const char *key = ext.key().c_str();
-      if (!strcmp(key, gltf::SUPPORTED_EXTRAS.TargetNames.c_str()))
+      if (!strcmp(key, gltf::SUPPORTED_EXTRAS.TargetNames))
       {
         gltf::Extras::TargetNames *unlit = new (malloc(sizeof(gltf::Extras::TargetNames))) gltf::Extras::TargetNames();
         ch_hashget(void *, hash, key) = unlit;

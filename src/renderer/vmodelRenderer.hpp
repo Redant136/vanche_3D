@@ -23,10 +23,6 @@ struct Camera_t
   bool updated = true;
   glm::mat4 viewMatrix, projectionMatrix;
 };
-struct Shader_t
-{
-  uint ID;
-};
 extern struct WORLD_t
 {
   glm::vec3 UP;
@@ -37,28 +33,41 @@ extern struct WORLD_t
   Camera_t camera;
   struct
   {
-    Shader_t defaultShader;
-    Shader_t skeletonShader;
-    Shader_t mtoon;
+    uint defaultShader;
+    uint skeletonShader;
+    uint mtoon;
   } shaders;
 } WORLD;
 struct VModel_t
 {
   std::string path;
   gltf::glTFModel model;
-  glm::vec3 pos;
-  uint **VAO;
-  uint *VBO;
-  uint *gltfImageTextureIndex;
-  uint sampler_obj;
-  bool *updatedMorphWeight;
-  glm::vec3 ***morphs;
-  uint *morphsVBO;
-  glm::vec4 *materialColorTransforms;
-  glm::vec2 *materialTextureTransform;
-  uint UBO;
-  uint nodesUBO;
-  uchar**accessorBuffers;
+  struct VModelPhysics
+  {
+    glm::vec3 pos;
+    struct NodeTRS
+    {
+      glm::vec3 translate;
+      glm::vec4 rotation;
+      glm::vec3 scale;
+    } *nodeTRS;
+    glm::mat4 *nodeMats;
+  } physics;
+  struct VModelRenderer
+  {
+    uint **VAO;
+    uint *VBO;
+    uint *gltfImageTextureIndex;
+    uint sampler_obj;
+    bool *updatedMorphWeight;
+    glm::vec3 ***morphs;
+    uint *morphsVBO;
+    glm::vec4 *materialColorTransforms;
+    glm::vec2 *materialTextureTransform;
+    uint UBO;
+    uint nodesUBO;
+    uchar **accessorBuffers;
+  } renderer;
 };
 
 void WORLDInit();
@@ -67,9 +76,11 @@ int updateVModel(VModel_t *vmodel);
 int renderVModel(VModel_t vmodel);
 void freeVModel(VModel_t *vmodel);
 
+glm::mat4 getNodeTransform(const VModel_t *vmodel, uint node, const glm::mat4 &parentTransform);
+
 void vmodelSetMorphWeight(VModel_t *vmodel, uint mesh, uint weight, float weightVal);
 void vmodelVRMSetMorphWeight(VModel_t *vmodel, uint mesh, std::string target, float weight);
 void vmodelSetVRMExpressions(VModel_t *vmodel, float *values);
-int vmodelGetVRMNode(VModel_t*vmodel,std::string name);
+int vmodelGetVRMNode(VModel_t*vmodel, std::string name);
 
 #endif
