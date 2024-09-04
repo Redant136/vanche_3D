@@ -42,12 +42,18 @@ struct VModel_t
 {
   std::string path;
   gltf::glTFModel model;
-  struct
+  struct VModelPhysics
   {
     glm::vec3 pos;
+    struct NodeTRS
+    {
+      glm::vec3 translate;
+      glm::vec4 rotation;
+      glm::vec3 scale;
+    } *nodeTRS;
     glm::mat4 *nodeMats;
   } physics;
-  struct
+  struct VModelRenderer
   {
     uint **VAO;
     uint *VBO;
@@ -69,6 +75,8 @@ void initVModel(VModel_t *vmodel);
 int updateVModel(VModel_t *vmodel);
 int renderVModel(VModel_t vmodel);
 void freeVModel(VModel_t *vmodel);
+
+glm::mat4 getNodeTransform(const VModel_t *vmodel, uint node, const glm::mat4 &parentTransform);
 
 void vmodelSetMorphWeight(VModel_t *vmodel, uint mesh, uint weight, float weightVal);
 void vmodelVRMSetMorphWeight(VModel_t *vmodel, uint mesh, std::string target, float weight);

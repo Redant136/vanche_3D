@@ -172,12 +172,12 @@ static uint createShader(std::string vertexPath, std::string geometryPath, std::
   return ID;
 }
 
-static glm::mat4 getNodeTransform(const VModel_t *vmodel, uint node, const glm::mat4 &parentTransform)
+glm::mat4 getNodeTransform(const VModel_t *vmodel, uint node, const glm::mat4 &parentTransform)
 {
   glm::mat4 mat = glm::mat4(1), T = glm::mat4(1), R = glm::mat4(1), S = glm::mat4(1);
-  S = glm::scale(glm::mat4(1.f), glm::vec3(vmodel->model.nodes[node].scale[0], vmodel->model.nodes[node].scale[1], vmodel->model.nodes[node].scale[2]));
-  R = glm::mat4_cast(glm::quat(vmodel->model.nodes[node].rotation[3], vmodel->model.nodes[node].rotation[0], vmodel->model.nodes[node].rotation[1], vmodel->model.nodes[node].rotation[2]));
-  T = glm::translate(glm::mat4(1.f), glm::vec3(vmodel->model.nodes[node].translation[0], vmodel->model.nodes[node].translation[1], vmodel->model.nodes[node].translation[2]));
+  S = glm::scale(glm::mat4(1.f), vmodel->physics.nodeTRS[node].scale);
+  R = glm::mat4_cast(glm::quat(vmodel->physics.nodeTRS[node].rotation.w, vmodel->physics.nodeTRS[node].rotation.x, vmodel->physics.nodeTRS[node].rotation.y, vmodel->physics.nodeTRS[node].rotation.z));
+  T = glm::translate(glm::mat4(1.f), vmodel->physics.nodeTRS[node].translate);
   mat = glm::mat4(
       vmodel->model.nodes[node].matrix[0], vmodel->model.nodes[node].matrix[1], vmodel->model.nodes[node].matrix[2], vmodel->model.nodes[node].matrix[3],
       vmodel->model.nodes[node].matrix[4], vmodel->model.nodes[node].matrix[5], vmodel->model.nodes[node].matrix[6], vmodel->model.nodes[node].matrix[7],
@@ -312,7 +312,14 @@ void initVModel(VModel_t *vmodel)
 {
   vmodel->physics.pos = glm::vec3(0, 0, 0);
 
-  vmodel->physics.nodeMats=(glm::mat4*)calloc(vmodel->model.nodes.size(),sizeof(glm::mat4));
+  vmodel->physics.nodeTRS = (VModel_t::VModelPhysics::NodeTRS *)calloc(vmodel->model.nodes.size(), sizeof(VModel_t::VModelPhysics::NodeTRS));
+  for (uint i = 0; i < vmodel->model.nodes.size(); i++)
+  {
+    vmodel->physics.nodeTRS[i].translate = glm::vec3(vmodel->model.nodes[i].translation[0], vmodel->model.nodes[i].translation[1], vmodel->model.nodes[i].translation[2]);
+    vmodel->physics.nodeTRS[i].rotation = glm::vec4(vmodel->model.nodes[i].rotation[0], vmodel->model.nodes[i].rotation[1], vmodel->model.nodes[i].rotation[2], vmodel->model.nodes[i].rotation[3]);
+    vmodel->physics.nodeTRS[i].scale = glm::vec3(vmodel->model.nodes[i].scale[0], vmodel->model.nodes[i].scale[1], vmodel->model.nodes[i].scale[2]);
+  }
+  vmodel->physics.nodeMats = (glm::mat4 *)calloc(vmodel->model.nodes.size(), sizeof(glm::mat4));
 
   // setup morph weights and matrix and nodeMatrix
   for (uint i = 0; i < vmodel->model.nodes.size(); i++)
@@ -672,12 +679,8 @@ static void bindTexture(const VModel_t &vmodel, const uint &currentShader, const
 }
 static int renderNode(const VModel_t &vmodel, const int _node, const gltf::Material::AlphaMode currentAlphaMode)
 {
-  glm::mat4 mat = vmodel.physics.nodeMats[_node];
   const gltf::Node &node = vmodel.model.nodes[_node];
   uint currentShader = WORLD.shaders.defaultShader;
-  glBindBuffer(GL_UNIFORM_BUFFER, vmodel.renderer.nodesUBO);
-  glBufferSubData(GL_UNIFORM_BUFFER, sizeof(glm::mat4) * _node, sizeof(glm::mat4), &mat);
-  glBindBuffer(GL_UNIFORM_BUFFER, 0);
   if (node.mesh > -1)
   {
     glBindBuffer(GL_UNIFORM_BUFFER, vmodel.renderer.UBO);
@@ -1197,6 +1200,9 @@ int renderVModel(VModel_t vmodel)
   }
 
   // modelDraw
+  glBindBuffer(GL_UNIFORM_BUFFER, vmodel.renderer.nodesUBO);
+  glBufferSubData(GL_UNIFORM_BUFFER, 0, sizeof(glm::mat4) * vmodel.model.nodes.size(), vmodel.physics.nodeMats);
+  glBindBuffer(GL_UNIFORM_BUFFER, 0);
   for (uint a = gltf::Material::OPAQUE; a <= gltf::Material::BLEND; a++)
   {
     for (uint i = 0; i < vmodel.model.nodes.size(); i++)

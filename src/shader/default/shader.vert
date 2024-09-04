@@ -2,16 +2,16 @@
 #define MAX_JOINT_MATRIX 256
 #define MAX_NODES 512
 
-layout (location = 0) in vec3 a_pos;
-layout (location = 1) in vec3 a_normal;
-layout (location = 2) in vec4 a_tangent;
-layout (location = 3) in vec2 a_texCoords_0;
-layout (location = 4) in vec2 a_texCoords_1;
-layout (location = 5) in vec2 a_texCoords_2;
-layout (location = 6) in vec4 a_color_0;
-layout (location = 7) in vec4 a_joints;
-layout (location = 8) in vec4 a_weights;
-layout (location = 9) in vec3 a_posMorph;
+layout (location =  0) in vec3 a_pos;
+layout (location =  1) in vec3 a_normal;
+layout (location =  2) in vec4 a_tangent;
+layout (location =  3) in vec2 a_texCoords_0;
+layout (location =  4) in vec2 a_texCoords_1;
+layout (location =  5) in vec2 a_texCoords_2;
+layout (location =  6) in vec4 a_color_0;
+layout (location =  7) in vec4 a_joints;
+layout (location =  8) in vec4 a_weights;
+layout (location =  9) in vec3 a_posMorph;
 layout (location = 10) in vec3 a_normMorph;
 layout (location = 11) in vec3 a_tanMorph;
 

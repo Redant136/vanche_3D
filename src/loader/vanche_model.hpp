@@ -25,7 +25,7 @@ namespace gltf
     const char KHR_materials_unlit[128] = "KHR_materials_unlit";
     const char KHR_texture_transform[128] = "KHR_texture_transform";
     const char KHR_materials_emissive_strength[128] = "KHR_materials_emissive_strength";
-    const char VRM[128] = "VRM";
+    // const char VRM[128] = "VRM";
     const char VRMC_springBone[128] = "VRMC_springBone";
     const char VRMC_materials_mtoon[128] = "VRMC_materials_mtoon";
     const char VRMC_node_constraint[128] = "VRMC_node_constraint";
