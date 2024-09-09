@@ -37,6 +37,11 @@ extern struct WORLD_t
     uint skeletonShader;
     uint mtoon;
   } shaders;
+  struct
+  {
+    glm::vec3 direction;
+    float strength;
+  } gravity;
 } WORLD;
 struct VModel_t
 {
@@ -45,13 +50,17 @@ struct VModel_t
   struct VModelPhysics
   {
     glm::vec3 pos;
+    double deltaTime;
     struct NodeTRS
     {
       glm::vec3 translate;
       glm::vec4 rotation;
       glm::vec3 scale;
     } *nodeTRS;
+    NodeTRS *prevNodeTRS;
     glm::mat4 *nodeMats;
+    glm::mat4 *prevNodeMats;
+    glm::mat4 *initialNodeMats;
   } physics;
   struct VModelRenderer
   {

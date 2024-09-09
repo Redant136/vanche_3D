@@ -180,8 +180,8 @@ static ch_hash deserialize_extensions(json extensions)
             }
             if (y.contains("center"))
               spr.center = y["center"].get<int>();
+            springBone->springs.push_back(spr);
           }
-          springBone->springs.push_back(spr);
         }
 
         ch_hashinsert(void *, hash, key, springBone);

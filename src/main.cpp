@@ -162,6 +162,7 @@ int main(int argn,char**args)
 
   freeVModel(&vmodel);
   recognizer_close();
+  glfwTerminate();
 
   // ch_writeFile("../dlib68Trackers.bin", (void *)tmp_face.aa, 5*68 * sizeof(glm::vec2));
 

@@ -9,6 +9,15 @@
 #define v4(V) (glm::vec4(V[0], V[1], V[2], V[3]))
 #define v4quat(V) (glm::quat(V[3], V[0], V[1], V[2]))
 
+static glm::quat getRotation(const glm::mat4 &mat)
+{
+  glm::vec3 _trans, _scale, _skew;
+  glm::vec4 _perspective;
+  glm::quat rotationQuat;
+  glm::decompose(mat, _scale, rotationQuat, _trans, _skew, _perspective);
+  return rotationQuat;
+}
+
 static int vrmConstraints(VModel_t *vmodel)
 {
   for (int i = 0; i < vmodel->model.nodes.size(); i++)
@@ -47,10 +56,7 @@ static int vrmConstraints(VModel_t *vmodel)
           break;
         }
 
-        glm::vec3 _trans, _scale, _skew;
-        glm::vec4 _perspective;
-        glm::quat rotationQuat;
-        glm::decompose(worldMat, _scale, rotationQuat, _trans, _skew, _perspective);
+        glm::quat rotationQuat=getRotation(worldMat);
         rotationQuat *= v4quat(node.rotation);
         fromVec = glm::mat4_cast(rotationQuat) * fromVec;
         glm::vec3 toVec = vmodel->physics.nodeMats[_src] * glm::vec4(0, 0, 0, 1) - vmodel->physics.nodeMats[i] * glm::vec4(0, 0, 0, 1);
@@ -112,12 +118,89 @@ static int vrmConstraints(VModel_t *vmodel)
   return 0;
 }
 
+static int vrmSpringBone(VModel_t *vmodel)
+{
+  gltf::Extensions::VRMC_springBone *springBone = ch_hashget(gltf::Extensions::VRMC_springBone *, vmodel->model.extensions, gltf::SUPPORTED_EXTENSIONS.VRMC_springBone);
+  if(springBone)
+  {
+    uint *nodeParents = (uint *)malloc(sizeof(uint) * vmodel->model.nodes.size());
+    memset(nodeParents, -1, sizeof(uint) * vmodel->model.nodes.size());
+    for (uint _spring = 0; _spring < springBone->springs.size(); _spring++)
+    {
+      gltf::Extensions::VRMC_springBone::Spring &spring = springBone->springs[_spring];
+
+      for (uint i = 0; i < spring.joints.size(); i++)
+      {
+        for (uint j = 0; j < vmodel->model.nodes[spring.joints[i].node].children.size(); j++)
+        {
+          nodeParents[vmodel->model.nodes[spring.joints[i].node].children[j]] = spring.joints[i].node;
+        }
+        if (i == 0)
+          continue;
+        glm::vec3 prevTail, currentTail, initialBone;
+        glm::mat4 parentBone;
+        glm::mat4 worldTransform = vmodel->physics.nodeMats[spring.joints[i].node] * glm::inverse(getNodeTransform(vmodel, spring.joints[i].node, glm::mat4(1)));
+        if (spring.center == -1)
+        {
+          prevTail = vmodel->physics.prevNodeMats[spring.joints[i].node] * glm::vec4(0, 0, 0, 1);
+          currentTail = vmodel->physics.nodeMats[spring.joints[i].node] * glm::vec4(0, 0, 0, 1);
+          parentBone = (nodeParents[spring.joints[i].node] == -1 ?
+            vmodel->physics.initialNodeMats[spring.joints[i].node] : vmodel->physics.initialNodeMats[nodeParents[spring.joints[i].node]]);
+          initialBone = vmodel->physics.initialNodeMats[spring.joints[i].node] * glm::vec4(0, 0, 0, 1);
+        }
+        else
+        {
+          prevTail = glm::inverse(vmodel->physics.prevNodeMats[spring.center]) * vmodel->physics.prevNodeMats[spring.joints[i].node] * glm::vec4(0, 0, 0, 1);
+          currentTail = glm::inverse(vmodel->physics.nodeMats[spring.center]) * vmodel->physics.nodeMats[spring.joints[i].node] * glm::vec4(0, 0, 0, 1);
+          parentBone = glm::inverse(vmodel->physics.initialNodeMats[spring.center]) * (nodeParents[spring.joints[i].node] == -1 ?
+            vmodel->physics.initialNodeMats[spring.joints[i].node] : vmodel->physics.initialNodeMats[nodeParents[spring.joints[i].node]]);
+          initialBone = glm::inverse(vmodel->physics.initialNodeMats[spring.center]) * vmodel->physics.initialNodeMats[spring.joints[i].node] * glm::vec4(0, 0, 0, 1);
+          worldTransform = glm::inverse(vmodel->physics.nodeMats[spring.center]) * worldTransform;
+        }
+
+        glm::vec3 inertia = (currentTail - prevTail) * (1 - spring.joints[i].dragForce);
+        glm::vec3 boneAxis = initialBone - glm::vec3(parentBone * glm::vec4(0, 0, 0, 1));
+        float boneLength = glm::length(boneAxis);
+        boneAxis = glm::normalize(boneAxis);
+        glm::vec3 stiffness = glm::mat4_cast(getRotation(parentBone) * v4quat(vmodel->model.nodes[spring.joints[i].node].rotation)) * glm::vec4(0, 0, 0, 1);
+        stiffness *= vmodel->physics.deltaTime * spring.joints[i].stiffness;
+        glm::vec3 external = v3(spring.joints[i].gravityDir);
+        external *= vmodel->physics.deltaTime * spring.joints[i].gravityPower;
+
+        glm::vec3 nextTail = currentTail + inertia + stiffness + external;
+
+        if (nextTail.x != nextTail.x)
+        {
+          fprintf(stderr, "Error in renderer. Number is NaN");
+          return -1;
+        }
+        nextTail = glm::normalize(glm::vec3(glm::inverse(worldTransform) * glm::vec4(nextTail, 1))) * boneLength;
+        vmodel->physics.nodeTRS[spring.joints[i].node].translate = nextTail;
+      }
+    }
+    free(nodeParents);
+  }
+  return 0;
+}
+static int vrmCustomPhysics(VModel_t*vmodel)
+{
+  gltf::Extensions::VRMC_vrm *vrm = ch_hashget(gltf::Extensions::VRMC_vrm *, vmodel->model.extensions, gltf::SUPPORTED_EXTENSIONS.VRMC_vrm);
+  if (vrm)
+  {
+    
+  }
+  return 0;
+}
+
 static int vrmPhysics(VModel_t *vmodel)
 {
-  vrmConstraints(vmodel);
+  chfpass(vrmConstraints, vmodel);
+  chfpass(vrmSpringBone, vmodel);
+  chfpass(vrmCustomPhysics, vmodel);
   // gltf::Node &leftHand = vmodel->model.nodes[vmodelGetVRMNode(vmodel, "leftHand")];
   // gltf::Node& rightHand = vmodel->model.nodes[vmodelGetVRMNode(vmodel,"rightHand")];
-  vmodel->physics.nodeTRS[vmodelGetVRMNode(vmodel, "leftHand")].translate.z += 0.001;
+  // vmodel->physics.nodeTRS[42].translate.x -= 0.0001;
+  // vmodel->physics.nodeTRS[vmodelGetVRMNode(vmodel, "leftHand")].translate.z += 0.001;
   // vmodel->physics.nodeTRS[vmodelGetVRMNode(vmodel, "leftUpperArm")].translate.z += 0.001;
   // vmodel->physics.nodeTRS[vmodelGetVRMNode(vmodel, "leftHand")].rotation = glm::normalize(vmodel->physics.nodeTRS[vmodelGetVRMNode(vmodel, "leftHand")].rotation);
 
@@ -130,5 +213,6 @@ int updateVModelPhysics(VModel_t *vmodel)
   {
     return vrmPhysics(vmodel);
   }
+  memcpy(vmodel->physics.prevNodeTRS, vmodel->physics.nodeTRS, sizeof(VModel_t::VModelPhysics::NodeTRS) * vmodel->model.nodes.size());
   return 0;
 }

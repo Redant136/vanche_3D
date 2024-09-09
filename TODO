@@ -1,11 +1,21 @@
 Working on:
 
-physics
 VRMC_springBone
 dlib face detection in seperate thread
 
 
 Backlog:
+
+loader:
+
+fbx file support (https://code.blender.org/2013/08/fbx-binary-file-format-specification/)
+see files types supported by vrchat
+obj file
+
+
+physics:
+
+inverse kinematics
 
 expression recog:
 

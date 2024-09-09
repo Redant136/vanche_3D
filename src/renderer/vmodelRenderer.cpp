@@ -20,6 +20,7 @@
                              "../src/shader/skeletonRenderer/skeleton.frag"
 
 WORLD_t WORLD;
+double lastUpdateTime;
 
 static void shaderSetBool(const uint &shader, const std::string &name, bool value)
 {
@@ -319,7 +320,11 @@ void initVModel(VModel_t *vmodel)
     vmodel->physics.nodeTRS[i].rotation = glm::vec4(vmodel->model.nodes[i].rotation[0], vmodel->model.nodes[i].rotation[1], vmodel->model.nodes[i].rotation[2], vmodel->model.nodes[i].rotation[3]);
     vmodel->physics.nodeTRS[i].scale = glm::vec3(vmodel->model.nodes[i].scale[0], vmodel->model.nodes[i].scale[1], vmodel->model.nodes[i].scale[2]);
   }
+  vmodel->physics.prevNodeTRS = (VModel_t::VModelPhysics::NodeTRS *)calloc(vmodel->model.nodes.size(), sizeof(VModel_t::VModelPhysics::NodeTRS));
+  memcpy(vmodel->physics.prevNodeTRS, vmodel->physics.nodeTRS, sizeof(VModel_t::VModelPhysics::NodeTRS) * vmodel->model.nodes.size());
   vmodel->physics.nodeMats = (glm::mat4 *)calloc(vmodel->model.nodes.size(), sizeof(glm::mat4));
+  vmodel->physics.prevNodeMats = (glm::mat4 *)calloc(vmodel->model.nodes.size(), sizeof(glm::mat4));
+  vmodel->physics.initialNodeMats = 0;
 
   // setup morph weights and matrix and nodeMatrix
   for (uint i = 0; i < vmodel->model.nodes.size(); i++)
@@ -653,6 +658,8 @@ void WORLDInit()
   WORLD.shaders.mtoon = createShader(mtoonShaderSource);
   glUniformBlockBinding(WORLD.shaders.defaultShader, glGetUniformBlockIndex(WORLD.shaders.defaultShader, "Lights"), UBO_LIGHTS_STATIC);
   glUniformBlockBinding(WORLD.shaders.mtoon, glGetUniformBlockIndex(WORLD.shaders.mtoon, "Lights"), UBO_LIGHTS_STATIC);
+  WORLD.gravity.direction = WORLD.UP;
+  WORLD.gravity.strength = -1;
 
   glGenBuffers(1, &WORLD.lightsUBO);
   glBindBuffer(GL_UNIFORM_BUFFER, WORLD.lightsUBO);
@@ -1216,9 +1223,19 @@ int renderVModel(VModel_t vmodel)
 
 int updateVModel(VModel_t *vmodel)
 {
+  vmodel->physics.deltaTime = glfwGetTime() - lastUpdateTime;
+  lastUpdateTime = glfwGetTime();
+  memcpy(vmodel->physics.prevNodeMats, vmodel->physics.nodeMats, sizeof(glm::mat4) * vmodel->model.nodes.size());
   for (uint i : vmodel->model.scenes[vmodel->model.scene > -1 ? vmodel->model.scene : 0].nodes)
   {
     updateNodeMats(vmodel, i, glm::mat4(1.f));
+  }
+  if (!vmodel->physics.initialNodeMats)
+  {
+    vmodel->physics.initialNodeMats = (glm::mat4 *)malloc(sizeof(glm::mat4) * vmodel->model.nodes.size());
+    memcpy(vmodel->physics.initialNodeMats, vmodel->physics.nodeMats, sizeof(glm::mat4) * vmodel->model.nodes.size());
+    // on initial node mat calculation, set prev to current so that we don't have garbage
+    memcpy(vmodel->physics.prevNodeMats, vmodel->physics.nodeMats, sizeof(glm::mat4) * vmodel->model.nodes.size());
   }
 
   updateStoredAccessorBuffers(vmodel);
@@ -1227,7 +1244,7 @@ int updateVModel(VModel_t *vmodel)
 
   chfpass(updateVModelPhysics, vmodel);
 
-  // node transforms
+  // node transforms, movement
 
   return 0;
 }
