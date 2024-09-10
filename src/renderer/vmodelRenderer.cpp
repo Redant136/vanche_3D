@@ -20,7 +20,6 @@
                              "../src/shader/skeletonRenderer/skeleton.frag"
 
 WORLD_t WORLD;
-double lastUpdateTime;
 
 static void shaderSetBool(const uint &shader, const std::string &name, bool value)
 {
@@ -322,9 +321,19 @@ void initVModel(VModel_t *vmodel)
   }
   vmodel->physics.prevNodeTRS = (VModel_t::VModelPhysics::NodeTRS *)calloc(vmodel->model.nodes.size(), sizeof(VModel_t::VModelPhysics::NodeTRS));
   memcpy(vmodel->physics.prevNodeTRS, vmodel->physics.nodeTRS, sizeof(VModel_t::VModelPhysics::NodeTRS) * vmodel->model.nodes.size());
+
   vmodel->physics.nodeMats = (glm::mat4 *)calloc(vmodel->model.nodes.size(), sizeof(glm::mat4));
+  for (uint i : vmodel->model.scenes[vmodel->model.scene > -1 ? vmodel->model.scene : 0].nodes)
+  {
+    updateNodeMats(vmodel, i, glm::mat4(1.f));
+  }
   vmodel->physics.prevNodeMats = (glm::mat4 *)calloc(vmodel->model.nodes.size(), sizeof(glm::mat4));
-  vmodel->physics.initialNodeMats = 0;
+  memcpy(vmodel->physics.prevNodeMats, vmodel->physics.nodeMats, sizeof(glm::mat4) * vmodel->model.nodes.size());
+  vmodel->physics.initialNodeMats = (glm::mat4 *)malloc(sizeof(glm::mat4) * vmodel->model.nodes.size());
+  memcpy(vmodel->physics.initialNodeMats, vmodel->physics.nodeMats, sizeof(glm::mat4) * vmodel->model.nodes.size());
+
+  vmodel->physics.lastUpdateTime = 0;
+  vmodel->physics.deltaTime = 0;
 
   // setup morph weights and matrix and nodeMatrix
   for (uint i = 0; i < vmodel->model.nodes.size(); i++)
@@ -1223,28 +1232,23 @@ int renderVModel(VModel_t vmodel)
 
 int updateVModel(VModel_t *vmodel)
 {
-  vmodel->physics.deltaTime = glfwGetTime() - lastUpdateTime;
-  lastUpdateTime = glfwGetTime();
+  vmodel->physics.deltaTime = glfwGetTime() - vmodel->physics.lastUpdateTime;
+  vmodel->physics.lastUpdateTime = glfwGetTime();
+  
   memcpy(vmodel->physics.prevNodeMats, vmodel->physics.nodeMats, sizeof(glm::mat4) * vmodel->model.nodes.size());
+  // node transforms, movement
+  chfpass(updateVModelPhysics, vmodel);
+
   for (uint i : vmodel->model.scenes[vmodel->model.scene > -1 ? vmodel->model.scene : 0].nodes)
   {
     updateNodeMats(vmodel, i, glm::mat4(1.f));
-  }
-  if (!vmodel->physics.initialNodeMats)
-  {
-    vmodel->physics.initialNodeMats = (glm::mat4 *)malloc(sizeof(glm::mat4) * vmodel->model.nodes.size());
-    memcpy(vmodel->physics.initialNodeMats, vmodel->physics.nodeMats, sizeof(glm::mat4) * vmodel->model.nodes.size());
-    // on initial node mat calculation, set prev to current so that we don't have garbage
-    memcpy(vmodel->physics.prevNodeMats, vmodel->physics.nodeMats, sizeof(glm::mat4) * vmodel->model.nodes.size());
   }
 
   updateStoredAccessorBuffers(vmodel);
 
   updateMorphData(vmodel);
 
-  chfpass(updateVModelPhysics, vmodel);
 
-  // node transforms, movement
 
   return 0;
 }

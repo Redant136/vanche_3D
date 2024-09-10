@@ -50,6 +50,7 @@ struct VModel_t
   struct VModelPhysics
   {
     glm::vec3 pos;
+    double lastUpdateTime;
     double deltaTime;
     struct NodeTRS
     {
