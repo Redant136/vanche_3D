@@ -12,5 +12,7 @@ extern glm::mat4 facial_movement;
 int recognizer_init(int cameraID = 0);
 int recognizer_calibrate();
 int recognizer_update();
+void recognizer_asyncUpdate();
+int recognizer_asyncJoin(int*status); 
 int recognizer_close();
 #endif

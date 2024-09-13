@@ -7,8 +7,10 @@ SET(VANCHE_SOURCES
   renderer/vmodelRenderer.cpp
   loader/vanche_loader.cpp
   physics/vmodelPhysics.cpp
+  face_pose_detection/face_recognizerThread.cpp
   face_pose_detection/face_mapper.cpp)
 SET(VANCHE_FACE_MAPPER_SOURCES
+  face_pose_detection/face_recognizerThread.cpp
   )
 
 OPTION(VANCHE_BUILD_FACE_RECOGNIZER "To build face recognizer" TRUE)

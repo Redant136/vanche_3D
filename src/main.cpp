@@ -30,6 +30,7 @@ static int camera_opened = 1;
 
 VModel_t vmodel;
 float angle = 0;
+int recognizer_ready;
 
 void init()
 {
@@ -49,6 +50,7 @@ void init()
     int err = recognizer_calibrate();
     if (err && err != VANCHE_FRECOG_NO_FACE)
       chprinterr("An error occured while calibrating the camera with code: %d", err);
+    recognizer_ready = 1;
   }
   else
     fprintf(stderr, "Camera failed to open. Running without face recognition\n");
@@ -127,19 +129,31 @@ void update()
       }
     }
     // get facial landmarks and movement
-    int recog_err = recognizer_update();
-    if (recog_err != VANCHE_FRECOG_NO_FACE)
+    
+    if(recognizer_ready)
     {
-      // map facial landmarks to expressions
-      chferror(map_points, facial_landmarks);
+      recognizer_asyncUpdate();
+      recognizer_ready = 0;
+    }
 
-      // pass expressions to model
-      vmodelSetVRMExpressions(&vmodel, model_expressions.data);
+    int recog_err;
+    recognizer_ready = recognizer_asyncJoin(&recog_err);
+    if (recognizer_ready)
+    {
+      if (recog_err != VANCHE_FRECOG_NO_FACE)
+      {
+        // map facial landmarks to expressions
+        chferror(map_points, facial_landmarks);
 
-      // rotate model
-      // int headNode=vmodelGetVRMNode(&vmodel,"head");
-      // assert(headNode!=-1);
-      // memcpy(vmodel.model.nodes[headNode].matrix, &facial_movement, sizeof(glm::mat4));
+        // pass expressions to model
+        vmodelSetVRMExpressions(&vmodel, model_expressions.data);
+
+        // rotate model
+        // int headNode=vmodelGetVRMNode(&vmodel,"head");
+        // assert(headNode!=-1);
+        // memcpy(vmodel.model.nodes[headNode].matrix, &facial_movement, sizeof(glm::mat4));
+      }
+
     }
   }
   end_time = clock();
@@ -161,6 +175,9 @@ int main(int argn,char**args)
 
   freeVModel(&vmodel);
   recognizer_close();
+  int err;
+  while(!recognizer_ready)
+    recognizer_ready = recognizer_asyncJoin(&err);
 
   // ch_writeFile("../dlib68Trackers.bin", (void *)tmp_face.aa, 5*68 * sizeof(glm::vec2));
 
