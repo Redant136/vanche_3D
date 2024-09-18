@@ -23,6 +23,7 @@
 #define female2 "../models/VRM1_Constraint_Twist_Sample.vrm"
 // https://hub.vroid.com/en/characters/5355100161680925073/models/2684838785958206602
 #define furisode "/home/chevan/Downloads/furisode.vrm"
+#define minato "/home/chevan/Documents/Minato.vrm"
 
 static char modelPath[256];
 static int camera_opened = 1;

@@ -15,7 +15,7 @@ static glm::quat getRotation(const glm::mat4 &mat)
   glm::vec4 _perspective;
   glm::quat rotationQuat;
   glm::decompose(mat, _scale, rotationQuat, _trans, _skew, _perspective);
-  return rotationQuat;
+  return glm::normalize(rotationQuat);
 }
 
 static int vrmConstraints(VModel_t *vmodel)
@@ -31,7 +31,7 @@ static int vrmConstraints(VModel_t *vmodel)
         uint _src = constraint->constraint.aim.source;
         glm::mat4 worldMat = vmodel->physics.nodeMats[i] * glm::inverse(getNodeTransform(vmodel, i, glm::mat4(1)));
 
-        glm::vec4 fromVec = glm::vec4(0);
+        glm::vec3 fromVec = glm::vec4(0);
         switch (constraint->constraint.aim.aimAxis)
         {
         case constraint->constraint.aim.PositiveX:
@@ -56,14 +56,14 @@ static int vrmConstraints(VModel_t *vmodel)
           break;
         }
 
-        glm::quat rotationQuat=getRotation(worldMat);
+        glm::quat rotationQuat = getRotation(worldMat);
         rotationQuat *= v4quat(node.rotation);
-        fromVec = glm::mat4_cast(rotationQuat) * fromVec;
+        fromVec = rotationQuat * fromVec;
         glm::vec3 toVec = vmodel->physics.nodeMats[_src] * glm::vec4(0, 0, 0, 1) - vmodel->physics.nodeMats[i] * glm::vec4(0, 0, 0, 1);
         if (glm::length(toVec) != 0)
           toVec = glm::normalize(toVec);
 
-        glm::quat fromToQuat = glm::rotation(glm::vec3(fromVec), toVec);
+        glm::quat fromToQuat = glm::rotation(fromVec, toVec);
 
         glm::quat res = glm::mix(v4quat(node.rotation),
                                  glm::quat_cast(glm::inverse(worldMat) * glm::mat4_cast(fromToQuat) * worldMat) * v4quat(node.rotation),
@@ -118,10 +118,14 @@ static int vrmConstraints(VModel_t *vmodel)
   return 0;
 }
 
+static glm::vec3 vrmCalculateColliderDirection(VModel_t *vmodel, glm::vec3 pos, gltf::Extensions::VRMC_springBone::Collider &collider)
+{
+  return glm::vec3(0,0,0);
+}
 static int vrmSpringBone(VModel_t *vmodel)
 {
   gltf::Extensions::VRMC_springBone *springBone = ch_hashget(gltf::Extensions::VRMC_springBone *, vmodel->model.extensions, gltf::SUPPORTED_EXTENSIONS.VRMC_springBone);
-  if(springBone)
+  if (springBone)
   {
     uint *nodeParents = (uint *)malloc(sizeof(uint) * vmodel->model.nodes.size());
     memset(nodeParents, -1, sizeof(uint) * vmodel->model.nodes.size());
@@ -137,57 +141,70 @@ static int vrmSpringBone(VModel_t *vmodel)
         }
         if (i == 0)
           continue;
-        glm::vec3 prevTail, currentTail, initialBone;
-        glm::mat4 parentBone;
-        glm::mat4 worldTransform = vmodel->physics.nodeMats[spring.joints[i].node] * glm::inverse(getNodeTransform(vmodel, spring.joints[i].node, glm::mat4(1)));
+        
+        glm::mat4 center;
         if (spring.center == -1)
         {
-          prevTail = vmodel->physics.prevNodeMats[spring.joints[i].node] * glm::vec4(0, 0, 0, 1);
-          currentTail = vmodel->physics.nodeMats[spring.joints[i].node] * glm::vec4(0, 0, 0, 1);
-          parentBone = (nodeParents[spring.joints[i].node] == -1 ?
-            vmodel->physics.initialNodeMats[spring.joints[i].node] : vmodel->physics.initialNodeMats[nodeParents[spring.joints[i].node]]);
-          initialBone = vmodel->physics.initialNodeMats[spring.joints[i].node] * glm::vec4(0, 0, 0, 1);
+          center=glm::mat4(1);
         }
         else
         {
-          prevTail = glm::inverse(vmodel->physics.prevNodeMats[spring.center]) * vmodel->physics.prevNodeMats[spring.joints[i].node] * glm::vec4(0, 0, 0, 1);
-          currentTail = glm::inverse(vmodel->physics.nodeMats[spring.center]) * vmodel->physics.nodeMats[spring.joints[i].node] * glm::vec4(0, 0, 0, 1);
-          parentBone = glm::inverse(vmodel->physics.initialNodeMats[spring.center]) * (nodeParents[spring.joints[i].node] == -1 ?
-            vmodel->physics.initialNodeMats[spring.joints[i].node] : vmodel->physics.initialNodeMats[nodeParents[spring.joints[i].node]]);
-          initialBone = glm::inverse(vmodel->physics.initialNodeMats[spring.center]) * vmodel->physics.initialNodeMats[spring.joints[i].node] * glm::vec4(0, 0, 0, 1);
-          worldTransform = glm::inverse(vmodel->physics.nodeMats[spring.center]) * worldTransform;
+          center = vmodel->physics.prevNodeMats[spring.center];
         }
+        glm::vec3 prevTail = glm::inverse(center) * vmodel->physics.prevNodeMats[spring.joints[i].node] * glm::vec4(0, 0, 0, 1);
+        glm::vec3 currentTail = glm::inverse(center) * vmodel->physics.nodeMats[spring.joints[i].node] * glm::vec4(0, 0, 0, 1);
+        glm::vec3 initialBone = glm::inverse(center) * vmodel->physics.initialNodeMats[spring.joints[i].node] * glm::vec4(0, 0, 0, 1);
+        glm::mat4 parentBone = nodeParents[spring.joints[i].node] == -1 ? glm::mat4(1) : 
+          glm::inverse(center) * vmodel->physics.nodeMats[nodeParents[spring.joints[i].node]];
+        glm::vec3 parentInitialBone = nodeParents[spring.joints[i].node] == -1 ? glm::vec3(0,0,0) : 
+          glm::inverse(center) * vmodel->physics.initialNodeMats[nodeParents[spring.joints[i].node]] * glm::vec4(0, 0, 0, 1);
+        glm::mat4 worldTransform = glm::inverse(vmodel->physics.nodeMats[spring.center]) * vmodel->physics.nodeMats[spring.joints[i].node] *
+                                   glm::inverse(getNodeTransform(vmodel, spring.joints[i].node, glm::mat4(1)));
+
+        float boneLength = glm::length(initialBone - parentInitialBone);
+        glm::vec3 boneAxis = getNodeInitialTransform(vmodel, spring.joints[i].node, glm::mat4(1)) * glm::vec4(0, 0, 0, 1);
+        boneAxis = glm::normalize(boneAxis);
 
         glm::vec3 inertia = (currentTail - prevTail) * (1 - spring.joints[i].dragForce);
-        glm::vec3 boneAxis = initialBone - glm::vec3(parentBone * glm::vec4(0, 0, 0, 1));
-        float boneLength = glm::length(boneAxis);
-        boneAxis = glm::normalize(boneAxis);
-        glm::vec3 stiffness = glm::mat4_cast(getRotation(parentBone) * v4quat(vmodel->model.nodes[spring.joints[i].node].rotation)) * glm::vec4(0, 0, 0, 1);
+        glm::vec3 stiffness = getRotation(parentBone) * v4quat(vmodel->model.nodes[spring.joints[i].node].rotation) * boneAxis;
         stiffness *= vmodel->physics.deltaTime * spring.joints[i].stiffness;
         glm::vec3 external = v3(spring.joints[i].gravityDir);
         external *= vmodel->physics.deltaTime * spring.joints[i].gravityPower;
 
-        glm::vec3 nextTail = currentTail + inertia + stiffness + external;
+        glm::vec3 nextTail = currentTail + inertia + stiffness*1.f + external;
 
-        if (nextTail.x != nextTail.x)
+        if (glm::any(glm::isnan(nextTail)))
         {
           fprintf(stderr, "Error in renderer. Number is NaN");
           return -1;
         }
         nextTail = glm::normalize(glm::vec3(glm::inverse(worldTransform) * glm::vec4(nextTail, 1))) * boneLength;
+
+
+        // collisions
+        for (uint colliderGroup = 0; colliderGroup < spring.colliderGroups.size(); colliderGroup++)
+        {
+          for (uint i = 0; i < springBone->colliderGroups[spring.colliderGroups[colliderGroup]].colliders.size(); i++)
+          {
+            nextTail = worldTransform * glm::vec4(nextTail, 1);
+            nextTail -= vrmCalculateColliderDirection(vmodel, nextTail,
+              springBone->colliders[springBone->colliderGroups[spring.colliderGroups[colliderGroup]].colliders[i]]);
+            nextTail = glm::normalize(glm::vec3(glm::inverse(worldTransform) * glm::vec4(nextTail, 1))) * boneLength;
+          }
+        }
         vmodel->physics.nodeTRS[spring.joints[i].node].translate = nextTail;
       }
     }
     free(nodeParents);
   }
+  // exit(0);
   return 0;
 }
-static int vrmCustomPhysics(VModel_t*vmodel)
+static int vrmCustomPhysics(VModel_t *vmodel)
 {
   gltf::Extensions::VRMC_vrm *vrm = ch_hashget(gltf::Extensions::VRMC_vrm *, vmodel->model.extensions, gltf::SUPPORTED_EXTENSIONS.VRMC_vrm);
   if (vrm)
   {
-    
   }
   return 0;
 }

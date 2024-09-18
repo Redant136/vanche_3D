@@ -57,7 +57,8 @@ struct VModel_t
       glm::vec3 translate;
       glm::vec4 rotation;
       glm::vec3 scale;
-    } *nodeTRS;
+    };
+    NodeTRS *nodeTRS;
     NodeTRS *prevNodeTRS;
     glm::mat4 *nodeMats;
     glm::mat4 *prevNodeMats;
@@ -86,6 +87,7 @@ int updateVModel(VModel_t *vmodel);
 int renderVModel(VModel_t vmodel);
 void freeVModel(VModel_t *vmodel);
 
+glm::mat4 getNodeInitialTransform(const VModel_t *vmodel, uint node, const glm::mat4 &parentTransform);
 glm::mat4 getNodeTransform(const VModel_t *vmodel, uint node, const glm::mat4 &parentTransform);
 
 void vmodelSetMorphWeight(VModel_t *vmodel, uint mesh, uint weight, float weightVal);
