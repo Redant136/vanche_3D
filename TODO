@@ -2,6 +2,7 @@ Working on:
 
 VRMC_springBone
 dlib face detection in seperate thread
+2 models rendered at once
 
 
 Backlog:
@@ -16,6 +17,7 @@ obj file
 physics:
 
 inverse kinematics
+confirm inertia is working properly
 
 expression recog:
 

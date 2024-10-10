@@ -35,15 +35,13 @@ float angle = 0;
 
 void init()
 {
-  vmodel.path = modelPath;
-  vmodel.model = loadModel(modelPath);
   WORLDInit();
   initVModel(&vmodel);
   WORLD.camera.pos.y = 1.4;
   WORLD.camera.pos.z = 0.4;
   camera_opened = recognizer_init();
   if (camera_opened && camera_opened != VANCHE_FRECOG_NO_CAMERA)
-    fprintf(stderr,"Error while opening the camera. Error number %d",camera_opened);
+    fprintf(stderr, "Error while opening the camera. Error number %d\n", camera_opened);
   camera_opened = !camera_opened;
   if (camera_opened)
   {
@@ -149,23 +147,22 @@ void update()
   // printf("FPS: %f\n",1/total_time);
 }
 
-int main(int argn,char**args)
+int main(int argn, char **args)
 {
-  if(argn>1){
-    strcpy(modelPath,args[1]);
-  }else{
-    strcpy(modelPath,seedsan);
+  if (argn > 1)
+  {
+    strcpy(modelPath, args[1]);
+  }
+  else
+  {
+    strcpy(modelPath, minato);
   }
   printf("Vanche Start\n");
-  printf("Launching with model %s\n",modelPath);
+  printf("Launching with model %s\n", modelPath);
   launch();
-
 
   freeVModel(&vmodel);
   recognizer_close();
   glfwTerminate();
-
-  // ch_writeFile("../dlib68Trackers.bin", (void *)tmp_face.aa, 5*68 * sizeof(glm::vec2));
-
   return 0;
 }

@@ -2,10 +2,10 @@
 #define CHEVAN_UTILS_ARRAY_H
 #include "chevan_utils_min.h"
 
-struct ch_array
+typedef struct ch_array
 {
   void *_start, *_end, *_max;
-};
+} ch_array;
 
 static inline ch_array ch_arrcreate(size_t size)
 {
@@ -54,27 +54,28 @@ static inline ch_array ch_arrexpand(size_t _size, ch_array arr, size_t nsize)
   return arr;
 }
 #define ch_arrexpand(type, arr, nSize) ch_arrexpand(sizeof(type), arr, nSize)
-static inline ch_array ch_arrfree(ch_array arr){
+static inline ch_array ch_arrfree(ch_array arr)
+{
   free(arr._start);
   arr._end = 0;
   arr._max = 0;
   return arr;
 }
 
-struct ch_hashPair
+typedef struct ch_hashPair
 {
   uchar key[32];
   // 1 for taken data
   uchar flag;
   void *data;
-};
+} ch_hashPair;
 static const void *ch_hash_NOTFOUND = 0;
-struct ch_hash
+typedef struct ch_hash
 {
   ch_hashPair *arr;
   size_t size;
   size_t (*hash)(void *);
-};
+} ch_hash;
 
 static inline ch_hash ch_hashcreatesize(size_t _tsize, size_t size)
 {
@@ -106,7 +107,7 @@ static inline size_t ch_stringHash(const char *h)
 }
 static void *ch_hashgetInt(ch_hash h, size_t k, size_t _size)
 {
-  if(!h.arr || !h.size)
+  if (!h.arr || !h.size)
     return &ch_hash_NOTFOUND;
   size_t _k = h.hash ? h.hash(&k) : k % h.size;
   for (int i = 0; i < h.size; i++)
@@ -114,14 +115,14 @@ static void *ch_hashgetInt(ch_hash h, size_t k, size_t _size)
     ch_hashPair *p = (ch_hashPair *)(((uchar *)h.arr) + (i + _k) * (sizeof(ch_hashPair) + _size - sizeof(void *)));
     if (!memcmp(&k, p->key, sizeof(k)))
       return ((uchar *)p) + offsetof(ch_hashPair, data);
-    if (!p->flag & 0x1)
+    if (!(p->flag & 0x1))
       break;
   }
   return &ch_hash_NOTFOUND;
 }
 static void *ch_hashgetStr(ch_hash h, const char *k, size_t _size)
 {
-  if(!h.arr || !h.size)
+  if (!h.arr || !h.size)
     return &ch_hash_NOTFOUND;
   size_t _k = h.hash ? h.hash((void *)k) : ch_stringHash(k) % h.size;
   for (int i = 0; i < h.size; i++)
@@ -129,7 +130,7 @@ static void *ch_hashgetStr(ch_hash h, const char *k, size_t _size)
     ch_hashPair *p = (ch_hashPair *)(((uchar *)h.arr) + ((i + _k) % h.size) * (sizeof(ch_hashPair) - sizeof(void *) + _size));
     if (!memcmp(k, p->key, strlen(k)))
       return ((uchar *)p) + offsetof(ch_hashPair, data);
-    if (!p->flag & 0x1)
+    if (!(p->flag & 0x1))
       break;
   }
   return &ch_hash_NOTFOUND;
@@ -223,13 +224,5 @@ static size_t ch_hashlength(size_t _size, ch_hash h)
   return s;
 }
 #define ch_hashlength(type, hash) ch_hashlength(sizeof(type), hash)
-
-#ifndef __cplusplus
-#define ch_get(type, arr, key) _Generic((arr), \
-    ch_array: ch_arrget,                       \
-    ch_hash: ch_hashget)(type, arr, key)
-#else
-
-#endif
 
 #endif
