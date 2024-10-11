@@ -39,7 +39,8 @@ IF(VANCHE_BUILD_FACE_RECOGNIZER)
   add_executable(face_mapper face_pose_detection/face_mapper_configurator.cpp ${VANCHE_FACE_MAPPER_SOURCES})
 ENDIF()
 
-add_executable(vanche main.cpp ${VANCHE_SOURCES})
+target_sources(vanche PRIVATE main.cpp ${VANCHE_SOURCES})
+target_include_directories(vanche PRIVATE "include/")
 
 target_link_libraries(vanche PRIVATE ${CMAKE_DL_LIBS})
 target_link_libraries(vanche PRIVATE glad)

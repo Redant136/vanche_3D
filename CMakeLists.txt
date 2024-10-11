@@ -33,5 +33,7 @@ if(APPLE)
   link_directories("/usr/local/lib")
 endif(APPLE)
 
+add_executable(vanche)
+
 add_subdirectory(extern)
 add_subdirectory(src)
