@@ -611,7 +611,7 @@ static ch_hash deserialize_extras(json extras)
       }
       else
       {
-        chprinterr("%s: extra not supported\n", ext.key().c_str());
+        fprintf(stderr, "%s: extra not supported\n", ext.key().c_str());
         continue;
       }
     }
@@ -932,7 +932,16 @@ static gltf::glTFModel parseGLTFJSON(json data)
         if (animData["channels"][j].contains("target"))
         {
           jsonget(animData["channels"][j]["target"], ch.target, node);
-          jsonget(animData["channels"][j]["target"], ch.target, path);
+          if (animData["channels"][j]["target"].contains("path"))
+          {
+            std::string path = animData["channels"][j]["target"]["path"].get<std::string>();
+            ch.target.path = path == "translation" ? ch.target.translation
+                             : path == "rotation"
+                                 ? ch.target.rotation
+                             : path == "scale"
+                                 ? ch.target.scale
+                                 : ch.target.weights;
+          }
           jsongetEx(animData["channels"][j]["target"], ch.target);
         }
         jsongetEx(animData["channels"][j], ch);
