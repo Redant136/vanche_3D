@@ -1,8 +1,6 @@
 Working on:
 
 VRMC_springBone
-dlib face detection in seperate thread
-2 models rendered at once
 
 
 Backlog:
@@ -33,6 +31,7 @@ other solving method for movement to transform
 
 renderer:
 
+change camera ubo to be in WORLD instead of vmodel
 optimize memory usage
 fix emissive texture
 uv animation

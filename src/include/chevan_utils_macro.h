@@ -1,6 +1,9 @@
 #ifndef CHEVAN_UTILS_MACRO_H
 #define CHEVAN_UTILS_MACRO_H
 
+#ifdef _WIN32
+#error MSVC does not expand macros properly
+#endif
 // Some c pre processor fuckery that allows to have loops & recursion in the pre processor
 
 #define FIRST(a, ...) a

@@ -23,8 +23,8 @@ elseif(${CMAKE_CXX_COMPILER_ID} STREQUAL MSVC)
   message(STATUS "MSVC detected, adding compile flags")
   set(CMAKE_BUILD_TYPE Debug)
   # set(CMAKE_CXX_FLAGS "-Wall")
-  set(CMAKE_CXX_FLAGS_DEBUG "-DEBUG /Zi")
-  set(CMAKE_CXX_FLAGS_RELEASE "-Ox")
+  set(CMAKE_CXX_FLAGS_DEBUG "/DEBUG /Zi")
+  set(CMAKE_CXX_FLAGS_RELEASE "/Ox")
 
 endif()
 
@@ -32,6 +32,8 @@ if(APPLE)
   include_directories("/usr/local/include") 
   link_directories("/usr/local/lib")
 endif(APPLE)
+
+add_executable(vanche)
 
 add_subdirectory(extern)
 add_subdirectory(src)

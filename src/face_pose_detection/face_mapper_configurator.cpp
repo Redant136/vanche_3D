@@ -1,6 +1,11 @@
 #include "face_recognizer.hpp"
+#ifdef WIN32
+// #include <windows.h>
+#else
 #include <chevan_utils_macro.h>
 #include <unistd.h>
+#endif
+
 
 enum Commands
 {
@@ -68,6 +73,50 @@ int main(int argn, char **args)
     chprintln("enter the expression you want to save: ");
     string128 message;
     scanf("%s", message);
+#ifdef _WIN32
+    if (!strcmp(message,"happy"))
+      e=Commands::happy;
+    else if(!strcmp(message,"angry"))
+      e=Commands::angry;
+    else if(!strcmp(message,"sad"))
+      e=Commands::sad;
+    else if(!strcmp(message,"relaxed"))
+      e=Commands::relaxed;
+    else if(!strcmp(message,"surprised"))
+      e=Commands::surprised;
+    else if(!strcmp(message,"aa"))
+      e=Commands::aa;
+    else if(!strcmp(message,"ih"))
+      e=Commands::ih;
+    else if(!strcmp(message,"ou"))
+      e=Commands::ou;
+    else if(!strcmp(message,"ee"))
+      e=Commands::ee;
+    else if(!strcmp(message,"oh"))
+      e=Commands::oh;
+    else if(!strcmp(message,"blink"))
+      e=Commands::blink;
+    else if(!strcmp(message,"blinkLeft"))
+      e=Commands::blinkLeft;
+    else if(!strcmp(message,"blinkRight"))
+      e=Commands::blinkRight;
+    else if(!strcmp(message,"lookUp"))
+      e=Commands::lookUp;
+    else if(!strcmp(message,"lookDown"))
+      e=Commands::lookDown;
+    else if(!strcmp(message,"lookLeft"))
+      e=Commands::lookLeft;
+    else if(!strcmp(message,"lookRight"))
+      e=Commands::lookRight;
+    else if(!strcmp(message,"neutral"))
+      e=Commands::neutral;
+    else if(!strcmp(message,"custom"))
+      e=Commands::custom;
+    else if(!strcmp(message,"cal"))
+      e=Commands::cal;
+    else
+      e=Commands::END;
+#else
     e = CH_ENUM_PARSE(message, Commands::, happy,
                       angry,
                       sad,
@@ -89,6 +138,7 @@ int main(int argn, char **args)
                       custom,
                       cal,
                       END);
+#endif
 
     if (e == cal)
       recognizer_calibrate();
@@ -103,7 +153,11 @@ int main(int argn, char **args)
         {
           filebuffer.sums[e * numPoints + i] += facial_landmarks[i];
         }
+#ifdef WIN32
+        // Sleep(0.1);
+#else
         usleep(100);
+#endif
       }
       for (int i = 0; i < numPoints; i++)
       {
