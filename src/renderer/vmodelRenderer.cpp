@@ -323,7 +323,8 @@ static void updateNodeMats(VModel_t *vmodel, uint node, glm::mat4 parentMat)
   }
 }
 
-static void bindTexture(const VModel_t &vmodel, const uint &currentShader, const gltf::Texture &texture, uint &texCoord, uint sampler_obj, uint GL_TextureIndex)
+static void bindTexture(const VModel_t &vmodel, const uint &currentShader, const gltf::Texture &texture,
+                        uint &texCoord, uint sampler_obj, uint GL_TextureIndex)
 {
   if (texture.sampler != -1)
   {
@@ -576,10 +577,13 @@ static int renderNode(const VModel_t &vmodel, const int _node, const gltf::Mater
       shaderSetBool(currentShader, "hasBaseColorTexture", hasBaseColorTexture);
 
       glUseProgram(currentShader);
-      shaderSetBool(currentShader, "MTOON_drawOutline", true);
-      glEnable(GL_CULL_FACE);
-      glDrawElements(primitive.mode, indexAccessor.count, indexAccessor.componentType,
-                     reinterpret_cast<void *>(indexAccessor.byteOffset));
+      if (vrmMtoon)
+      {
+        shaderSetBool(currentShader, "MTOON_drawOutline", true);
+        glEnable(GL_CULL_FACE);
+        glDrawElements(primitive.mode, indexAccessor.count, indexAccessor.componentType,
+                       reinterpret_cast<void *>(indexAccessor.byteOffset));
+      }
       shaderSetBool(currentShader, "MTOON_drawOutline", false);
       if (doubleSided)
         glDisable(GL_CULL_FACE);
@@ -763,7 +767,7 @@ void initVModel(VModel_t *vmodel)
       size += sizeof(glm::vec3) * vmodel->model.accessors[primitive.attributes.POSITION].count * 3;
     }
     glBindBuffer(GL_ARRAY_BUFFER, vmodel->renderer.morphsVBO[i]);
-    glBufferData(GL_ARRAY_BUFFER, size, 0, GL_STREAM_DRAW);
+    glBufferData(GL_ARRAY_BUFFER, size, 0, GL_DYNAMIC_DRAW); // <-- should be stream draw but causes issues with data overlapp
     glBindBuffer(GL_ARRAY_BUFFER, 0);
     uint offset = 0;
     for (uint j = 0; j < vmodel->model.meshes[i].primitives.size(); j++)
@@ -902,6 +906,7 @@ void initVModel(VModel_t *vmodel)
     const gltf::Image &image = vmodel->model.images[i];
     int width, height, channels;
     uchar *im = NULL;
+    glBindTexture(GL_TEXTURE_2D, vmodel->renderer.gltfImageTextureIndex[i]);
     if (image.bufferView != -1)
     {
       const gltf::BufferView &bufferView = vmodel->model.bufferViews[image.bufferView];
@@ -920,8 +925,6 @@ void initVModel(VModel_t *vmodel)
       height = 0;
       channels = 0;
     }
-
-    glBindTexture(GL_TEXTURE_2D, vmodel->renderer.gltfImageTextureIndex[i]);
 
     glTexParameterf(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
     glTexParameterf(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
