@@ -494,6 +494,7 @@ static int renderNode(const VModel_t &vmodel, const int _node, const gltf::Mater
             glDepthMask(false);
           else
             glDepthMask(true);
+          assert(primitive.material < vmodel.model.materials.size());
           membuild(glm::vec3, shadeColor, vrmMtoon->shadeColorFactor);
           shadeColor += glm::vec3(vmodel.renderer.materialColorTransforms[primitive.material * 6 + gltf::Extensions::VRMC_vrm::ExpressionPresets::Expression::MaterialColorBind::shadeColor]);
           shaderSetVec3(currentShader, "VRMData.shadeColor", shadeColor);
@@ -761,8 +762,7 @@ void initVModel(VModel_t *vmodel)
       size += sizeof(glm::vec3) * vmodel->model.accessors[primitive.attributes.POSITION].count * 3;
     }
     glBindBuffer(GL_ARRAY_BUFFER, vmodel->renderer.morphsVBO[i]);
-    glBufferData(GL_ARRAY_BUFFER, size, 0, GL_DYNAMIC_DRAW); // <-- should be stream draw but causes issues with data overlapp
-    glBindBuffer(GL_ARRAY_BUFFER, 0);
+    glBufferData(GL_ARRAY_BUFFER, size, 0, GL_STREAM_DRAW); // <-- should be stream draw but causes issues with data overlapp
     uint offset = 0;
     for (uint j = 0; j < vmodel->model.meshes[i].primitives.size(); j++)
     {
@@ -770,6 +770,7 @@ void initVModel(VModel_t *vmodel)
       glBufferSubData(GL_ARRAY_BUFFER, offset, sizeof(glm::vec3) * vmodel->model.accessors[primitive.attributes.POSITION].count * 3, vmodel->renderer.morphs[i][j]);
       offset += sizeof(glm::vec3) * vmodel->model.accessors[primitive.attributes.POSITION].count * 3;
     }
+    glBindBuffer(GL_ARRAY_BUFFER, 0);
   }
 
   // VAO

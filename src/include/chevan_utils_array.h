@@ -24,15 +24,15 @@ static inline ch_array ch_arrstack(size_t maxSize)
 }
 #define ch_arrstack(type, size) ch_arrstack(sizeof(type) * size)
 #define ch_arrlength(type, arr) (((uchar *)arr._end - (uchar *)arr._start) / sizeof(type))
-static inline void *ch_getarr(size_t _size, ch_array arr, int i)
+static inline void *ch_arrget(size_t _size, ch_array arr, int i)
 {
   if (i >= 0)
     return (uchar *)arr._start + i * _size;
   else
     return (uchar *)arr._end + i * _size;
 }
-#define ch_arrgetp(type, arr, i) (((type *)ch_getarr(sizeof(type), arr, i)))
-#define ch_arrget(type, arr, i) (*((type *)ch_getarr(sizeof(type), arr, i)))
+#define ch_arrgetp(type, arr, i) (((type *)ch_arrget(sizeof(type), arr, i)))
+#define ch_arrget(type, arr, i) (*((type *)ch_arrget(sizeof(type), arr, i)))
 
 #define ch_arrpush(type, arr, e)                 \
   if (arr._end != arr._max)                      \
@@ -190,6 +190,7 @@ static void *ch_hashinsStr(ch_hash h, const char *k, size_t _size)
 
 #ifndef __cplusplus
 #define ch_hashinsert(type, hash, key, e)                           \
+  do                                                                \
   {                                                                 \
     type _e = e;                                                    \
     memcpy(_Generic((key),                                          \
@@ -200,7 +201,7 @@ static void *ch_hashinsStr(ch_hash h, const char *k, size_t _size)
            char *: ch_hashinsStr,                                   \
            const char *: ch_hashinsStr)(hash, (key), sizeof(type)), \
            &_e, sizeof(type));                                      \
-  }
+  } while (0)
 #else
 static inline void *ch_hashinsert(ch_hash h, size_t key, size_t _size)
 {

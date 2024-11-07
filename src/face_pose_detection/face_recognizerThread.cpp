@@ -6,7 +6,7 @@ static volatile int recognizer_status;
 static pthread_t thread_id;
 
 
-void* threaded_update(void*_a)
+static void* threaded_update(void*_a)
 {
   recognizer_status = recognizer_update();
   recognizer_status |= THREADDONE_MASK;
@@ -34,7 +34,7 @@ int recognizer_asyncJoin(int*status)
 static volatile int recognizer_status;
 static HANDLE thread;
 
-DWORD WINAPI threaded_update(LPVOID _a)
+static DWORD WINAPI threaded_update(LPVOID _a)
 {
   recognizer_status = recognizer_update();
   recognizer_status |= THREADDONE_MASK;
