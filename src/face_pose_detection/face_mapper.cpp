@@ -1,6 +1,5 @@
 #include "face_mapper.hpp"
 #include <iostream>
-#include <glm/gtx/string_cast.hpp>
 
 static uint32_t TRACKER_MAP = 0b00011;
 #define TRACK_NEUTRAL (TRACKER_MAP & 1 << 0)

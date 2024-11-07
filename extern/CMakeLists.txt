@@ -1,18 +1,43 @@
+include(FetchContent)
+
 add_subdirectory(glad)
 
-# find_package(OpenGL REQUIRED)
+message(STATUS "Downloading dependencies...")
 
 find_package(glfw QUIET NAMES glfw glfw3)
 if(NOT glfw_FOUND)
-  add_subdirectory(glfw)
+  message(STATUS "Downloading glfw3")
+  FetchContent_Declare(
+    glfw
+    GIT_REPOSITORY	https://github.com/glfw/glfw.git
+    GIT_TAG 	master
+  )
+  FetchContent_MakeAvailable(glfw)
 endif()
 
-set(JSON_BuildTests OFF CACHE INTERNAL "")
-add_subdirectory(json)
+message(STATUS "Downloading nlohmann json")
+FetchContent_Declare(
+	json
+	GIT_REPOSITORY	https://github.com/nlohmann/json.git
+	GIT_TAG 	master
+)
+FetchContent_MakeAvailable(json)
 
-add_subdirectory(glm)
+message(STATUS "Downloading glm")
+FetchContent_Declare(
+	glm
+	GIT_REPOSITORY	https://github.com/g-truc/glm.git
+	GIT_TAG 	master
+)
+FetchContent_MakeAvailable(glm)
 
-add_subdirectory(dlib)
+message(STATUS "Downloading dlib")
+FetchContent_Declare(
+	dlib
+	GIT_REPOSITORY	https://github.com/davisking/dlib.git
+	GIT_TAG 	master
+)
+FetchContent_MakeAvailable(dlib)
 target_compile_options(dlib PRIVATE -w)
 
 

@@ -9,6 +9,7 @@
 #include <opencv2/videoio.hpp>
 #include <opencv2/core/utils/logger.hpp>
 #include <opencv2/calib3d.hpp>
+#define GLM_ENABLE_EXPERIMENTAL
 #include <glm/gtx/euler_angles.hpp>
 #pragma GCC diagnostic pop
 #define SHOW_DLIB_WINDOW 0

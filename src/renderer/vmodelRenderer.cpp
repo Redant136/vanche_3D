@@ -762,7 +762,7 @@ void initVModel(VModel_t *vmodel)
       size += sizeof(glm::vec3) * vmodel->model.accessors[primitive.attributes.POSITION].count * 3;
     }
     glBindBuffer(GL_ARRAY_BUFFER, vmodel->renderer.morphsVBO[i]);
-    glBufferData(GL_ARRAY_BUFFER, size, 0, GL_STREAM_DRAW); // <-- should be stream draw but causes issues with data overlapp
+    glBufferData(GL_ARRAY_BUFFER, size, 0, GL_STREAM_DRAW);
     uint offset = 0;
     for (uint j = 0; j < vmodel->model.meshes[i].primitives.size(); j++)
     {
